@@ -1,0 +1,10 @@
+[package]
+name = "vaccel-bindings"
+version = "0.1.0"
+authors = ["Babis Chalios <mail@bchalios.io>"]
+edition = "2018"
+build = "build.rs"
+links = "vaccel"
+
+[build-dependencies]
+bindgen = "0.53.1"
