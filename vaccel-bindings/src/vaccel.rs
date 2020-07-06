@@ -11,6 +11,8 @@ pub struct VaccelRuntime {
     sessions: HashMap<u32, vaccelrt_session>,
 }
 
+unsafe impl Send for vaccelrt_session {}
+
 impl VaccelRuntime {
     fn next_session_id(&mut self) -> Result<u32> {
         match self.next_sess_id.checked_add(1) {
