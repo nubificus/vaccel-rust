@@ -1,6 +1,7 @@
-use super::super::*;
-use crate::vaccel::Result;
 use std::collections::HashMap;
+use crate::*;
+
+pub type Result<T> = std::result::Result<T, i32>;
 
 pub struct VaccelRuntime {
     /// should be enough for now

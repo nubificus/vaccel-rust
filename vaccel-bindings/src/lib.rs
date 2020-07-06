@@ -4,5 +4,5 @@
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-mod vaccel;
-pub use vaccel::vaccel::*;
+pub mod vaccel;
+pub use vaccel::*;
