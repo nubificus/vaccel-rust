@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::*;
+use std::collections::HashMap;
 
 pub type Result<T> = std::result::Result<T, i32>;
 
@@ -31,9 +31,8 @@ impl VaccelRuntime {
     pub fn new_session(
         &mut self,
         out_args: &mut [vaccelrt_arg],
-        in_args: &mut [vaccelrt_arg]
+        in_args: &mut [vaccelrt_arg],
     ) -> Result<u32> {
-
         let mut sess = vaccelrt_session::default();
         let mut sess_type: u32 = 0;
         let id = self.next_session_id()?;
@@ -50,7 +49,7 @@ impl VaccelRuntime {
         };
 
         if err != VACCELRT_OK as i32 {
-            return Err(err)
+            return Err(err);
         }
 
         self.sessions.insert(id, sess);
@@ -59,9 +58,7 @@ impl VaccelRuntime {
 
     pub fn close_session(&mut self, sess_id: u32) -> Result<()> {
         if let Some(mut sess) = self.sessions.remove(&sess_id) {
-            unsafe {
-                vaccelrt_sess_free(&mut sess)
-            };
+            unsafe { vaccelrt_sess_free(&mut sess) };
 
             Ok(())
         } else {
@@ -73,9 +70,8 @@ impl VaccelRuntime {
         &mut self,
         sess_id: u32,
         out_args: &mut [vaccelrt_arg],
-        in_args: &mut [vaccelrt_arg]
+        in_args: &mut [vaccelrt_arg],
     ) -> Result<()> {
-
         let sess = match self.sessions.get_mut(&sess_id) {
             Some(_sess) => _sess,
             None => return Err(VACCELRT_ERR),
@@ -88,11 +84,11 @@ impl VaccelRuntime {
                 in_args.as_mut_ptr(),
                 out_args.len() as u32,
                 in_args.len() as u32,
-                )
+            )
         };
 
         if ret != VACCELRT_OK as i32 {
-            return Err(ret)
+            return Err(ret);
         }
 
         Ok(())
