@@ -4,7 +4,11 @@ version = "0.1.0"
 authors = ["Babis Chalios <mail@bchalios.io>"]
 edition = "2018"
 build = "build.rs"
-links = "vaccel"
+
+[lib]
+name = "vaccel_bindings"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
 
 [build-dependencies]
 bindgen = "0.53.1"
