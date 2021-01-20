@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package grpc;
+
+service VaccelAgent {
+	// Session handling
+	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+	rpc DestroySession(DestroySessionRequest) returns (VaccelEmpty);
+}
+
+message CreateSessionRequest {
+	uint32 flags = 1;
+}
+
+message DestroySessionRequest {
+	uint32 session_id = 1;
+}
+
+message CreateSessionResponse {
+	uint32 session_id = 1;
+}
+
+message VaccelEmpty {}
