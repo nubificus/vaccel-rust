@@ -517,6 +517,7 @@ dependencies = [
 [[package]]
 name = "protocols"
 version = "0.1.0"
+source = "git+https://github.com/cloudkernels/vaccel-grpc.git#1f046cb53758f9a2fdb31aaab955e1c694860d21"
 dependencies = [
  "protobuf",
  "ttrpc",

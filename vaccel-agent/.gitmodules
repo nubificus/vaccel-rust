@@ -1,3 +1,0 @@
-[submodule "vaccel-grpc"]
-	path = vaccel-grpc
-	url = git@github.com:cloudkernels/vaccel-grpc.git
