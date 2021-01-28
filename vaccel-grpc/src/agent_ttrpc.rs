@@ -44,6 +44,12 @@ impl VaccelAgentClient {
         ::ttrpc::client_request!(self, req, timeout_nano, "grpc.VaccelAgent", "DestroySession", cres);
         Ok(cres)
     }
+
+    pub fn image_classification(&self, req: &super::agent::ImageClassificationRequest, timeout_nano: i64) -> ::ttrpc::Result<super::agent::ImageClassificationResponse> {
+        let mut cres = super::agent::ImageClassificationResponse::new();
+        ::ttrpc::client_request!(self, req, timeout_nano, "grpc.VaccelAgent", "ImageClassification", cres);
+        Ok(cres)
+    }
 }
 
 struct CreateSessionMethod {
@@ -68,12 +74,26 @@ impl ::ttrpc::MethodHandler for DestroySessionMethod {
     }
 }
 
+struct ImageClassificationMethod {
+    service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for ImageClassificationMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, agent, ImageClassificationRequest, image_classification);
+        Ok(())
+    }
+}
+
 pub trait VaccelAgent {
     fn create_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::agent::CreateSessionRequest) -> ::ttrpc::Result<super::agent::CreateSessionResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/grpc.VaccelAgent/CreateSession is not supported".to_string())))
     }
     fn destroy_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::agent::DestroySessionRequest) -> ::ttrpc::Result<super::agent::VaccelEmpty> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/grpc.VaccelAgent/DestroySession is not supported".to_string())))
+    }
+    fn image_classification(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::agent::ImageClassificationRequest) -> ::ttrpc::Result<super::agent::ImageClassificationResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/grpc.VaccelAgent/ImageClassification is not supported".to_string())))
     }
 }
 
@@ -85,6 +105,9 @@ pub fn create_vaccel_agent(service: Arc<std::boxed::Box<dyn VaccelAgent + Send +
 
     methods.insert("/grpc.VaccelAgent/DestroySession".to_string(),
                     std::boxed::Box::new(DestroySessionMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/grpc.VaccelAgent/ImageClassification".to_string(),
+                    std::boxed::Box::new(ImageClassificationMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
 
     methods
 }
