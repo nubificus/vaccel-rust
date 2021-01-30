@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ttrpc = "0.3.0"
+ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", branch = "feat_non_abstract_socket" }
 protobuf = "=2.14.0"
 
 [build-dependencies]
