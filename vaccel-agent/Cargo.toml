@@ -8,9 +8,10 @@ edition = "2018"
 
 [dependencies]
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "master" }
-ttrpc = "0.3.0"
+ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", branch = "feat_non_abstract_socket" }
 protobuf = "=2.14.0"
 serde_json = "1.0.39"
-vaccel-bindings = { git = "https://github.com/bchalios/vaccel-bindings", branch = "master" }
+vaccel-bindings = { git = "https://github.com/bchalios/vaccel-bindings", branch = "api_cleanup" }
 signal-hook = "0.1.9"
 ctrlc = { version = "3.0", features = ["termination"] }
+structopt = { version = "0.3", default-features = false }

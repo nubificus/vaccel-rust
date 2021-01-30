@@ -1,12 +1,17 @@
 use std::sync::{Arc};
 
-use ttrpc::{self, error::get_rpc_status as ttrpc_error};
-
-use protocols::agent::{CreateSessionResponse, VaccelEmpty};
-
+use protocols::agent::{
+    CreateSessionRequest, CreateSessionResponse,
+    DestroySessionRequest, VaccelEmpty,
+    ImageClassificationRequest, ImageClassificationResponse
+};
 
 #[derive(Clone)]
 pub struct Agent {
+}
+
+fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::error::Error {
+    ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
 }
 
 pub fn start(server_address: &str) -> ttrpc::Server {
@@ -30,8 +35,8 @@ pub fn start(server_address: &str) -> ttrpc::Server {
 impl protocols::agent_ttrpc::VaccelAgent for Agent {
     fn create_session(
         &self,
-        _ctx: &ttrpc::TtrpcContext,
-        req: protocols::agent::CreateSessionRequest
+        _ctx: &::ttrpc::TtrpcContext,
+        req: CreateSessionRequest
     ) -> ttrpc::Result<CreateSessionResponse> {
         let mut sess: vaccel_bindings::vaccel_session = Default::default();
         match vaccel_bindings::new_session(&mut sess, req.flags) {
@@ -40,6 +45,8 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
                 let mut resp = CreateSessionResponse::new();
                 resp.session_id = sess.session_id;
 
+                println!("Created session {:?}", sess.session_id);
+
                 Ok(resp)
             }
         }
@@ -47,10 +54,44 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
 
     fn destroy_session(
         &self,
-        _ctx: &ttrpc::TtrpcContext,
-        _req: protocols::agent::DestroySessionRequest
+        _ctx: &::ttrpc::TtrpcContext,
+        req: DestroySessionRequest
     ) -> ttrpc::Result<VaccelEmpty> {
-        Ok(VaccelEmpty::new())
+        let mut sess: vaccel_bindings::vaccel_session = Default::default();
+        sess.session_id = req.session_id;
+        println!("Destroying session {:?}", sess.session_id);
+        match vaccel_bindings::close_session(&mut sess) {
+            Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
+            Ok(()) => {
+                println!("Destroyed session {:?}", req.session_id);
+                Ok(VaccelEmpty::new())
+            }
+        }
+    }
+
+    fn image_classification(
+        &self,
+        _ctx: &::ttrpc::TtrpcContext,
+        req: ImageClassificationRequest
+    ) -> ttrpc::Result<ImageClassificationResponse> {
+        let mut sess: vaccel_bindings::vaccel_session = Default::default();
+        let mut tags = vec![0; 1024];
+        let mut image_path = vec![0; 1024];
+
+        sess.session_id = req.session_id;
+        println!("session:{:?} Image classification", sess.session_id);
+        match vaccel_bindings::image_classification(
+        &mut sess, &req.image, &mut tags, &mut image_path) {
+            Err(e) => {
+                println!("Could not perform classification");
+                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
+            },
+            Ok(()) => {
+                let mut resp = ImageClassificationResponse::new();
+                resp.tags.append(&mut tags);
+                Ok(resp)
+            }
+        }
     }
 }
 

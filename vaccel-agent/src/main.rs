@@ -2,11 +2,15 @@ extern crate signal_hook;
 
 use std::thread;
 use std::sync::mpsc::{self};
+use structopt::StructOpt;
 
 mod rpc;
+mod cli;
 
 fn main() {
-    let mut server = rpc::start("unix:///tmp/1");
+    let cli = cli::VaccelAgentCli::from_args();
+
+    let mut server = rpc::start(&cli.uri);
 
     let _ = server.start().unwrap();
 
