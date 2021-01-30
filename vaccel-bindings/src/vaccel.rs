@@ -69,14 +69,14 @@ pub fn sgemm(
 
 pub fn image_classification(
     sess: &mut vaccel_session,
-    img: &mut [u8],
+    img: &[u8],
     out_text: &mut [u8],
     out_imgname: &mut [u8],
 ) -> Result<()> {
     let err = unsafe {
         vaccel_image_classification(
             sess,
-            img.as_mut_ptr() as *mut c_void,
+            img.as_ptr() as *mut c_void,
             out_text.as_mut_ptr(),
             out_imgname.as_mut_ptr(),
             img.len() as u64,
