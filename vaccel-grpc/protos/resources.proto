@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package vaccel;
+
+message CreateCaffeModelRequest {
+	bytes prototxt = 2;
+	bytes binary_model = 3;
+	bytes labels = 4;
+}
+
+message CreateTensorflowModelRequest {
+	bytes model = 1;
+}
+
+message CreateResourceRequest {
+	oneof model {
+		CreateTensorflowModelRequest tf = 1;
+		CreateCaffeModelRequest caffe = 2;
+	}
+}
+
+message CreateResourceResponse {
+	int64 resource_id = 1;
+}
+
+message RegisterResourceRequest {
+	int64 resource_id = 1;
+	uint32 session_id = 2;
+}
+
+message UnregisterResourceRequest {
+	uint32 session_id = 1;
+	int64 resource_id = 2;
+}
+
+message DestroyResourceRequest {
+	int64 resource_id = 1;
+}

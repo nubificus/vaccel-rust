@@ -1,33 +1,24 @@
 syntax = "proto3";
 
-package grpc;
+import "session.proto";
+import "resources.proto";
+import "image.proto";
+
+package vaccel;
 
 service VaccelAgent {
 	// Session handling
 	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
 	rpc DestroySession(DestroySessionRequest) returns (VaccelEmpty);
+
+	// vAccelRT resource handling
+	rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse);
+	rpc RegisterResource(RegisterResourceRequest) returns (VaccelEmpty);
+	rpc UnregisterResource(UnregisterResourceRequest) returns (VaccelEmpty);
+	rpc DestroyResource(DestroyResourceRequest) returns (VaccelEmpty);
+
+	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
-}
-
-message CreateSessionRequest {
-	uint32 flags = 1;
-}
-
-message DestroySessionRequest {
-	uint32 session_id = 1;
-}
-
-message CreateSessionResponse {
-	uint32 session_id = 1;
-}
-
-message ImageClassificationRequest {
-	uint32 session_id = 1;
-	bytes image = 2;
-}
-
-message ImageClassificationResponse {
-	bytes tags = 1;
 }
 
 message VaccelEmpty {}
