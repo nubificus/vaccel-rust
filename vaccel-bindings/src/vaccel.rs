@@ -79,4 +79,23 @@ impl vaccel_session {
             err => Err(err)
         }
     }
+
+    pub fn genop(
+        &mut self,
+        read: &mut [vaccel_arg],
+        write: &mut [vaccel_arg],
+    ) -> Result<()> {
+        match unsafe {
+            vaccel_genop(
+                self,
+                read.as_mut_ptr(),
+                read.len() as i32,
+                write.as_mut_ptr(),
+                write.len() as i32
+            ) as u32
+        } {
+            VACCEL_OK => Ok(()),
+            err => Err(err)
+        }
+    }
 }
