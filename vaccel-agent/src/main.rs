@@ -1,11 +1,11 @@
 extern crate signal_hook;
 
-use std::thread;
 use std::sync::mpsc::{self};
+use std::thread;
 use structopt::StructOpt;
 
-mod rpc;
 mod cli;
+mod rpc;
 
 fn main() {
     let cli = cli::VaccelAgentCli::from_args();
@@ -14,7 +14,7 @@ fn main() {
 
     let _ = server.start().unwrap();
 
-	// Hold the main thread until receiving signal SIGTERM
+    // Hold the main thread until receiving signal SIGTERM
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         ctrlc::set_handler(move || {
