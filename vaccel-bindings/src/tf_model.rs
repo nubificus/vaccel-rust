@@ -29,8 +29,15 @@ impl vaccel_tf_model {
     pub fn new(path: &Path) -> Result<Box<Self>> {
         let mut model = Box::new(vaccel_tf_model::default());
 
+        #[cfg(target_arch = "x86_64")]
         let path_str = match path.to_str() {
             Some(s) => s.as_ptr() as *const i8,
+            None => return Err(Error::Runtime(VACCEL_ENOENT)),
+        };
+
+        #[cfg(target_arch = "aarch64")]
+        let path_str = match path.to_str() {
+            Some(s) => s.as_ptr(),
             None => return Err(Error::Runtime(VACCEL_ENOENT)),
         };
 
