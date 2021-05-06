@@ -91,8 +91,9 @@ pub extern "C" fn image_classify(
 }
 
 fn create_tf_model(client: &VsockClient, model: &vaccel_tf_model) -> vaccel_id_t {
-    if !model.path.is_null() {
-        let cstr: &CStr = unsafe { CStr::from_ptr(model.path) };
+    let file = &model.file;
+    if !file.path.is_null() {
+        let cstr: &CStr = unsafe { CStr::from_ptr(file.path) };
         let rstr = match cstr.to_str() {
             Ok(rstr) => rstr,
             Err(_) => return -(VACCEL_ENOENT as i64),
@@ -109,7 +110,7 @@ fn create_tf_model(client: &VsockClient, model: &vaccel_tf_model) -> vaccel_id_t
         }
     } else {
         let data =
-            unsafe { Vec::from_raw_parts(model.data, model.size as usize, model.size as usize) };
+            unsafe { Vec::from_raw_parts(file.data, file.size as usize, file.size as usize) };
         let tf_model = match TensorFlowModel::from_vec(&data) {
             Ok(m) => m,
             Err(err) => return -(err as i64),
