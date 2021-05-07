@@ -595,7 +595,7 @@ dependencies = [
 [[package]]
 name = "protocols"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-grpc.git?branch=feat_resource_registration#f922673effc55b359dc298cd0c6a6de6a8ba5a69"
+source = "git+https://github.com/cloudkernels/vaccel-grpc.git?branch=master#332fb073b9547518503bf070e1919873f7038963"
 dependencies = [
  "protobuf",
  "ttrpc",
@@ -985,7 +985,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "vaccel-bindings"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-bindings?branch=feat_resource_registration#4360d1fc83d1a219e778c01d51d8c4c4d318b516"
+source = "git+https://github.com/cloudkernels/vaccel-bindings?branch=master#4360d1fc83d1a219e778c01d51d8c4c4d318b516"
 dependencies = [
  "bindgen",
  "libc",
