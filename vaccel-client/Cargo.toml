@@ -17,7 +17,7 @@ libc = ">=0.2.39"
 cc = { version = "1.0", features = ["parallel"] }
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_resource_registration" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "master" }
 vm-memory = { version = ">=0.2.2" }
 
 protobuf = "2.14.0"
