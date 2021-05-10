@@ -1,0 +1,52 @@
+name: Test Building vAccel
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, "${{ matrix.archconfig }}" ]
+
+    strategy:
+      matrix:
+        archconfig: [x86_64, aarch64]
+        build_type: [debug, release]
+      fail-fast: false
+
+    steps:
+    - name: Find SHA
+      run: |
+        if [[ "${{github.event.pull_request.head.sha}}" != "" ]]
+        then
+          echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
+        else
+          echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
+        fi
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Build agent
+      run: |
+        if [[ ${{matrix.build_type}} == "release" ]]
+        then
+          cargo build --release
+        else
+          cargo build
+        fi
+
+    - name: Upload artifact
+      uses: cloudkernels/minio-upload@master
+      with:
+        url: https://s3.nubificus.co.uk
+        access-key: ${{ secrets.AWS_ACCESS_KEY }}
+        secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        local-path: target/${{matrix.build_type}}/vaccelrt-agent
+        remote-path: nbfc-assets/github/vaccel-agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
