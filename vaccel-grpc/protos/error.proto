@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package vaccel;
+
+message VaccelError {
+	int64 error_code = 1;
+};
