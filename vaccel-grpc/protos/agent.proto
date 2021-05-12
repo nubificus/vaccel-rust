@@ -3,6 +3,7 @@ syntax = "proto3";
 import "session.proto";
 import "resources.proto";
 import "image.proto";
+import "tensorflow.proto";
 
 package vaccel;
 
@@ -19,6 +20,10 @@ service VaccelAgent {
 
 	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
+
+	// TensorFlow inference API
+	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
+	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 }
 
 message VaccelEmpty {}

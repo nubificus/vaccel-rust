@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package vaccel;
+
+import "error.proto";
+
+message TensorflowModelLoadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowModelLoadResponse {
+	VaccelError error = 1;
+};
+
+enum TFDataType {
+	// Add unused value here so that we are compatible
+	// with what vAccelRT returns us
+	UNUSED = 0;
+	FLOAT = 1;
+	DOUBLE = 2;
+	INT32 = 3;  // Int32 tensors are always in 'host' memory.
+	UINT8 = 4;
+	INT16 = 5;
+	INT8 = 6;
+	STRING = 7;
+	COMPLEX = 8;    // Old identifier kept for API backwards compatibility
+	INT64 = 9;
+	BOOL = 10;
+	QINT8 = 11;     // Quantized int8
+	QUINT8 = 12;    // Quantized uint8
+	QINT32 = 13;    // Quantized int32
+	BFLOAT16 = 14;  // Float32 truncated to 16 bits.  Only for cast ops.
+	QINT16 = 15;    // Quantized int16
+	QUINT16 = 16;   // Quantized uint16
+	UINT16 = 17;
+	COMPLEX128 = 18;  // Double-precision complex
+	HALF = 19;
+	RESOURCE = 20;
+	VARIANT = 21;
+	UINT32 = 22;
+	UINT64 = 23;
+};
+
+message TFTensor {
+	// Data of the tensor
+	bytes data = 1;
+
+	// Dimensions of the tensor
+	repeated int64 dims = 2;
+
+	// Data type
+	TFDataType type = 3;
+};
+
+message TFNode {
+	// Name of the node
+	string name = 1;
+
+	// Id of the node
+	int64 id = 2;
+};
+
+message TensorflowModelRunRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+
+	// Run options
+	bytes run_options = 3;
+
+	// Input nodes & tensors
+	repeated TFNode in_nodes = 4;
+	repeated TFTensor in_tensors = 5;
+
+	// Output nodes
+	repeated TFNode out_nodes = 6;
+};
+
+message InferenceResult {
+	// An inference result is a number of output tensors
+	repeated TFTensor out_tensors = 1;
+};
+
+message TensorflowModelRunResponse {
+	oneof result {
+		VaccelError error = 1;
+		InferenceResult result = 2;
+	}
+};

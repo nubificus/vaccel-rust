@@ -74,6 +74,18 @@ impl VaccelAgentClient {
         ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "ImageClassification", cres);
         Ok(cres)
     }
+
+    pub fn tensorflow_model_load(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelLoadResponse> {
+        let mut cres = super::tensorflow::TensorflowModelLoadResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowModelLoad", cres);
+        Ok(cres)
+    }
+
+    pub fn tensorflow_model_run(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
+        let mut cres = super::tensorflow::TensorflowModelRunResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowModelRun", cres);
+        Ok(cres)
+    }
 }
 
 struct CreateSessionMethod {
@@ -153,6 +165,28 @@ impl ::ttrpc::MethodHandler for ImageClassificationMethod {
     }
 }
 
+struct TensorflowModelLoadMethod {
+    service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowModelLoadMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowModelLoadRequest, tensorflow_model_load);
+        Ok(())
+    }
+}
+
+struct TensorflowModelRunMethod {
+    service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowModelRunMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowModelRunRequest, tensorflow_model_run);
+        Ok(())
+    }
+}
+
 pub trait VaccelAgent {
     fn create_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::session::CreateSessionRequest) -> ::ttrpc::Result<super::session::CreateSessionResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/CreateSession is not supported".to_string())))
@@ -174,6 +208,12 @@ pub trait VaccelAgent {
     }
     fn image_classification(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::image::ImageClassificationRequest) -> ::ttrpc::Result<super::image::ImageClassificationResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/ImageClassification is not supported".to_string())))
+    }
+    fn tensorflow_model_load(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::tensorflow::TensorflowModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelLoadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelLoad is not supported".to_string())))
+    }
+    fn tensorflow_model_run(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelRun is not supported".to_string())))
     }
 }
 
@@ -200,6 +240,12 @@ pub fn create_vaccel_agent(service: Arc<std::boxed::Box<dyn VaccelAgent + Send +
 
     methods.insert("/vaccel.VaccelAgent/ImageClassification".to_string(),
                     std::boxed::Box::new(ImageClassificationMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowModelLoad".to_string(),
+                    std::boxed::Box::new(TensorflowModelLoadMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowModelRun".to_string(),
+                    std::boxed::Box::new(TensorflowModelRunMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
 
     methods
 }

@@ -5,4 +5,5 @@ pub mod error;
 pub mod image;
 pub mod resources;
 pub mod session;
+pub mod tensorflow;
 pub mod agent_ttrpc;
