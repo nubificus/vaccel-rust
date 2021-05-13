@@ -12,6 +12,7 @@ pub mod image;
 pub mod noop;
 pub mod resource;
 pub mod session;
+pub mod tf_inference;
 pub mod tf_model;
 
 #[derive(Debug)]
