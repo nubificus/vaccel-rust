@@ -1,7 +1,7 @@
 use crate::client::VsockClient;
-use crate::*;
 
 use protocols::image::ImageClassificationRequest;
+use vaccel_bindings::VACCEL_EIO;
 
 impl VsockClient {
     pub fn image_classify(&self, sess_id: u32, img: Vec<u8>) -> Result<Vec<u8>, u32> {

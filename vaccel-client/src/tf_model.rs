@@ -1,9 +1,10 @@
 use crate::resources::VaccelResource;
-use crate::*;
 
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+
+use vaccel_bindings::VACCEL_EIO;
 
 use protocols::resources::{CreateResourceRequest, CreateTensorflowModelRequest};
 

@@ -1,6 +1,7 @@
 use crate::client::VsockClient;
-use crate::*;
+
 use protocols::session::{CreateSessionRequest, DestroySessionRequest};
+use vaccel_bindings::VACCEL_EIO;
 
 impl VsockClient {
     pub fn sess_init(&self, flags: u32) -> Result<u32, u32> {

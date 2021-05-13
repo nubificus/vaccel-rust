@@ -2,11 +2,11 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
 use nix::sys::socket::{connect, socket, AddressFamily, SockAddr, SockFlag, SockType};
-use std::env;
 use std::os::unix::io::RawFd;
+
+use vaccel_bindings::{VACCEL_EINVAL, VACCEL_EIO, VACCEL_ENOTSUP};
+
 use ttrpc;
 
 fn client_create_vsock_fd(cid: libc::c_uint, port: u32) -> Result<RawFd, u32> {

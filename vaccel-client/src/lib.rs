@@ -3,8 +3,6 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-
 use libc::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_uchar;
@@ -13,6 +11,8 @@ use std::slice;
 
 use client::VsockClient;
 use tf_model::TensorFlowModel;
+use vaccel_bindings::{vaccel_id_t, vaccel_resource_t, vaccel_tf_model};
+use vaccel_bindings::{VACCEL_EINVAL, VACCEL_ENOENT, VACCEL_OK};
 
 pub mod client;
 pub mod image;
@@ -140,12 +140,11 @@ pub extern "C" fn create_resource(
     };
 
     match res_type {
-        vaccel_resource_t_VACCEL_RES_TF_MODEL => {
+        _vaccel_resource_t_VACCEL_RES_TF_MODEL => {
             let model_ptr = data as *mut vaccel_tf_model;
             let model = unsafe { model_ptr.as_ref().unwrap() };
             create_tf_model(client, model)
         }
-        _ => -(VACCEL_ENOTSUP as i64),
     }
 }
 

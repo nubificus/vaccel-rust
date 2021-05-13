@@ -4,6 +4,7 @@ use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,
 };
+use vaccel_bindings::VACCEL_EIO;
 
 pub trait VaccelResource {
     fn create_resource_request(self) -> Result<CreateResourceRequest, u32>;
