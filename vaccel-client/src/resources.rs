@@ -1,10 +1,14 @@
 use crate::client::VsockClient;
-use crate::*;
+use crate::tf_model::create_tf_model;
 use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,
 };
-use vaccel_bindings::VACCEL_EIO;
+
+use vaccel_bindings::{vaccel_id_t, vaccel_resource_t, vaccel_tf_model};
+use vaccel_bindings::{VACCEL_EINVAL, VACCEL_EIO, VACCEL_OK};
+
+use std::ffi::c_void;
 
 pub trait VaccelResource {
     fn create_resource_request(self) -> Result<CreateResourceRequest, u32>;
@@ -57,5 +61,42 @@ impl VsockClient {
             .map_err(|_| VACCEL_EIO)?;
 
         Ok(())
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn create_resource(
+    client_ptr: *const VsockClient,
+    res_type: vaccel_resource_t,
+    data: *mut c_void,
+) -> vaccel_id_t {
+    if data.is_null() {
+        return VACCEL_EINVAL as i64;
+    }
+
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return VACCEL_EINVAL as i64,
+    };
+
+    match res_type {
+        _vaccel_resource_t_VACCEL_RES_TF_MODEL => {
+            let model_ptr = data as *mut vaccel_tf_model;
+            let model = unsafe { model_ptr.as_ref().unwrap() };
+            create_tf_model(client, model)
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn destroy_resource(client_ptr: *const VsockClient, id: vaccel_id_t) -> i32 {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return VACCEL_EINVAL as i32,
+    };
+
+    match client.destroy_resource(id) {
+        Err(ret) => ret as i32,
+        Ok(()) => VACCEL_OK as i32,
     }
 }

@@ -1,10 +1,13 @@
+use crate::client::VsockClient;
 use crate::resources::VaccelResource;
 
+use std::ffi::CStr;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use vaccel_bindings::VACCEL_EIO;
+use vaccel_bindings::{vaccel_id_t, vaccel_tf_model};
+use vaccel_bindings::{VACCEL_EIO, VACCEL_ENOENT};
 
 use protocols::resources::{CreateResourceRequest, CreateTensorflowModelRequest};
 
@@ -36,5 +39,39 @@ impl VaccelResource for TensorFlowModel {
         req.set_tf(model);
 
         Ok(req)
+    }
+}
+
+pub(crate) fn create_tf_model(client: &VsockClient, model: &vaccel_tf_model) -> vaccel_id_t {
+    let file = &model.file;
+    if !file.path.is_null() {
+        let cstr: &CStr = unsafe { CStr::from_ptr(file.path) };
+        let rstr = match cstr.to_str() {
+            Ok(rstr) => rstr,
+            Err(_) => return -(VACCEL_ENOENT as i64),
+        };
+
+        let tf_model = match TensorFlowModel::new(Path::new(rstr)) {
+            Ok(m) => m,
+            Err(err) => return -(err as i64),
+        };
+
+        match client.create_resource(tf_model) {
+            Ok(id) => id,
+            Err(err) => return -(err as i64),
+        }
+    } else {
+        let data =
+            unsafe { Vec::from_raw_parts(file.data, file.size as usize, file.size as usize) };
+        let tf_model = match TensorFlowModel::from_vec(&data) {
+            Ok(m) => m,
+            Err(err) => return -(err as i64),
+        };
+        std::mem::forget(data);
+
+        match client.create_resource(tf_model) {
+            Err(ret) => -(ret as i64),
+            Ok(id) => id,
+        }
     }
 }
