@@ -1,5 +1,6 @@
 use crate::Result;
 use crate::{vaccel_id_t, vaccel_resource};
+use std::any::Any;
 
 pub trait VaccelResource {
     /// Get the id of a vAccel resource
@@ -16,4 +17,10 @@ pub trait VaccelResource {
 
     /// Destroy a resource
     fn destroy(&mut self) -> Result<()>;
+
+    /// "Cast" VaccelResource to Any type sto we can downcast to type
+    fn as_any(&self) -> &dyn Any;
+
+    /// "Cast" VaccelResource to a mutable Any type
+    fn as_mut_any(&mut self) -> &mut dyn Any;
 }

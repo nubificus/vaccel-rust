@@ -4,6 +4,7 @@ use crate::{
     vaccel_tf_model_new, vaccel_tf_model_new_from_buffer, VACCEL_ENOENT, VACCEL_OK,
 };
 use crate::{Error, Result};
+use std::any::Any;
 use std::path::Path;
 
 impl vaccel_tf_model {
@@ -135,5 +136,13 @@ impl VaccelResource for vaccel_tf_model {
 
     fn destroy(&mut self) -> Result<()> {
         self.destroy()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_mut_any(&mut self) -> &mut dyn Any {
+        self
     }
 }
