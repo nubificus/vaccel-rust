@@ -8,6 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 use std::fmt;
 
 pub mod genop;
+pub mod grpc;
 pub mod image;
 pub mod noop;
 pub mod resource;

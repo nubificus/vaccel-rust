@@ -9,6 +9,11 @@ build = "build.rs"
 name = "vaccel_bindings"
 path = "src/lib.rs"
 
+[dependencies]
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "feat_tf_inference" }
+protobuf = "=2.14.0"
+memchr = "2.4.0"
+
 [build-dependencies]
 libc = ">=0.2.39"
 bindgen = "0.53.1"
