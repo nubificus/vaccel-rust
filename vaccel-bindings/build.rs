@@ -49,6 +49,8 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         // Derive Default Trait
         .derive_default(true)
+        // Do not prepend C enum name
+        .prepend_enum_name(false)
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.
