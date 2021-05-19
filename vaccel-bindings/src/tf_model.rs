@@ -1,11 +1,12 @@
 use crate::resource::VaccelResource;
+use crate::VACCEL_OK;
 use crate::{
     vaccel_id_t, vaccel_resource, vaccel_tf_model, vaccel_tf_model_destroy, vaccel_tf_model_get_id,
-    vaccel_tf_model_new, vaccel_tf_model_new_from_buffer, VACCEL_ENOENT, VACCEL_OK,
+    vaccel_tf_model_new, vaccel_tf_model_new_from_buffer,
 };
 use crate::{Error, Result};
 use std::any::Any;
-use std::os::raw::c_char;
+use std::ffi::CString;
 use std::path::Path;
 
 impl vaccel_tf_model {
@@ -20,12 +21,12 @@ impl vaccel_tf_model {
     pub fn new(path: &Path) -> Result<Self> {
         let mut model = vaccel_tf_model::default();
 
-        let path_str = match path.to_str() {
-            Some(s) => s.as_ptr() as *mut c_char,
-            None => return Err(Error::Runtime(VACCEL_ENOENT)),
-        };
+        // We create a CString to ensure that the path we pass to libvaccel
+        // is null terminated
+        let c_str = CString::new(path.as_os_str().to_str().ok_or(Error::InvalidArgument)?)
+            .map_err(|_| Error::InvalidArgument)?;
 
-        match unsafe { vaccel_tf_model_new(&mut model, path_str) as u32 } {
+        match unsafe { vaccel_tf_model_new(&mut model, c_str.as_ptr()) as u32 } {
             VACCEL_OK => Ok(model),
             err => Err(Error::Runtime(err)),
         }
