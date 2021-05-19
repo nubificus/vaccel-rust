@@ -4,7 +4,7 @@ use std::any::Any;
 
 pub trait VaccelResource {
     /// Get the id of a vAccel resource
-    fn id(&self) -> Option<vaccel_id_t>;
+    fn id(&self) -> vaccel_id_t;
 
     /// Has the vAccel resource been created?
     fn initialized(&self) -> bool;

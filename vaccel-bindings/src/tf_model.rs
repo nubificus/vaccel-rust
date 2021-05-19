@@ -109,11 +109,8 @@ impl vaccel_tf_model {
 }
 
 impl VaccelResource for vaccel_tf_model {
-    fn id(&self) -> Option<vaccel_id_t> {
-        match unsafe { vaccel_tf_model_get_id(self) } {
-            -1 => None,
-            id => Some(id),
-        }
+    fn id(&self) -> vaccel_id_t {
+        unsafe { vaccel_tf_model_get_id(self) }
     }
 
     fn initialized(&self) -> bool {
