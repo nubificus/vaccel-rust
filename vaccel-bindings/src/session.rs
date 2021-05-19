@@ -37,6 +37,11 @@ impl vaccel_session {
         }
     }
 
+    /// Get the session id
+    pub fn id(&self) -> u32 {
+        self.session_id
+    }
+
     /// Destroy a vAccel session
     ///
     /// This will close an open session and consume it.
