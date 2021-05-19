@@ -16,26 +16,6 @@ impl vaccel_tf_model {
     /// * `session` - The session in the context of which we perform the operation. The model needs
     /// to be registered with this session.
     ///
-    /// # Examples
-    ///
-    /// ```
-    /// use vaccel_bindings::{vaccel_session, vaccel_tf_model, Error};
-    ///
-    /// fn main() -> Result<(), vaccel_bindings::Error> {
-    ///     let path = Path::new("/path/to/model.pb");
-    ///     let model = vaccel_tf_model::new(path)?;
-    ///
-    ///     let sess = vaccel_session::new(0)?;
-    ///     sess.register(model)?;
-    ///
-    ///     model.load_graph(sess)?;
-    ///         
-    ///     println!("Successfully load TensorFlow graph");
-    ///     Ok(())
-    /// }
-    ///
-    /// ```
-    ///
     pub fn load_graph(&mut self, sess: &mut vaccel_session) -> Result<vaccel_tf_status> {
         let mut status = vaccel_tf_status::default();
 
