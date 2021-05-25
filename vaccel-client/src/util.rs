@@ -5,7 +5,7 @@
 use nix::sys::socket::{connect, socket, AddressFamily, SockAddr, SockFlag, SockType};
 use std::os::unix::io::RawFd;
 
-use vaccel_bindings::{VACCEL_EINVAL, VACCEL_EIO, VACCEL_ENOTSUP};
+use vaccel::ffi;
 
 use ttrpc;
 
@@ -16,24 +16,24 @@ fn client_create_vsock_fd(cid: libc::c_uint, port: u32) -> Result<RawFd, u32> {
         SockFlag::SOCK_CLOEXEC,
         None,
     )
-    .map_err(|_| VACCEL_EIO)?;
+    .map_err(|_| ffi::VACCEL_EIO)?;
 
     let sock_addr = SockAddr::new_vsock(cid, port);
 
-    connect(fd, &sock_addr).map_err(|_| VACCEL_EIO)?;
+    connect(fd, &sock_addr).map_err(|_| ffi::VACCEL_EIO)?;
 
     Ok(fd)
 }
 
 pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32> {
     if server_address == "" {
-        return Err(VACCEL_EINVAL);
+        return Err(ffi::VACCEL_EINVAL);
     }
 
     let fields: Vec<&str> = server_address.split("://").collect();
 
     if fields.len() != 2 {
-        return Err(VACCEL_EINVAL);
+        return Err(ffi::VACCEL_EINVAL);
     }
 
     let scheme = fields[0].to_lowercase();
@@ -43,25 +43,25 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32
             let addr: Vec<&str> = fields[1].split(':').collect();
 
             if addr.len() != 2 {
-                return Err(VACCEL_EINVAL);
+                return Err(ffi::VACCEL_EINVAL);
             }
 
             let cid: u32 = match addr[0] {
                 "-1" | "" => libc::VMADDR_CID_ANY,
                 _ => match addr[0].parse::<u32>() {
                     Ok(c) => c,
-                    Err(_) => return Err(VACCEL_EINVAL),
+                    Err(_) => return Err(ffi::VACCEL_EINVAL),
                 },
             };
 
             let port: u32 = match addr[1].parse::<u32>() {
                 Ok(p) => p,
-                Err(_) => return Err(VACCEL_EINVAL),
+                Err(_) => return Err(ffi::VACCEL_EINVAL),
             };
 
-            client_create_vsock_fd(cid, port).map_err(|_| VACCEL_EINVAL)?
+            client_create_vsock_fd(cid, port).map_err(|_| ffi::VACCEL_EINVAL)?
         }
-        _ => return Err(VACCEL_ENOTSUP),
+        _ => return Err(ffi::VACCEL_ENOTSUP),
     };
 
     Ok(ttrpc::client::Client::new(fd))
