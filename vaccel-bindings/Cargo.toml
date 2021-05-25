@@ -12,7 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "feat_tf_inference" }
 protobuf = "=2.14.0"
-memchr = "2.4.0"
+memchr = "2.3.3"
 
 [build-dependencies]
 libc = ">=0.2.39"
