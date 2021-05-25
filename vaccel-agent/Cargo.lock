@@ -604,7 +604,7 @@ dependencies = [
 [[package]]
 name = "protocols"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-grpc.git?branch=master#332fb073b9547518503bf070e1919873f7038963"
+source = "git+https://github.com/cloudkernels/vaccel-grpc.git?branch=feat_tf_inference#6b963a8aea5ee8296683149b19d85965ab1e33eb"
 dependencies = [
  "protobuf",
  "ttrpc",
@@ -767,9 +767,9 @@ checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
 name = "serde"
-version = "1.0.125"
+version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "558dc50e1a5a5fa7112ca2ce4effcb321b0300c0d4ccf0776a9f60cd89031171"
+checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 
 [[package]]
 name = "serde_json"
@@ -994,12 +994,15 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "vaccel-bindings"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-bindings?branch=master#e6b589dd8d52401b9b0d2eab0b628675f0f28a79"
+source = "git+https://github.com/cloudkernels/vaccel-bindings?branch=feat_tf_inference#946d7b1b7b3f5b9b75a4e976bcd618f89b40bd3d"
 dependencies = [
  "bindgen",
  "cmake",
  "libc",
+ "memchr",
  "pkg-config",
+ "protobuf",
+ "protocols",
 ]
 
 [[package]]

@@ -7,11 +7,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "master" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_tf_inference" }
 ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", branch = "devel" }
 protobuf = "=2.14.0"
 serde_json = "1.0.39"
-vaccel-bindings = { git = "https://github.com/cloudkernels/vaccel-bindings", branch = "master" }
+vaccel-bindings = { git = "https://github.com/cloudkernels/vaccel-bindings", branch = "feat_tf_inference" }
 signal-hook = "0.1.9"
 ctrlc = { version = "3.0", features = ["termination"] }
 structopt = { version = "0.3", default-features = false }
