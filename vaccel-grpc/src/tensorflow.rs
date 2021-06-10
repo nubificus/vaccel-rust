@@ -219,8 +219,8 @@ impl ::protobuf::reflect::ProtobufValue for TensorflowModelLoadRequest {
 
 #[derive(PartialEq,Clone,Default)]
 pub struct TensorflowModelLoadResponse {
-    // message fields
-    pub error: ::protobuf::SingularPtrField<super::error::VaccelError>,
+    // message oneof groups
+    pub result: ::std::option::Option<TensorflowModelLoadResponse_oneof_result>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -232,52 +232,123 @@ impl<'a> ::std::default::Default for &'a TensorflowModelLoadResponse {
     }
 }
 
+#[derive(Clone,PartialEq,Debug)]
+pub enum TensorflowModelLoadResponse_oneof_result {
+    graph_def(::std::vec::Vec<u8>),
+    error(super::error::VaccelError),
+}
+
 impl TensorflowModelLoadResponse {
     pub fn new() -> TensorflowModelLoadResponse {
         ::std::default::Default::default()
     }
 
-    // .vaccel.VaccelError error = 1;
+    // bytes graph_def = 1;
+
+
+    pub fn get_graph_def(&self) -> &[u8] {
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(ref v)) => v,
+            _ => &[],
+        }
+    }
+    pub fn clear_graph_def(&mut self) {
+        self.result = ::std::option::Option::None;
+    }
+
+    pub fn has_graph_def(&self) -> bool {
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_graph_def(&mut self, v: ::std::vec::Vec<u8>) {
+        self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_graph_def(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if let ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(::std::vec::Vec::new()));
+        }
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_graph_def(&mut self) -> ::std::vec::Vec<u8> {
+        if self.has_graph_def() {
+            match self.result.take() {
+                ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            ::std::vec::Vec::new()
+        }
+    }
+
+    // .vaccel.VaccelError error = 2;
 
 
     pub fn get_error(&self) -> &super::error::VaccelError {
-        self.error.as_ref().unwrap_or_else(|| super::error::VaccelError::default_instance())
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(ref v)) => v,
+            _ => super::error::VaccelError::default_instance(),
+        }
     }
     pub fn clear_error(&mut self) {
-        self.error.clear();
+        self.result = ::std::option::Option::None;
     }
 
     pub fn has_error(&self) -> bool {
-        self.error.is_some()
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(..)) => true,
+            _ => false,
+        }
     }
 
     // Param is passed by value, moved
     pub fn set_error(&mut self, v: super::error::VaccelError) {
-        self.error = ::protobuf::SingularPtrField::some(v);
+        self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(v))
     }
 
     // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
     pub fn mut_error(&mut self) -> &mut super::error::VaccelError {
-        if self.error.is_none() {
-            self.error.set_default();
+        if let ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(super::error::VaccelError::new()));
         }
-        self.error.as_mut().unwrap()
+        match self.result {
+            ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(ref mut v)) => v,
+            _ => panic!(),
+        }
     }
 
     // Take field
     pub fn take_error(&mut self) -> super::error::VaccelError {
-        self.error.take().unwrap_or_else(|| super::error::VaccelError::new())
+        if self.has_error() {
+            match self.result.take() {
+                ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            super::error::VaccelError::new()
+        }
     }
 }
 
 impl ::protobuf::Message for TensorflowModelLoadResponse {
     fn is_initialized(&self) -> bool {
-        for v in &self.error {
+        if let Some(TensorflowModelLoadResponse_oneof_result::error(ref v)) = self.result {
             if !v.is_initialized() {
                 return false;
             }
-        };
+        }
         true
     }
 
@@ -286,7 +357,16 @@ impl ::protobuf::Message for TensorflowModelLoadResponse {
             let (field_number, wire_type) = is.read_tag_unpack()?;
             match field_number {
                 1 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.error)?;
+                    if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::graph_def(is.read_bytes()?));
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.result = ::std::option::Option::Some(TensorflowModelLoadResponse_oneof_result::error(is.read_message()?));
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -300,9 +380,16 @@ impl ::protobuf::Message for TensorflowModelLoadResponse {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if let Some(ref v) = self.error.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &TensorflowModelLoadResponse_oneof_result::graph_def(ref v) => {
+                    my_size += ::protobuf::rt::bytes_size(1, &v);
+                },
+                &TensorflowModelLoadResponse_oneof_result::error(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+                },
+            };
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -310,10 +397,17 @@ impl ::protobuf::Message for TensorflowModelLoadResponse {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if let Some(ref v) = self.error.as_ref() {
-            os.write_tag(1, ::protobuf::wire_format::WireTypeLengthDelimited)?;
-            os.write_raw_varint32(v.get_cached_size())?;
-            v.write_to_with_cached_sizes(os)?;
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &TensorflowModelLoadResponse_oneof_result::graph_def(ref v) => {
+                    os.write_bytes(1, v)?;
+                },
+                &TensorflowModelLoadResponse_oneof_result::error(ref v) => {
+                    os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+                    os.write_raw_varint32(v.get_cached_size())?;
+                    v.write_to_with_cached_sizes(os)?;
+                },
+            };
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -354,10 +448,15 @@ impl ::protobuf::Message for TensorflowModelLoadResponse {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::error::VaccelError>>(
+                fields.push(::protobuf::reflect::accessor::make_singular_bytes_accessor::<_>(
+                    "graph_def",
+                    TensorflowModelLoadResponse::has_graph_def,
+                    TensorflowModelLoadResponse::get_graph_def,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_message_accessor::<_, super::error::VaccelError>(
                     "error",
-                    |m: &TensorflowModelLoadResponse| { &m.error },
-                    |m: &mut TensorflowModelLoadResponse| { &mut m.error },
+                    TensorflowModelLoadResponse::has_error,
+                    TensorflowModelLoadResponse::get_error,
                 ));
                 ::protobuf::reflect::MessageDescriptor::new_pb_name::<TensorflowModelLoadResponse>(
                     "TensorflowModelLoadResponse",
@@ -378,7 +477,8 @@ impl ::protobuf::Message for TensorflowModelLoadResponse {
 
 impl ::protobuf::Clear for TensorflowModelLoadResponse {
     fn clear(&mut self) {
-        self.error.clear();
+        self.result = ::std::option::Option::None;
+        self.result = ::std::option::Option::None;
         self.unknown_fields.clear();
     }
 }
@@ -1785,13 +1885,14 @@ impl ::protobuf::reflect::ProtobufValue for TFDataType {
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x10tensorflow.proto\x12\x06vaccel\"H\n\x1aTensorflowModelLoadRequest\
     \x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\
-    \x02\x20\x01(\x03B\0:\0\"E\n\x1bTensorflowModelLoadResponse\x12$\n\x05er\
-    ror\x18\x01\x20\x01(\x0b2\x13.vaccel.VaccelErrorB\0:\0\"P\n\x08TFTensor\
-    \x12\x0e\n\x04data\x18\x01\x20\x01(\x0cB\0\x12\x0e\n\x04dims\x18\x02\x20\
-    \x03(\x03B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataType\
-    B\0:\0\"(\n\x06TFNode\x12\x0e\n\x04name\x18\x01\x20\x01(\tB\0\x12\x0c\n\
-    \x02id\x18\x02\x20\x01(\x03B\0:\0\"\xcf\x01\n\x19TensorflowModelRunReque\
-    st\x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\
+    \x02\x20\x01(\x03B\0:\0\"h\n\x1bTensorflowModelLoadResponse\x12\x15\n\tg\
+    raph_def\x18\x01\x20\x01(\x0cH\0B\0\x12&\n\x05error\x18\x02\x20\x01(\x0b\
+    2\x13.vaccel.VaccelErrorH\0B\0B\x08\n\x06result:\0\"P\n\x08TFTensor\x12\
+    \x0e\n\x04data\x18\x01\x20\x01(\x0cB\0\x12\x0e\n\x04dims\x18\x02\x20\x03\
+    (\x03B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataTypeB\0:\
+    \0\"(\n\x06TFNode\x12\x0e\n\x04name\x18\x01\x20\x01(\tB\0\x12\x0c\n\x02i\
+    d\x18\x02\x20\x01(\x03B\0:\0\"\xcf\x01\n\x19TensorflowModelRunRequest\
+    \x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\
     \x02\x20\x01(\x03B\0\x12\x15\n\x0brun_options\x18\x03\x20\x01(\x0cB\0\
     \x12\"\n\x08in_nodes\x18\x04\x20\x03(\x0b2\x0e.vaccel.TFNodeB\0\x12&\n\n\
     in_tensors\x18\x05\x20\x03(\x0b2\x10.vaccel.TFTensorB\0\x12#\n\tout_node\

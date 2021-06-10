@@ -10,7 +10,10 @@ message TensorflowModelLoadRequest {
 };
 
 message TensorflowModelLoadResponse {
-	VaccelError error = 1;
+	oneof result {
+		bytes graph_def = 1;
+		VaccelError error = 2;
+	}
 };
 
 enum TFDataType {
