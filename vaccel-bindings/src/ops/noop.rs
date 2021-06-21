@@ -1,4 +1,4 @@
-use crate::{vaccel_noop, vaccel_session, VACCEL_OK};
+use crate::ffi::{vaccel_noop, vaccel_session, VACCEL_OK};
 use crate::{Error, Result};
 
 impl vaccel_session {

@@ -6,7 +6,7 @@ use std::os::raw::c_char;
 use protobuf::ProtobufEnum;
 use protocols::tensorflow::{TFDataType, TFNode, TFTensor};
 
-use crate::{vaccel_tf_buffer, vaccel_tf_node, vaccel_tf_tensor};
+use crate::ffi::{vaccel_tf_buffer, vaccel_tf_node, vaccel_tf_tensor};
 
 /// Convert a `vaccel_tf_buffer` in a slice of `u8`
 ///

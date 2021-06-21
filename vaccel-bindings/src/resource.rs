@@ -1,19 +1,20 @@
+use crate::ffi;
 use crate::Result;
-use crate::{vaccel_id_t, vaccel_resource};
+use crate::VaccelId;
 use std::any::Any;
 
-pub trait VaccelResource {
+pub trait Resource {
     /// Get the id of a vAccel resource
-    fn id(&self) -> vaccel_id_t;
+    fn id(&self) -> VaccelId;
 
     /// Has the vAccel resource been created?
     fn initialized(&self) -> bool;
 
     /// Get a const pointer of the underlying vAccel resource
-    fn to_vaccel_ptr(&self) -> Option<*const vaccel_resource>;
+    fn to_vaccel_ptr(&self) -> Option<*const ffi::vaccel_resource>;
 
     /// Get a mutable pointer of the underlying vAccel resource
-    fn to_mut_vaccel_ptr(&self) -> Option<*mut vaccel_resource>;
+    fn to_mut_vaccel_ptr(&self) -> Option<*mut ffi::vaccel_resource>;
 
     /// Destroy a resource
     fn destroy(&mut self) -> Result<()>;

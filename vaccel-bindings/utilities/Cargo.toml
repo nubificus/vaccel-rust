@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 env_logger = "0.8.3"
 log = "0.4.0"
-vaccel-bindings = { path = ".." }
+vaccel = { path = ".." }
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "master" }
 
 [patch.'https://github.com/cloudkernels/vaccel-grpc']

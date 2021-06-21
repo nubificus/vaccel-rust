@@ -1,4 +1,4 @@
-use crate::{
+use crate::ffi::{
     vaccel_image_classification, vaccel_image_detection, vaccel_image_segmentation, vaccel_session,
     VACCEL_OK,
 };
