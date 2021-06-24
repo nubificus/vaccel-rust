@@ -1,18 +1,15 @@
 use std::fmt;
+
 use std::fs::File;
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-use log::{error, info};
-
-extern crate vaccel_bindings;
-use vaccel_bindings::resource::VaccelResource;
-use vaccel_bindings::{vaccel_session, vaccel_tf_model};
+extern crate vaccel;
 
 pub enum Error {
     IO(std::io::Error),
 
-    Vaccel(vaccel_bindings::Error),
+    Vaccel(vaccel::Error),
 }
 
 impl fmt::Debug for Error {
@@ -24,20 +21,13 @@ impl fmt::Debug for Error {
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
-
-pub fn create_from_file(path: &Path) -> Result<vaccel_tf_model> {
-    match vaccel_tf_model::new(path) {
-        Ok(model) => {
-            info!("New model from file: {}", model.id());
-            Ok(model)
-        }
-        Err(err) => {
-            error!("Could not create model from {:?}: {}", path, err);
-            Err(Error::Vaccel(err))
-        }
+impl From<vaccel::Error> for Error {
+    fn from(error: vaccel::Error) -> Self {
+        Error::Vaccel(error)
     }
 }
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub fn vec_from_file(path: &Path) -> Result<Vec<u8>> {
     let mut file = File::open(path).map_err(|e| Error::IO(e))?;
@@ -48,53 +38,18 @@ pub fn vec_from_file(path: &Path) -> Result<Vec<u8>> {
     Ok(data)
 }
 
-pub fn create_from_data(data: &[u8]) -> Result<vaccel_tf_model> {
-    match vaccel_tf_model::from_buffer(data) {
-        Ok(model) => {
-            info!("New model from buffer: {}", model.id());
-            Ok(model)
-        }
-        Err(err) => {
-            error!("Could not create model from buffer: {}", err);
-            Err(Error::Vaccel(err))
-        }
-    }
-}
+pub fn load_in_mem(path: &Path) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+    let mut model_path = PathBuf::from(path);
+    model_path.push("saved_model.pb");
+    let model_pb = vec_from_file(&model_path)?;
 
-pub fn register_model(sess: &mut vaccel_session, model: &mut vaccel_tf_model) -> Result<()> {
-    match sess.register(model) {
-        Ok(()) => {
-            info!("Model {} registered with session {}", model.id(), sess.id());
-            Ok(())
-        }
-        Err(err) => {
-            error!(
-                "Could not register model {} with session {}",
-                model.id(),
-                sess.id()
-            );
-            Err(Error::Vaccel(err))
-        }
-    }
-}
+    let mut ckpt_path = PathBuf::from(path);
+    ckpt_path.push("variables/variables.data-00000-of-00001");
+    let checkpoint = vec_from_file(&ckpt_path)?;
 
-pub fn unregister_model(sess: &mut vaccel_session, model: &mut vaccel_tf_model) -> Result<()> {
-    match sess.unregister(model) {
-        Ok(()) => {
-            info!(
-                "Model {} unregistered from session {}",
-                model.id(),
-                sess.id()
-            );
-            Ok(())
-        }
-        Err(err) => {
-            error!(
-                "Could not unregister model {} from session {}",
-                model.id(),
-                sess.id()
-            );
-            Err(Error::Vaccel(err))
-        }
-    }
+    let mut var_index_path = PathBuf::from(path);
+    var_index_path.push("variables/variables.index");
+    let var_index = vec_from_file(&var_index_path)?;
+
+    Ok((model_pb, checkpoint, var_index))
 }

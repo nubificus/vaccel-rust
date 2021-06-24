@@ -6,12 +6,14 @@
 
 use std::fmt;
 
-pub(crate) mod ffi;
-pub mod grpc;
+pub mod ffi;
 pub mod ops;
 pub mod resource;
 pub mod session;
 pub mod tensorflow;
+
+pub use resource::Resource;
+pub use session::Session;
 
 #[derive(Debug)]
 pub enum Error {
@@ -23,6 +25,9 @@ pub enum Error {
 
     // Uninitialized vAccel object
     Uninitialized,
+
+    // A TensorFlow Error
+    TensorFlow(tensorflow::Code),
 }
 
 impl fmt::Display for Error {
@@ -31,12 +36,14 @@ impl fmt::Display for Error {
             Error::Runtime(err) => write!(f, "vAccel runtime error {}", err),
             Error::InvalidArgument => write!(f, "An invalid argument was given to us"),
             Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
+            Error::TensorFlow(code) => write!(f, "TensorFlow error: {:?}", code),
         }
     }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(PartialEq, Eq, Hash, Debug)]
 pub struct VaccelId {
     inner: Option<ffi::vaccel_id_t>,
 }
@@ -44,12 +51,6 @@ pub struct VaccelId {
 impl VaccelId {
     fn has_id(&self) -> bool {
         self.inner.is_some()
-    }
-}
-
-impl PartialEq for VaccelId {
-    fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
     }
 }
 
@@ -68,6 +69,32 @@ impl From<ffi::vaccel_id_t> for VaccelId {
             VaccelId { inner: None }
         } else {
             VaccelId { inner: Some(id) }
+        }
+    }
+}
+
+impl From<VaccelId> for ffi::vaccel_id_t {
+    fn from(id: VaccelId) -> Self {
+        match id.inner {
+            None => 0,
+            Some(id) => id,
+        }
+    }
+}
+
+impl From<VaccelId> for u32 {
+    fn from(id: VaccelId) -> Self {
+        match id.inner {
+            None => 0,
+            Some(id) => id as u32,
+        }
+    }
+}
+
+impl From<u32> for VaccelId {
+    fn from(id: u32) -> Self {
+        VaccelId {
+            inner: Some(id.into()),
         }
     }
 }

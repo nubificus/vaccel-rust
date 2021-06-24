@@ -1,11 +1,10 @@
-use crate::ffi::{
-    vaccel_image_classification, vaccel_image_detection, vaccel_image_segmentation, vaccel_session,
-    VACCEL_OK,
-};
+use crate::ffi;
+use crate::session::Session;
 use crate::{Error, Result};
+
 use std::os::raw::c_void;
 
-impl vaccel_session {
+impl Session {
     /// Perform image classification
     ///
     /// vAccel image classification using a pre-defined model (TODO: use a registered model)
@@ -18,8 +17,8 @@ impl vaccel_session {
         let mut out_img = vec![0; 1024];
 
         match unsafe {
-            vaccel_image_classification(
-                self,
+            ffi::vaccel_image_classification(
+                self.inner_mut(),
                 img.as_ptr() as *mut c_void,
                 tags.as_mut_ptr(),
                 out_img.as_mut_ptr(),
@@ -28,7 +27,7 @@ impl vaccel_session {
                 out_img.len() as u64,
             ) as u32
         } {
-            VACCEL_OK => Ok((tags, out_img)),
+            ffi::VACCEL_OK => Ok((tags, out_img)),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -37,15 +36,15 @@ impl vaccel_session {
         let mut out_img = vec![0; img.len()];
 
         match unsafe {
-            vaccel_image_detection(
-                self,
+            ffi::vaccel_image_detection(
+                self.inner_mut(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
                 img.len() as u64,
                 out_img.len() as u64,
             ) as u32
         } {
-            VACCEL_OK => Ok(out_img),
+            ffi::VACCEL_OK => Ok(out_img),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -54,15 +53,15 @@ impl vaccel_session {
         let mut out_img = vec![0; img.len()];
 
         match unsafe {
-            vaccel_image_segmentation(
-                self,
+            ffi::vaccel_image_segmentation(
+                self.inner_mut(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
                 img.len() as u64,
                 out_img.len() as u64,
             ) as u32
         } {
-            VACCEL_OK => Ok(out_img),
+            ffi::VACCEL_OK => Ok(out_img),
             err => Err(Error::Runtime(err)),
         }
     }

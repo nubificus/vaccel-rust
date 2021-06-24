@@ -5024,6 +5024,15 @@ extern "C" {
 extern "C" {
     pub fn vaccel_file_initialized(file: *mut vaccel_file) -> bool;
 }
+extern "C" {
+    pub fn vaccel_file_read(file: *mut vaccel_file) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_file_data(file: *mut vaccel_file, size: *mut size_t) -> *mut u8;
+}
+extern "C" {
+    pub fn vaccel_file_path(file: *mut vaccel_file) -> *const ::std::os::raw::c_char;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct vaccel_tf_model {
@@ -5294,6 +5303,27 @@ impl Default for vaccel_tf_buffer {
         unsafe { ::std::mem::zeroed() }
     }
 }
+extern "C" {
+    pub fn vaccel_tf_buffer_new(
+        data: *mut ::std::os::raw::c_void,
+        size: size_t,
+    ) -> *mut vaccel_tf_buffer;
+}
+extern "C" {
+    pub fn vaccel_tf_buffer_destroy(buffer: *mut vaccel_tf_buffer);
+}
+extern "C" {
+    pub fn vaccel_tf_buffer_take_data(
+        buffer: *mut vaccel_tf_buffer,
+        size: *mut size_t,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_tf_buffer_get_data(
+        buffer: *const vaccel_tf_buffer,
+        size: *mut size_t,
+    ) -> *mut ::std::os::raw::c_void;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct vaccel_tf_node {
@@ -5338,11 +5368,24 @@ impl Default for vaccel_tf_node {
         unsafe { ::std::mem::zeroed() }
     }
 }
+extern "C" {
+    pub fn vaccel_tf_node_new(name: *const ::std::os::raw::c_char, id: i64) -> *mut vaccel_tf_node;
+}
+extern "C" {
+    pub fn vaccel_tf_node_destroy(node: *mut vaccel_tf_node);
+}
+extern "C" {
+    pub fn vaccel_tf_node_get_name(node: *mut vaccel_tf_node) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn vaccel_tf_node_get_id(node: *mut vaccel_tf_node) -> i64;
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct vaccel_tf_tensor {
     pub data: *mut ::std::os::raw::c_void,
     pub size: size_t,
+    pub owned: bool,
     pub nr_dims: ::std::os::raw::c_int,
     pub dims: *mut i64,
     pub data_type: vaccel_tf_data_type,
@@ -5380,8 +5423,18 @@ fn bindgen_test_layout_vaccel_tf_tensor() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<vaccel_tf_tensor>())).nr_dims as *const _ as usize },
+        unsafe { &(*(::std::ptr::null::<vaccel_tf_tensor>())).owned as *const _ as usize },
         16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_tf_tensor),
+            "::",
+            stringify!(owned)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_tf_tensor>())).nr_dims as *const _ as usize },
+        20usize,
         concat!(
             "Offset of field: ",
             stringify!(vaccel_tf_tensor),
@@ -5414,6 +5467,34 @@ impl Default for vaccel_tf_tensor {
     fn default() -> Self {
         unsafe { ::std::mem::zeroed() }
     }
+}
+extern "C" {
+    pub fn vaccel_tf_tensor_new(
+        nr_dims: ::std::os::raw::c_int,
+        dims: *mut i64,
+        type_: vaccel_tf_data_type,
+    ) -> *mut vaccel_tf_tensor;
+}
+extern "C" {
+    pub fn vaccel_tf_tensor_allocate(
+        nr_dims: ::std::os::raw::c_int,
+        dims: *mut i64,
+        type_: vaccel_tf_data_type,
+        total_size: size_t,
+    ) -> *mut vaccel_tf_tensor;
+}
+extern "C" {
+    pub fn vaccel_tf_tensor_destroy(tensor: *mut vaccel_tf_tensor) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_tf_tensor_set_data(
+        tensor: *mut vaccel_tf_tensor,
+        data: *mut ::std::os::raw::c_void,
+        size: size_t,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_tf_tensor_get_data(tensor: *mut vaccel_tf_tensor) -> *mut ::std::os::raw::c_void;
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -5472,10 +5553,10 @@ extern "C" {
         model: *const vaccel_tf_saved_model,
         run_options: *const vaccel_tf_buffer,
         in_nodes: *const vaccel_tf_node,
-        in_: *const vaccel_tf_tensor,
+        in_: *const *mut vaccel_tf_tensor,
         nr_inputs: ::std::os::raw::c_int,
         out_nodes: *const vaccel_tf_node,
-        out: *mut vaccel_tf_tensor,
+        out: *mut *mut vaccel_tf_tensor,
         nr_outputs: ::std::os::raw::c_int,
         status: *mut vaccel_tf_status,
     ) -> ::std::os::raw::c_int;
@@ -5580,11 +5661,22 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
+    pub fn vaccel_tf_saved_model_get_path(
+        model: *mut vaccel_tf_saved_model,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
     pub fn vaccel_tf_saved_model_set_model(
         model: *mut vaccel_tf_saved_model,
         ptr: *mut u8,
         len: size_t,
     ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_tf_saved_model_get_model(
+        model: *mut vaccel_tf_saved_model,
+        len: *mut size_t,
+    ) -> *const u8;
 }
 extern "C" {
     pub fn vaccel_tf_saved_model_set_checkpoint(
@@ -5594,11 +5686,23 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
+    pub fn vaccel_tf_saved_model_get_checkpoint(
+        model: *mut vaccel_tf_saved_model,
+        len: *mut size_t,
+    ) -> *const u8;
+}
+extern "C" {
     pub fn vaccel_tf_saved_model_set_var_index(
         model: *mut vaccel_tf_saved_model,
         ptr: *mut u8,
         len: size_t,
     ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_tf_saved_model_get_var_index(
+        model: *mut vaccel_tf_saved_model,
+        len: *mut size_t,
+    ) -> *const u8;
 }
 extern "C" {
     pub fn vaccel_tf_saved_model_register(

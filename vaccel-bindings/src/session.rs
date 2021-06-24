@@ -22,10 +22,10 @@ impl Session {
     ///
     /// * `flags` - Flags for session creation. Currently ignored.
     pub fn new(flags: u32) -> Result<Self> {
-        let mut inner: ffi::vaccel_session;
+        let mut inner = ffi::vaccel_session::default();
 
         match unsafe { ffi::vaccel_sess_init(&mut inner, flags) as u32 } {
-            VACCEL_OK => Ok(Session { inner }),
+            ffi::VACCEL_OK => Ok(Session { inner }),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -38,9 +38,9 @@ impl Session {
     /// Destroy a vAccel session
     ///
     /// This will close an open session and consume it.
-    pub fn close(self) -> Result<()> {
+    pub fn close(&mut self) -> Result<()> {
         match unsafe { ffi::vaccel_sess_free(&mut self.inner) as u32 } {
-            VACCEL_OK => Ok(()),
+            ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -62,7 +62,7 @@ impl Session {
         let res_ptr = res.to_mut_vaccel_ptr().ok_or(Error::InvalidArgument)?;
 
         match unsafe { ffi::vaccel_sess_register(&mut self.inner, res_ptr) as u32 } {
-            VACCEL_OK => Ok(()),
+            ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -71,7 +71,7 @@ impl Session {
         let res_ptr = res.to_mut_vaccel_ptr().ok_or(Error::InvalidArgument)?;
 
         match unsafe { ffi::vaccel_sess_unregister(&mut self.inner, res_ptr) as u32 } {
-            VACCEL_OK => Ok(()),
+            ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
     }
@@ -80,7 +80,7 @@ impl Session {
         &self.inner
     }
 
-    pub(crate) fn inner_mut(&self) -> &mut ffi::vaccel_session {
+    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_session {
         &mut self.inner
     }
 }

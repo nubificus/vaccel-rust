@@ -2,7 +2,7 @@ extern crate env_logger;
 
 use env_logger::Env;
 use log::{error, info};
-use vaccel_bindings::vaccel_session;
+use vaccel::session::Session;
 
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
@@ -10,7 +10,7 @@ fn main() {
     info!("Starting vAccel session handling example");
 
     info!("Creating new vAccel session");
-    let sess = match vaccel_session::new(0) {
+    let mut sess = match Session::new(0) {
         Ok(sess) => sess,
         Err(e) => {
             error!("Error: {}", e);
