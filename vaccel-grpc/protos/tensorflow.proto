@@ -50,7 +50,7 @@ message TFTensor {
 	bytes data = 1;
 
 	// Dimensions of the tensor
-	repeated int64 dims = 2;
+	repeated uint64 dims = 2;
 
 	// Data type
 	TFDataType type = 3;

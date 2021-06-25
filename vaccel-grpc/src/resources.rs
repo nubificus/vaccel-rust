@@ -437,6 +437,253 @@ impl ::protobuf::reflect::ProtobufValue for CreateTensorflowModelRequest {
 }
 
 #[derive(PartialEq,Clone,Default)]
+pub struct CreateTensorflowSavedModelRequest {
+    // message fields
+    pub model_pb: ::std::vec::Vec<u8>,
+    pub checkpoint: ::std::vec::Vec<u8>,
+    pub var_index: ::std::vec::Vec<u8>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a CreateTensorflowSavedModelRequest {
+    fn default() -> &'a CreateTensorflowSavedModelRequest {
+        <CreateTensorflowSavedModelRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl CreateTensorflowSavedModelRequest {
+    pub fn new() -> CreateTensorflowSavedModelRequest {
+        ::std::default::Default::default()
+    }
+
+    // bytes model_pb = 1;
+
+
+    pub fn get_model_pb(&self) -> &[u8] {
+        &self.model_pb
+    }
+    pub fn clear_model_pb(&mut self) {
+        self.model_pb.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_model_pb(&mut self, v: ::std::vec::Vec<u8>) {
+        self.model_pb = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_model_pb(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.model_pb
+    }
+
+    // Take field
+    pub fn take_model_pb(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.model_pb, ::std::vec::Vec::new())
+    }
+
+    // bytes checkpoint = 2;
+
+
+    pub fn get_checkpoint(&self) -> &[u8] {
+        &self.checkpoint
+    }
+    pub fn clear_checkpoint(&mut self) {
+        self.checkpoint.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_checkpoint(&mut self, v: ::std::vec::Vec<u8>) {
+        self.checkpoint = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_checkpoint(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.checkpoint
+    }
+
+    // Take field
+    pub fn take_checkpoint(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.checkpoint, ::std::vec::Vec::new())
+    }
+
+    // bytes var_index = 3;
+
+
+    pub fn get_var_index(&self) -> &[u8] {
+        &self.var_index
+    }
+    pub fn clear_var_index(&mut self) {
+        self.var_index.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_var_index(&mut self, v: ::std::vec::Vec<u8>) {
+        self.var_index = v;
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_var_index(&mut self) -> &mut ::std::vec::Vec<u8> {
+        &mut self.var_index
+    }
+
+    // Take field
+    pub fn take_var_index(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.var_index, ::std::vec::Vec::new())
+    }
+}
+
+impl ::protobuf::Message for CreateTensorflowSavedModelRequest {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.model_pb)?;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.checkpoint)?;
+                },
+                3 => {
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.var_index)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if !self.model_pb.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(1, &self.model_pb);
+        }
+        if !self.checkpoint.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(2, &self.checkpoint);
+        }
+        if !self.var_index.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(3, &self.var_index);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if !self.model_pb.is_empty() {
+            os.write_bytes(1, &self.model_pb)?;
+        }
+        if !self.checkpoint.is_empty() {
+            os.write_bytes(2, &self.checkpoint)?;
+        }
+        if !self.var_index.is_empty() {
+            os.write_bytes(3, &self.var_index)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> CreateTensorflowSavedModelRequest {
+        CreateTensorflowSavedModelRequest::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "model_pb",
+                    |m: &CreateTensorflowSavedModelRequest| { &m.model_pb },
+                    |m: &mut CreateTensorflowSavedModelRequest| { &mut m.model_pb },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "checkpoint",
+                    |m: &CreateTensorflowSavedModelRequest| { &m.checkpoint },
+                    |m: &mut CreateTensorflowSavedModelRequest| { &mut m.checkpoint },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
+                    "var_index",
+                    |m: &CreateTensorflowSavedModelRequest| { &m.var_index },
+                    |m: &mut CreateTensorflowSavedModelRequest| { &mut m.var_index },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new_pb_name::<CreateTensorflowSavedModelRequest>(
+                    "CreateTensorflowSavedModelRequest",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static CreateTensorflowSavedModelRequest {
+        static mut instance: ::protobuf::lazy::Lazy<CreateTensorflowSavedModelRequest> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            instance.get(CreateTensorflowSavedModelRequest::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for CreateTensorflowSavedModelRequest {
+    fn clear(&mut self) {
+        self.model_pb.clear();
+        self.checkpoint.clear();
+        self.var_index.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for CreateTensorflowSavedModelRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for CreateTensorflowSavedModelRequest {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct CreateResourceRequest {
     // message oneof groups
     pub model: ::std::option::Option<CreateResourceRequest_oneof_model>,
@@ -455,6 +702,7 @@ impl<'a> ::std::default::Default for &'a CreateResourceRequest {
 pub enum CreateResourceRequest_oneof_model {
     tf(CreateTensorflowModelRequest),
     caffe(CreateCaffeModelRequest),
+    tf_saved(CreateTensorflowSavedModelRequest),
 }
 
 impl CreateResourceRequest {
@@ -559,6 +807,55 @@ impl CreateResourceRequest {
             CreateCaffeModelRequest::new()
         }
     }
+
+    // .vaccel.CreateTensorflowSavedModelRequest tf_saved = 3;
+
+
+    pub fn get_tf_saved(&self) -> &CreateTensorflowSavedModelRequest {
+        match self.model {
+            ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(ref v)) => v,
+            _ => CreateTensorflowSavedModelRequest::default_instance(),
+        }
+    }
+    pub fn clear_tf_saved(&mut self) {
+        self.model = ::std::option::Option::None;
+    }
+
+    pub fn has_tf_saved(&self) -> bool {
+        match self.model {
+            ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_tf_saved(&mut self, v: CreateTensorflowSavedModelRequest) {
+        self.model = ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_tf_saved(&mut self) -> &mut CreateTensorflowSavedModelRequest {
+        if let ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(_)) = self.model {
+        } else {
+            self.model = ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(CreateTensorflowSavedModelRequest::new()));
+        }
+        match self.model {
+            ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_tf_saved(&mut self) -> CreateTensorflowSavedModelRequest {
+        if self.has_tf_saved() {
+            match self.model.take() {
+                ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            CreateTensorflowSavedModelRequest::new()
+        }
+    }
 }
 
 impl ::protobuf::Message for CreateResourceRequest {
@@ -569,6 +866,11 @@ impl ::protobuf::Message for CreateResourceRequest {
             }
         }
         if let Some(CreateResourceRequest_oneof_model::caffe(ref v)) = self.model {
+            if !v.is_initialized() {
+                return false;
+            }
+        }
+        if let Some(CreateResourceRequest_oneof_model::tf_saved(ref v)) = self.model {
             if !v.is_initialized() {
                 return false;
             }
@@ -592,6 +894,12 @@ impl ::protobuf::Message for CreateResourceRequest {
                     }
                     self.model = ::std::option::Option::Some(CreateResourceRequest_oneof_model::caffe(is.read_message()?));
                 },
+                3 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeLengthDelimited {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.model = ::std::option::Option::Some(CreateResourceRequest_oneof_model::tf_saved(is.read_message()?));
+                },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
                 },
@@ -614,6 +922,10 @@ impl ::protobuf::Message for CreateResourceRequest {
                     let len = v.compute_size();
                     my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
                 },
+                &CreateResourceRequest_oneof_model::tf_saved(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+                },
             };
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
@@ -631,6 +943,11 @@ impl ::protobuf::Message for CreateResourceRequest {
                 },
                 &CreateResourceRequest_oneof_model::caffe(ref v) => {
                     os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+                    os.write_raw_varint32(v.get_cached_size())?;
+                    v.write_to_with_cached_sizes(os)?;
+                },
+                &CreateResourceRequest_oneof_model::tf_saved(ref v) => {
+                    os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
                     os.write_raw_varint32(v.get_cached_size())?;
                     v.write_to_with_cached_sizes(os)?;
                 },
@@ -685,6 +1002,11 @@ impl ::protobuf::Message for CreateResourceRequest {
                     CreateResourceRequest::has_caffe,
                     CreateResourceRequest::get_caffe,
                 ));
+                fields.push(::protobuf::reflect::accessor::make_singular_message_accessor::<_, CreateTensorflowSavedModelRequest>(
+                    "tf_saved",
+                    CreateResourceRequest::has_tf_saved,
+                    CreateResourceRequest::get_tf_saved,
+                ));
                 ::protobuf::reflect::MessageDescriptor::new_pb_name::<CreateResourceRequest>(
                     "CreateResourceRequest",
                     fields,
@@ -704,6 +1026,7 @@ impl ::protobuf::Message for CreateResourceRequest {
 
 impl ::protobuf::Clear for CreateResourceRequest {
     fn clear(&mut self) {
+        self.model = ::std::option::Option::None;
         self.model = ::std::option::Option::None;
         self.model = ::std::option::Option::None;
         self.unknown_fields.clear();
@@ -1421,16 +1744,19 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x12\n\x08prototxt\x18\x02\x20\x01(\x0cB\0\x12\x16\n\x0cbinary_model\x18\
     \x03\x20\x01(\x0cB\0\x12\x10\n\x06labels\x18\x04\x20\x01(\x0cB\0:\0\"1\n\
     \x1cCreateTensorflowModelRequest\x12\x0f\n\x05model\x18\x01\x20\x01(\x0c\
-    B\0:\0\"\x8c\x01\n\x15CreateResourceRequest\x124\n\x02tf\x18\x01\x20\x01\
-    (\x0b2$.vaccel.CreateTensorflowModelRequestH\0B\0\x122\n\x05caffe\x18\
-    \x02\x20\x01(\x0b2\x1f.vaccel.CreateCaffeModelRequestH\0B\0B\x07\n\x05mo\
-    del:\0\"1\n\x16CreateResourceResponse\x12\x15\n\x0bresource_id\x18\x01\
-    \x20\x01(\x03B\0:\0\"H\n\x17RegisterResourceRequest\x12\x15\n\x0bresourc\
-    e_id\x18\x01\x20\x01(\x03B\0\x12\x14\n\nsession_id\x18\x02\x20\x01(\rB\0\
-    :\0\"J\n\x19UnregisterResourceRequest\x12\x14\n\nsession_id\x18\x01\x20\
-    \x01(\rB\0\x12\x15\n\x0bresource_id\x18\x02\x20\x01(\x03B\0:\0\"1\n\x16D\
-    estroyResourceRequest\x12\x15\n\x0bresource_id\x18\x01\x20\x01(\x03B\0:\
-    \0B\0b\x06proto3\
+    B\0:\0\"d\n!CreateTensorflowSavedModelRequest\x12\x12\n\x08model_pb\x18\
+    \x01\x20\x01(\x0cB\0\x12\x14\n\ncheckpoint\x18\x02\x20\x01(\x0cB\0\x12\
+    \x13\n\tvar_index\x18\x03\x20\x01(\x0cB\0:\0\"\xcd\x01\n\x15CreateResour\
+    ceRequest\x124\n\x02tf\x18\x01\x20\x01(\x0b2$.vaccel.CreateTensorflowMod\
+    elRequestH\0B\0\x122\n\x05caffe\x18\x02\x20\x01(\x0b2\x1f.vaccel.CreateC\
+    affeModelRequestH\0B\0\x12?\n\x08tf_saved\x18\x03\x20\x01(\x0b2).vaccel.\
+    CreateTensorflowSavedModelRequestH\0B\0B\x07\n\x05model:\0\"1\n\x16Creat\
+    eResourceResponse\x12\x15\n\x0bresource_id\x18\x01\x20\x01(\x03B\0:\0\"H\
+    \n\x17RegisterResourceRequest\x12\x15\n\x0bresource_id\x18\x01\x20\x01(\
+    \x03B\0\x12\x14\n\nsession_id\x18\x02\x20\x01(\rB\0:\0\"J\n\x19Unregiste\
+    rResourceRequest\x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x15\n\
+    \x0bresource_id\x18\x02\x20\x01(\x03B\0:\0\"1\n\x16DestroyResourceReques\
+    t\x12\x15\n\x0bresource_id\x18\x01\x20\x01(\x03B\0:\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy::INIT;

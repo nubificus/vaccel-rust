@@ -499,7 +499,7 @@ impl ::protobuf::reflect::ProtobufValue for TensorflowModelLoadResponse {
 pub struct TFTensor {
     // message fields
     pub data: ::std::vec::Vec<u8>,
-    pub dims: ::std::vec::Vec<i64>,
+    pub dims: ::std::vec::Vec<u64>,
     pub field_type: TFDataType,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -543,10 +543,10 @@ impl TFTensor {
         ::std::mem::replace(&mut self.data, ::std::vec::Vec::new())
     }
 
-    // repeated int64 dims = 2;
+    // repeated uint64 dims = 2;
 
 
-    pub fn get_dims(&self) -> &[i64] {
+    pub fn get_dims(&self) -> &[u64] {
         &self.dims
     }
     pub fn clear_dims(&mut self) {
@@ -554,17 +554,17 @@ impl TFTensor {
     }
 
     // Param is passed by value, moved
-    pub fn set_dims(&mut self, v: ::std::vec::Vec<i64>) {
+    pub fn set_dims(&mut self, v: ::std::vec::Vec<u64>) {
         self.dims = v;
     }
 
     // Mutable pointer to the field.
-    pub fn mut_dims(&mut self) -> &mut ::std::vec::Vec<i64> {
+    pub fn mut_dims(&mut self) -> &mut ::std::vec::Vec<u64> {
         &mut self.dims
     }
 
     // Take field
-    pub fn take_dims(&mut self) -> ::std::vec::Vec<i64> {
+    pub fn take_dims(&mut self) -> ::std::vec::Vec<u64> {
         ::std::mem::replace(&mut self.dims, ::std::vec::Vec::new())
     }
 
@@ -597,7 +597,7 @@ impl ::protobuf::Message for TFTensor {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.data)?;
                 },
                 2 => {
-                    ::protobuf::rt::read_repeated_int64_into(wire_type, is, &mut self.dims)?;
+                    ::protobuf::rt::read_repeated_uint64_into(wire_type, is, &mut self.dims)?;
                 },
                 3 => {
                     ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.field_type, 3, &mut self.unknown_fields)?
@@ -633,7 +633,7 @@ impl ::protobuf::Message for TFTensor {
             os.write_bytes(1, &self.data)?;
         }
         for v in &self.dims {
-            os.write_int64(2, *v)?;
+            os.write_uint64(2, *v)?;
         };
         if self.field_type != TFDataType::UNUSED {
             os.write_enum(3, self.field_type.value())?;
@@ -682,7 +682,7 @@ impl ::protobuf::Message for TFTensor {
                     |m: &TFTensor| { &m.data },
                     |m: &mut TFTensor| { &mut m.data },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeUint64>(
                     "dims",
                     |m: &TFTensor| { &m.dims },
                     |m: &mut TFTensor| { &mut m.dims },
@@ -1889,7 +1889,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     raph_def\x18\x01\x20\x01(\x0cH\0B\0\x12&\n\x05error\x18\x02\x20\x01(\x0b\
     2\x13.vaccel.VaccelErrorH\0B\0B\x08\n\x06result:\0\"P\n\x08TFTensor\x12\
     \x0e\n\x04data\x18\x01\x20\x01(\x0cB\0\x12\x0e\n\x04dims\x18\x02\x20\x03\
-    (\x03B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataTypeB\0:\
+    (\x04B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataTypeB\0:\
     \0\"(\n\x06TFNode\x12\x0e\n\x04name\x18\x01\x20\x01(\tB\0\x12\x0c\n\x02i\
     d\x18\x02\x20\x01(\x03B\0:\0\"\xcf\x01\n\x19TensorflowModelRunRequest\
     \x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\

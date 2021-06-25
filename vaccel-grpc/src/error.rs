@@ -28,8 +28,8 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 
 #[derive(PartialEq,Clone,Default)]
 pub struct VaccelError {
-    // message fields
-    pub error_code: i64,
+    // message oneof groups
+    pub error: ::std::option::Option<VaccelError_oneof_error>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -41,24 +41,65 @@ impl<'a> ::std::default::Default for &'a VaccelError {
     }
 }
 
+#[derive(Clone,PartialEq,Debug)]
+pub enum VaccelError_oneof_error {
+    vaccel_error(i64),
+    agent_error(i64),
+}
+
 impl VaccelError {
     pub fn new() -> VaccelError {
         ::std::default::Default::default()
     }
 
-    // int64 error_code = 1;
+    // int64 vaccel_error = 1;
 
 
-    pub fn get_error_code(&self) -> i64 {
-        self.error_code
+    pub fn get_vaccel_error(&self) -> i64 {
+        match self.error {
+            ::std::option::Option::Some(VaccelError_oneof_error::vaccel_error(v)) => v,
+            _ => 0,
+        }
     }
-    pub fn clear_error_code(&mut self) {
-        self.error_code = 0;
+    pub fn clear_vaccel_error(&mut self) {
+        self.error = ::std::option::Option::None;
+    }
+
+    pub fn has_vaccel_error(&self) -> bool {
+        match self.error {
+            ::std::option::Option::Some(VaccelError_oneof_error::vaccel_error(..)) => true,
+            _ => false,
+        }
     }
 
     // Param is passed by value, moved
-    pub fn set_error_code(&mut self, v: i64) {
-        self.error_code = v;
+    pub fn set_vaccel_error(&mut self, v: i64) {
+        self.error = ::std::option::Option::Some(VaccelError_oneof_error::vaccel_error(v))
+    }
+
+    // int64 agent_error = 2;
+
+
+    pub fn get_agent_error(&self) -> i64 {
+        match self.error {
+            ::std::option::Option::Some(VaccelError_oneof_error::agent_error(v)) => v,
+            _ => 0,
+        }
+    }
+    pub fn clear_agent_error(&mut self) {
+        self.error = ::std::option::Option::None;
+    }
+
+    pub fn has_agent_error(&self) -> bool {
+        match self.error {
+            ::std::option::Option::Some(VaccelError_oneof_error::agent_error(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_agent_error(&mut self, v: i64) {
+        self.error = ::std::option::Option::Some(VaccelError_oneof_error::agent_error(v))
     }
 }
 
@@ -75,8 +116,13 @@ impl ::protobuf::Message for VaccelError {
                     if wire_type != ::protobuf::wire_format::WireTypeVarint {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
-                    let tmp = is.read_int64()?;
-                    self.error_code = tmp;
+                    self.error = ::std::option::Option::Some(VaccelError_oneof_error::vaccel_error(is.read_int64()?));
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    self.error = ::std::option::Option::Some(VaccelError_oneof_error::agent_error(is.read_int64()?));
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -90,8 +136,15 @@ impl ::protobuf::Message for VaccelError {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if self.error_code != 0 {
-            my_size += ::protobuf::rt::value_size(1, self.error_code, ::protobuf::wire_format::WireTypeVarint);
+        if let ::std::option::Option::Some(ref v) = self.error {
+            match v {
+                &VaccelError_oneof_error::vaccel_error(v) => {
+                    my_size += ::protobuf::rt::value_size(1, v, ::protobuf::wire_format::WireTypeVarint);
+                },
+                &VaccelError_oneof_error::agent_error(v) => {
+                    my_size += ::protobuf::rt::value_size(2, v, ::protobuf::wire_format::WireTypeVarint);
+                },
+            };
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -99,8 +152,15 @@ impl ::protobuf::Message for VaccelError {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if self.error_code != 0 {
-            os.write_int64(1, self.error_code)?;
+        if let ::std::option::Option::Some(ref v) = self.error {
+            match v {
+                &VaccelError_oneof_error::vaccel_error(v) => {
+                    os.write_int64(1, v)?;
+                },
+                &VaccelError_oneof_error::agent_error(v) => {
+                    os.write_int64(2, v)?;
+                },
+            };
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -141,10 +201,15 @@ impl ::protobuf::Message for VaccelError {
         unsafe {
             descriptor.get(|| {
                 let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
-                    "error_code",
-                    |m: &VaccelError| { &m.error_code },
-                    |m: &mut VaccelError| { &mut m.error_code },
+                fields.push(::protobuf::reflect::accessor::make_singular_i64_accessor::<_>(
+                    "vaccel_error",
+                    VaccelError::has_vaccel_error,
+                    VaccelError::get_vaccel_error,
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_i64_accessor::<_>(
+                    "agent_error",
+                    VaccelError::has_agent_error,
+                    VaccelError::get_agent_error,
                 ));
                 ::protobuf::reflect::MessageDescriptor::new_pb_name::<VaccelError>(
                     "VaccelError",
@@ -165,7 +230,8 @@ impl ::protobuf::Message for VaccelError {
 
 impl ::protobuf::Clear for VaccelError {
     fn clear(&mut self) {
-        self.error_code = 0;
+        self.error = ::std::option::Option::None;
+        self.error = ::std::option::Option::None;
         self.unknown_fields.clear();
     }
 }
@@ -183,8 +249,9 @@ impl ::protobuf::reflect::ProtobufValue for VaccelError {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0berror.proto\x12\x06vaccel\"%\n\x0bVaccelError\x12\x14\n\nerror_cod\
-    e\x18\x01\x20\x01(\x03B\0:\0B\0b\x06proto3\
+    \n\x0berror.proto\x12\x06vaccel\"K\n\x0bVaccelError\x12\x18\n\x0cvaccel_\
+    error\x18\x01\x20\x01(\x03H\0B\0\x12\x17\n\x0bagent_error\x18\x02\x20\
+    \x01(\x03H\0B\0B\x07\n\x05error:\0B\0b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy::INIT;
