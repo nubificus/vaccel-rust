@@ -2,23 +2,28 @@ use chashmap::*;
 use std::default::Default;
 use std::sync::Arc;
 
+/*
 use vaccel_bindings::resource::VaccelResource;
 use vaccel_bindings::{
     vaccel_id_t, vaccel_session, vaccel_tf_buffer, vaccel_tf_model, vaccel_tf_node,
     vaccel_tf_tensor, VACCEL_EINVAL, VACCEL_OK,
 };
+*/
+
+extern crate vaccel;
+use vaccel::tensorflow as tf;
 
 use protocols::error::VaccelError;
 use protocols::resources::{
     CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
-    CreateTensorflowModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
+    CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
 };
 use protocols::session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest};
 use protocols::{agent::VaccelEmpty, resources::DestroyResourceRequest};
 use protocols::{
     image::{ImageClassificationRequest, ImageClassificationResponse},
     tensorflow::{
-        InferenceResult, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
+        InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
         TensorflowModelRunRequest, TensorflowModelRunResponse,
         TensorflowModelRunResponse_oneof_result,
     },
@@ -28,19 +33,14 @@ fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::error::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
 }
 
-fn vaccel_ok() -> VaccelError {
-    VaccelError {
-        error_code: VACCEL_OK as i64,
-        ..Default::default()
-    }
-}
-
-fn vaccel_error(err: vaccel_bindings::Error) -> VaccelError {
+fn vaccel_error(err: vaccel::Error) -> VaccelError {
     let mut grpc_error = VaccelError::new();
 
     match err {
-        vaccel_bindings::Error::Runtime(e) => grpc_error.set_error_code(e as i64),
-        vaccel_bindings::Error::InvalidArgument => grpc_error.set_error_code(VACCEL_EINVAL as i64),
+        vaccel::Error::Runtime(e) => grpc_error.set_vaccel_error(e as i64),
+        vaccel::Error::InvalidArgument => grpc_error.set_agent_error(1i64),
+        vaccel::Error::Uninitialized => grpc_error.set_agent_error(2i64),
+        vaccel::Error::TensorFlow(_) => grpc_error.set_agent_error(3i64),
     }
 
     grpc_error
@@ -48,8 +48,8 @@ fn vaccel_error(err: vaccel_bindings::Error) -> VaccelError {
 
 #[derive(Clone)]
 pub struct Agent {
-    sessions: Arc<CHashMap<u32, Box<vaccel_session>>>,
-    resources: Arc<CHashMap<vaccel_id_t, Box<dyn VaccelResource>>>,
+    sessions: Arc<CHashMap<vaccel::VaccelId, Box<vaccel::Session>>>,
+    resources: Arc<CHashMap<vaccel::VaccelId, Box<dyn vaccel::Resource>>>,
 }
 
 unsafe impl Sync for Agent {}
@@ -81,11 +81,11 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &::ttrpc::TtrpcContext,
         req: CreateSessionRequest,
     ) -> ttrpc::Result<CreateSessionResponse> {
-        match vaccel_session::new(req.flags) {
+        match vaccel::Session::new(req.flags) {
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
             Ok(sess) => {
                 let mut resp = CreateSessionResponse::new();
-                resp.session_id = sess.id();
+                resp.session_id = sess.id().into();
 
                 assert!(!self.sessions.contains_key(&sess.id()));
                 self.sessions.insert_new(sess.id(), Box::new(sess));
@@ -101,10 +101,13 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &::ttrpc::TtrpcContext,
         req: DestroySessionRequest,
     ) -> ttrpc::Result<VaccelEmpty> {
-        let sess = self.sessions.remove(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .remove(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
 
         println!("Destroying session {:?}", sess.id());
         match sess.close() {
@@ -121,10 +124,13 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &::ttrpc::TtrpcContext,
         req: ImageClassificationRequest,
     ) -> ttrpc::Result<ImageClassificationResponse> {
-        let mut sess = self.sessions.get_mut(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown Session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown Session".to_string(),
+            ))?;
 
         println!("session:{:?} Image classification", sess.id());
         match sess.image_classification(&req.image) {
@@ -156,10 +162,14 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         };
 
         match model {
-            CreateResourceRequest_oneof_model::tf(req) => self.create_tf_model(req),
+            CreateResourceRequest_oneof_model::tf_saved(req) => self.create_tf_model(req),
             CreateResourceRequest_oneof_model::caffe(_) => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 "Caffee models not supported yet".to_string(),
+            )),
+            CreateResourceRequest_oneof_model::tf(_) => Err(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Frozen model not supported yet".to_string(),
             )),
         }
     }
@@ -169,7 +179,7 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &ttrpc::TtrpcContext,
         req: DestroyResourceRequest,
     ) -> ttrpc::Result<VaccelEmpty> {
-        match self.resources.remove(&req.resource_id) {
+        match self.resources.remove(&req.resource_id.into()) {
             None => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 "Unknown resource".to_string(),
@@ -189,15 +199,21 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &ttrpc::TtrpcContext,
         req: RegisterResourceRequest,
     ) -> ttrpc::Result<VaccelEmpty> {
-        let mut resource = self.resources.get_mut(&req.resource_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown resource".to_string(),
-        ))?;
+        let mut resource = self
+            .resources
+            .get_mut(&req.resource_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown resource".to_string(),
+            ))?;
 
-        let mut sess = self.sessions.get_mut(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
 
         println!(
             "Registering resource {} to session {}",
@@ -215,15 +231,21 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &ttrpc::TtrpcContext,
         req: UnregisterResourceRequest,
     ) -> ttrpc::Result<VaccelEmpty> {
-        let mut resource = self.resources.get_mut(&req.resource_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown resource".to_string(),
-        ))?;
+        let mut resource = self
+            .resources
+            .get_mut(&req.resource_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown resource".to_string(),
+            ))?;
 
-        let mut sess = self.sessions.get_mut(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
 
         match sess.unregister(&mut **resource) {
             Ok(()) => Ok(VaccelEmpty::new()),
@@ -236,31 +258,36 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &ttrpc::TtrpcContext,
         req: TensorflowModelLoadRequest,
     ) -> ttrpc::Result<TensorflowModelLoadResponse> {
-        let mut resource = self.resources.get_mut(&req.model_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown TensorFlow model".to_string(),
-        ))?;
+        let mut resource = self
+            .resources
+            .get_mut(&req.model_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown TensorFlow model".to_string(),
+            ))?;
 
-        let mut sess = self.sessions.get_mut(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<vaccel_tf_model>()
+            .downcast_mut::<tf::SavedModel>()
             .ok_or(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 format!("Resource {} is not a TensorFlow model", req.model_id),
             ))?;
 
         let mut resp = TensorflowModelLoadResponse::new();
-        let err = match model.load_graph(&mut sess) {
-            Ok(_) => vaccel_ok(),
-            Err(e) => vaccel_error(e),
+        match model.load_graph(&mut sess) {
+            Ok(_) => resp.set_graph_def(Vec::new()),
+            Err(e) => resp.set_error(vaccel_error(e)),
         };
 
-        resp.set_error(err);
         Ok(resp)
     }
 
@@ -269,44 +296,60 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         _ctx: &ttrpc::TtrpcContext,
         mut req: TensorflowModelRunRequest,
     ) -> ttrpc::Result<TensorflowModelRunResponse> {
-        let mut resource = self.resources.get_mut(&req.model_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown TensorFlow model".to_string(),
-        ))?;
+        let mut resource = self
+            .resources
+            .get_mut(&req.model_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown TensorFlow model".to_string(),
+            ))?;
 
-        let mut sess = self.sessions.get_mut(&req.session_id).ok_or(ttrpc_error(
-            ttrpc::Code::INVALID_ARGUMENT,
-            "Unknown session".to_string(),
-        ))?;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<vaccel_tf_model>()
+            .downcast_mut::<tf::SavedModel>()
             .ok_or(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 format!("Resource {} is not a TensorFlow model", req.model_id),
             ))?;
 
-        let run_options: vaccel_tf_buffer = req.mut_run_options().as_mut_slice().into();
+        let mut sess_args = vaccel::ops::inference::InferenceArgs::new();
 
-        let in_nodes: Vec<vaccel_tf_node> =
-            req.mut_in_nodes().iter_mut().map(|e| e.into()).collect();
+        let run_options = tf::Buffer::new(req.mut_run_options().as_slice());
+        sess_args.set_run_options(&run_options);
 
-        let in_tensors: Vec<vaccel_tf_tensor> =
-            req.mut_in_tensors().iter_mut().map(|e| e.into()).collect();
+        let in_nodes: Vec<tf::Node> = req.get_in_nodes().iter().map(|e| e.into()).collect();
+        let in_tensors = req.get_in_tensors();
+        for it in in_nodes.iter().zip(in_tensors.iter()) {
+            let (node, tensor) = it;
+            sess_args.add_input(node, tensor);
+        }
 
-        let out_nodes: Vec<vaccel_tf_node> =
-            req.mut_out_nodes().iter_mut().map(|e| e.into()).collect();
+        let out_nodes: Vec<tf::Node> = req.get_out_nodes().iter().map(|e| e.into()).collect();
+        let num_outputs = out_nodes.len();
+        for output in out_nodes.iter() {
+            sess_args.request_output(output);
+        }
 
-        let response =
-            match model.inference(&mut sess, &run_options, &in_nodes, &in_tensors, &out_nodes) {
-                Ok((out_tensors, _)) => {
-                    let mut inference = InferenceResult::new();
-                    inference.set_out_tensors(out_tensors.into_iter().map(|e| e.into()).collect());
-                    TensorflowModelRunResponse_oneof_result::result(inference)
+        let response = match model.inference(&mut sess, &mut sess_args) {
+            Ok(result) => {
+                let mut inference = InferenceResult::new();
+                let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
+                for i in 0..num_outputs {
+                    out_tensors.push(result.get_grpc_output(i).unwrap());
                 }
-                Err(e) => TensorflowModelRunResponse_oneof_result::error(vaccel_error(e)),
-            };
+                inference.set_out_tensors(out_tensors.into());
+                TensorflowModelRunResponse_oneof_result::result(inference)
+            }
+            Err(e) => TensorflowModelRunResponse_oneof_result::error(vaccel_error(e)),
+        };
 
         Ok(TensorflowModelRunResponse {
             result: Some(response),
@@ -318,17 +361,21 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
 impl Agent {
     fn create_tf_model(
         &self,
-        req: CreateTensorflowModelRequest,
+        mut req: CreateTensorflowSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
         println!("Request to create TensorFlow model resource");
-        match vaccel_tf_model::from_buffer(req.get_model()) {
+        match tf::SavedModel::new().from_in_memory(
+            req.take_model_pb(),
+            req.take_checkpoint(),
+            req.take_var_index(),
+        ) {
             Ok(model) => {
-                let mut resp = CreateResourceResponse::new();
+                println!("Created new TensorFlow model with id: {}", model.id());
 
-                resp.set_resource_id(model.id());
+                let mut resp = CreateResourceResponse::new();
+                resp.set_resource_id(model.id().into());
                 self.resources.insert_new(model.id(), Box::new(model));
 
-                println!("Created new TensorFlow model with id: {}", model.id());
                 Ok(resp)
             }
             Err(e) => {
