@@ -263,6 +263,146 @@ impl TensorType for f32 {
     }
 }
 
+impl TensorType for f64 {
+    fn data_type() -> DataType {
+        DataType::Double
+    }
+
+    fn one() -> Self {
+        1.0f64
+    }
+
+    fn zero() -> Self {
+        0.0f64
+    }
+}
+
+impl TensorType for i32 {
+    fn data_type() -> DataType {
+        DataType::Int32
+    }
+
+    fn one() -> Self {
+        1i32
+    }
+
+    fn zero() -> Self {
+        0i32
+    }
+}
+
+impl TensorType for u8 {
+    fn data_type() -> DataType {
+        DataType::UInt8
+    }
+
+    fn one() -> Self {
+        1u8
+    }
+
+    fn zero() -> Self {
+        0u8
+    }
+}
+
+impl TensorType for i16 {
+    fn data_type() -> DataType {
+        DataType::Int16
+    }
+
+    fn one() -> Self {
+        1i16
+    }
+
+    fn zero() -> Self {
+        0i16
+    }
+}
+
+impl TensorType for i8 {
+    fn data_type() -> DataType {
+        DataType::Int8
+    }
+
+    fn one() -> Self {
+        1i8
+    }
+
+    fn zero() -> Self {
+        0i8
+    }
+}
+
+impl TensorType for i64 {
+    fn data_type() -> DataType {
+        DataType::Int64
+    }
+
+    fn one() -> Self {
+        1i64
+    }
+
+    fn zero() -> Self {
+        0i64
+    }
+}
+
+impl TensorType for u16 {
+    fn data_type() -> DataType {
+        DataType::UInt16
+    }
+
+    fn one() -> Self {
+        1u16
+    }
+
+    fn zero() -> Self {
+        0u16
+    }
+}
+
+impl TensorType for u32 {
+    fn data_type() -> DataType {
+        DataType::UInt32
+    }
+
+    fn one() -> Self {
+        1u32
+    }
+
+    fn zero() -> Self {
+        0u32
+    }
+}
+
+impl TensorType for u64 {
+    fn data_type() -> DataType {
+        DataType::UInt64
+    }
+
+    fn one() -> Self {
+        1u64
+    }
+
+    fn zero() -> Self {
+        0u64
+    }
+}
+
+impl TensorType for bool {
+    fn data_type() -> DataType {
+        DataType::Bool
+    }
+
+    fn one() -> Self {
+        true
+    }
+
+    fn zero() -> Self {
+        false
+    }
+}
+
 impl From<&ffi::vaccel_tf_tensor> for TFTensor {
     fn from(tensor: &ffi::vaccel_tf_tensor) -> Self {
         unsafe {
