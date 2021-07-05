@@ -14,7 +14,6 @@ protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "fea
 protobuf = "=2.14.0"
 memchr = "2.3.3"
 libc = "0.2.76"
-safe-transmute = "0.11.2"
 
 [build-dependencies]
 libc = ">=0.2.39"

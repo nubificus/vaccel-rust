@@ -5,8 +5,6 @@ use crate::{Error, Result};
 use protobuf::ProtobufEnum;
 use protocols::tensorflow::{TFDataType, TFTensor};
 
-use safe_transmute::transmute_vec;
-
 use std::ops::{Deref, DerefMut};
 
 pub struct Tensor<T: TensorType> {
@@ -25,9 +23,6 @@ pub trait TensorType: Default + Clone {
 
     /// Zero value of type
     fn zero() -> Self;
-
-    /// Convert a gRPC tensor Type into a Tensor
-    fn from_grpc(tensor: TFTensor) -> Result<Tensor<Self>>;
 }
 
 fn product(values: &[u64]) -> u64 {
@@ -265,17 +260,6 @@ impl TensorType for f32 {
 
     fn zero() -> Self {
         0.0f32
-    }
-
-    fn from_grpc(tensor: TFTensor) -> Result<Tensor<Self>> {
-        if DataType::from_int(tensor.field_type.value() as u32) != DataType::Float {
-            return Err(Error::TensorFlow(Code::InvalidArgument));
-        }
-
-        let data = transmute_vec::<u8, f32>(tensor.data)
-            .map_err(|_| crate::Error::Runtime(crate::ffi::VACCEL_EINVAL))?;
-
-        Tensor::<f32>::new(tensor.dims.as_slice()).with_data(data.as_slice())
     }
 }
 
