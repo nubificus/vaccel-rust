@@ -42,9 +42,9 @@ jobs:
       run: |
         if [[ ${{matrix.build_type}} == "release" ]]
         then
-          cargo build --release
+          cargo build --release -j $(nproc)
         else
-          cargo build
+          cargo build -j $(nproc)
         fi
 
     - name: Upload artifact
