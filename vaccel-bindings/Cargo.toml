@@ -10,7 +10,7 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "feat_tf_inference" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", tag = "v0.1.0" }
 protobuf = "=2.14.0"
 memchr = "2.3.3"
 libc = "0.2.68"
