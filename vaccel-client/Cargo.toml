@@ -10,8 +10,8 @@ path = "src/lib.rs"
 crate-type = ["staticlib"]
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_tf_inference" }
-vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", branch = "refactor_api" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", tag = "v0.1.0" }
+vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", tag = "v0.1.1" }
 vm-memory = { version = ">=0.2.2" }
 
 protobuf = "2.14.0"
