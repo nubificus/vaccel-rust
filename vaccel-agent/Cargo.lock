@@ -609,7 +609,7 @@ dependencies = [
 [[package]]
 name = "protocols"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-grpc?tag=v0.1.0#891b4c1c1c387ac080d2f08ca89b8a133257a425"
+source = "git+https://github.com/cloudkernels/vaccel-grpc.git?tag=v0.1.0#891b4c1c1c387ac080d2f08ca89b8a133257a425"
 dependencies = [
  "protobuf",
  "ttrpc",
@@ -999,7 +999,7 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "vaccel"
 version = "0.1.0"
-source = "git+https://github.com/cloudkernels/vaccel-bindings?tag=v0.1.1#8f369847f4c069240d4a1455e79960a56b856b6b"
+source = "git+https://github.com/cloudkernels/vaccel-bindings?tag=v0.2.0#ec3fa0cc739d4dd7543816e2423c51320806111c"
 dependencies = [
  "bindgen",
  "cmake",

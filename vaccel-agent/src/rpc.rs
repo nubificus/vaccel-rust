@@ -361,13 +361,13 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
 impl Agent {
     fn create_tf_model(
         &self,
-        mut req: CreateTensorflowSavedModelRequest,
+        req: CreateTensorflowSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
         println!("Request to create TensorFlow model resource");
         match tf::SavedModel::new().from_in_memory(
-            req.take_model_pb(),
-            req.take_checkpoint(),
-            req.take_var_index(),
+            req.get_model_pb(),
+            req.get_checkpoint(),
+            req.get_var_index(),
         ) {
             Ok(model) => {
                 println!("Created new TensorFlow model with id: {}", model.id());
