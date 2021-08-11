@@ -71,12 +71,9 @@ impl SavedModel {
     }
 
     /// Set the in-memory protobuf data
-    fn set_protobuf(&mut self, mut data: Vec<u8>) -> Result<()> {
-        data.shrink_to_fit();
-        let mem = data.leak();
-
+    fn set_protobuf(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_model(self.inner, mem.as_mut_ptr(), mem.len() as u64)
+            ffi::vaccel_tf_saved_model_set_model(self.inner, data.as_ptr(), data.len() as u64)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),
@@ -85,16 +82,10 @@ impl SavedModel {
     }
 
     /// Set the in-memory checkpoint data
-    fn set_checkpoint(&mut self, mut data: Vec<u8>) -> Result<()> {
-        data.shrink_to_fit();
-        let mem = data.leak();
-
+    fn set_checkpoint(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_checkpoint(
-                self.inner,
-                mem.as_mut_ptr(),
-                mem.len() as u64,
-            ) as u32
+            ffi::vaccel_tf_saved_model_set_checkpoint(self.inner, data.as_ptr(), data.len() as u64)
+                as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
@@ -102,12 +93,9 @@ impl SavedModel {
     }
 
     /// Set the in-memory variable index data
-    fn set_var_index(&mut self, mut data: Vec<u8>) -> Result<()> {
-        data.shrink_to_fit();
-        let mem = data.leak();
-
+    fn set_var_index(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_var_index(self.inner, mem.as_mut_ptr(), mem.len() as u64)
+            ffi::vaccel_tf_saved_model_set_var_index(self.inner, data.as_ptr(), data.len() as u64)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),
@@ -118,13 +106,13 @@ impl SavedModel {
     /// Create the resource from in-memory data
     pub fn from_in_memory(
         mut self,
-        protobuf: Vec<u8>,
-        checkpoint: Vec<u8>,
-        variable_index: Vec<u8>,
+        protobuf: &[u8],
+        checkpoint: &[u8],
+        variable_index: &[u8],
     ) -> Result<Self> {
-        self.set_protobuf(protobuf)?;
-        self.set_checkpoint(checkpoint)?;
-        self.set_var_index(variable_index)?;
+        self.set_protobuf(&protobuf)?;
+        self.set_checkpoint(&checkpoint)?;
+        self.set_var_index(&variable_index)?;
 
         match unsafe { ffi::vaccel_tf_saved_model_register(self.inner) } as u32 {
             ffi::VACCEL_OK => Ok(self),

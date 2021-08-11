@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     let (model_pb, ckpt, var_index) = utilities::load_in_mem(&path)?;
 
     // Create a TensorFlow model resource from data
-    let mut model2 = SavedModel::new().from_in_memory(model_pb, ckpt, var_index)?;
+    let mut model2 = SavedModel::new().from_in_memory(&model_pb, &ckpt, &var_index)?;
     info!("New saved model from in-memory data: {}", model.id());
     sess.register(&mut model2)?;
     info!(

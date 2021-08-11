@@ -5668,7 +5668,7 @@ extern "C" {
 extern "C" {
     pub fn vaccel_tf_saved_model_set_model(
         model: *mut vaccel_tf_saved_model,
-        ptr: *mut u8,
+        ptr: *const u8,
         len: size_t,
     ) -> ::std::os::raw::c_int;
 }
@@ -5681,7 +5681,7 @@ extern "C" {
 extern "C" {
     pub fn vaccel_tf_saved_model_set_checkpoint(
         model: *mut vaccel_tf_saved_model,
-        ptr: *mut u8,
+        ptr: *const u8,
         len: size_t,
     ) -> ::std::os::raw::c_int;
 }
@@ -5694,7 +5694,7 @@ extern "C" {
 extern "C" {
     pub fn vaccel_tf_saved_model_set_var_index(
         model: *mut vaccel_tf_saved_model,
-        ptr: *mut u8,
+        ptr: *const u8,
         len: size_t,
     ) -> ::std::os::raw::c_int;
 }
