@@ -12,7 +12,7 @@ impl VsockClient {
     pub fn new() -> Result<Self> {
         let server_address = match env::var("VACCEL_VSOCK") {
             Ok(addr) => addr,
-            Err(_) => "vsock://1:2048".to_string(),
+            Err(_) => "vsock://2:2048".to_string(),
         };
 
         let ttrpc_client =
