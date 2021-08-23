@@ -3,6 +3,7 @@ name = "vsock"
 version = "0.1.0"
 authors = ["Babis Chalios <mail@bchalios.io>"]
 edition = "2018"
+license = "Apache-2.0"
 
 [lib]
 name = "vaccel_vsock"
