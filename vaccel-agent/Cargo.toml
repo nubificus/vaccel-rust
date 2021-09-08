@@ -1,6 +1,6 @@
 [package]
 name = "vaccelrt-agent"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Nubificus Ltd"]
 edition = "2018"
 license = "Apache-2.0"
@@ -8,11 +8,11 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", tag = "v0.1.0" }
-ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", branch = "devel" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", tag = "v0.2.0" }
+ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "vaccel-0.1.0" }
 protobuf = "=2.14.0"
 serde_json = "1.0.39"
-vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings", tag = "v0.2.0" }
+vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings", tag = "v0.3.0" }
 signal-hook = "0.1.9"
 ctrlc = { version = "3.0", features = ["termination"] }
 structopt = { version = "0.3", default-features = false }
