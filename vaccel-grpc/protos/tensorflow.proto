@@ -30,6 +30,16 @@ message TensorflowModelLoadResponse {
 	}
 };
 
+message TensorflowModelUnloadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowModelUnloadResponse {
+	bool success = 1;
+	VaccelError error = 2;
+};
+
 enum TFDataType {
 	// Add unused value here so that we are compatible
 	// with what vAccelRT returns us

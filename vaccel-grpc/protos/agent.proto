@@ -37,6 +37,7 @@ service VaccelAgent {
 
 	// TensorFlow inference API
 	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
+	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 }
 

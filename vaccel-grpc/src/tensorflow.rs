@@ -496,6 +496,410 @@ impl ::protobuf::reflect::ProtobufValue for TensorflowModelLoadResponse {
 }
 
 #[derive(PartialEq,Clone,Default)]
+pub struct TensorflowModelUnloadRequest {
+    // message fields
+    pub session_id: u32,
+    pub model_id: i64,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowModelUnloadRequest {
+    fn default() -> &'a TensorflowModelUnloadRequest {
+        <TensorflowModelUnloadRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowModelUnloadRequest {
+    pub fn new() -> TensorflowModelUnloadRequest {
+        ::std::default::Default::default()
+    }
+
+    // uint32 session_id = 1;
+
+
+    pub fn get_session_id(&self) -> u32 {
+        self.session_id
+    }
+    pub fn clear_session_id(&mut self) {
+        self.session_id = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_session_id(&mut self, v: u32) {
+        self.session_id = v;
+    }
+
+    // int64 model_id = 2;
+
+
+    pub fn get_model_id(&self) -> i64 {
+        self.model_id
+    }
+    pub fn clear_model_id(&mut self) {
+        self.model_id = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_model_id(&mut self, v: i64) {
+        self.model_id = v;
+    }
+}
+
+impl ::protobuf::Message for TensorflowModelUnloadRequest {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.session_id = tmp;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int64()?;
+                    self.model_id = tmp;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.session_id != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.session_id, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.model_id != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.model_id, ::protobuf::wire_format::WireTypeVarint);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.session_id != 0 {
+            os.write_uint32(1, self.session_id)?;
+        }
+        if self.model_id != 0 {
+            os.write_int64(2, self.model_id)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> TensorflowModelUnloadRequest {
+        TensorflowModelUnloadRequest::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                    "session_id",
+                    |m: &TensorflowModelUnloadRequest| { &m.session_id },
+                    |m: &mut TensorflowModelUnloadRequest| { &mut m.session_id },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
+                    "model_id",
+                    |m: &TensorflowModelUnloadRequest| { &m.model_id },
+                    |m: &mut TensorflowModelUnloadRequest| { &mut m.model_id },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new_pb_name::<TensorflowModelUnloadRequest>(
+                    "TensorflowModelUnloadRequest",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static TensorflowModelUnloadRequest {
+        static mut instance: ::protobuf::lazy::Lazy<TensorflowModelUnloadRequest> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            instance.get(TensorflowModelUnloadRequest::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for TensorflowModelUnloadRequest {
+    fn clear(&mut self) {
+        self.session_id = 0;
+        self.model_id = 0;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for TensorflowModelUnloadRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowModelUnloadRequest {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+pub struct TensorflowModelUnloadResponse {
+    // message fields
+    pub success: bool,
+    pub error: ::protobuf::SingularPtrField<super::error::VaccelError>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowModelUnloadResponse {
+    fn default() -> &'a TensorflowModelUnloadResponse {
+        <TensorflowModelUnloadResponse as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowModelUnloadResponse {
+    pub fn new() -> TensorflowModelUnloadResponse {
+        ::std::default::Default::default()
+    }
+
+    // bool success = 1;
+
+
+    pub fn get_success(&self) -> bool {
+        self.success
+    }
+    pub fn clear_success(&mut self) {
+        self.success = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_success(&mut self, v: bool) {
+        self.success = v;
+    }
+
+    // .vaccel.VaccelError error = 2;
+
+
+    pub fn get_error(&self) -> &super::error::VaccelError {
+        self.error.as_ref().unwrap_or_else(|| super::error::VaccelError::default_instance())
+    }
+    pub fn clear_error(&mut self) {
+        self.error.clear();
+    }
+
+    pub fn has_error(&self) -> bool {
+        self.error.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_error(&mut self, v: super::error::VaccelError) {
+        self.error = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_error(&mut self) -> &mut super::error::VaccelError {
+        if self.error.is_none() {
+            self.error.set_default();
+        }
+        self.error.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_error(&mut self) -> super::error::VaccelError {
+        self.error.take().unwrap_or_else(|| super::error::VaccelError::new())
+    }
+}
+
+impl ::protobuf::Message for TensorflowModelUnloadResponse {
+    fn is_initialized(&self) -> bool {
+        for v in &self.error {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.success = tmp;
+                },
+                2 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.error)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.success != false {
+            my_size += 2;
+        }
+        if let Some(ref v) = self.error.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.success != false {
+            os.write_bool(1, self.success)?;
+        }
+        if let Some(ref v) = self.error.as_ref() {
+            os.write_tag(2, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> TensorflowModelUnloadResponse {
+        TensorflowModelUnloadResponse::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "success",
+                    |m: &TensorflowModelUnloadResponse| { &m.success },
+                    |m: &mut TensorflowModelUnloadResponse| { &mut m.success },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::error::VaccelError>>(
+                    "error",
+                    |m: &TensorflowModelUnloadResponse| { &m.error },
+                    |m: &mut TensorflowModelUnloadResponse| { &mut m.error },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new_pb_name::<TensorflowModelUnloadResponse>(
+                    "TensorflowModelUnloadResponse",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static TensorflowModelUnloadResponse {
+        static mut instance: ::protobuf::lazy::Lazy<TensorflowModelUnloadResponse> = ::protobuf::lazy::Lazy::INIT;
+        unsafe {
+            instance.get(TensorflowModelUnloadResponse::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for TensorflowModelUnloadResponse {
+    fn clear(&mut self) {
+        self.success = false;
+        self.error.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for TensorflowModelUnloadResponse {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowModelUnloadResponse {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct TFTensor {
     // message fields
     pub data: ::std::vec::Vec<u8>,
@@ -1887,9 +2291,13 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\
     \x02\x20\x01(\x03B\0:\0\"h\n\x1bTensorflowModelLoadResponse\x12\x15\n\tg\
     raph_def\x18\x01\x20\x01(\x0cH\0B\0\x12&\n\x05error\x18\x02\x20\x01(\x0b\
-    2\x13.vaccel.VaccelErrorH\0B\0B\x08\n\x06result:\0\"P\n\x08TFTensor\x12\
-    \x0e\n\x04data\x18\x01\x20\x01(\x0cB\0\x12\x0e\n\x04dims\x18\x02\x20\x03\
-    (\x04B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataTypeB\0:\
+    2\x13.vaccel.VaccelErrorH\0B\0B\x08\n\x06result:\0\"J\n\x1cTensorflowMod\
+    elUnloadRequest\x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\
+    \x08model_id\x18\x02\x20\x01(\x03B\0:\0\"Z\n\x1dTensorflowModelUnloadRes\
+    ponse\x12\x11\n\x07success\x18\x01\x20\x01(\x08B\0\x12$\n\x05error\x18\
+    \x02\x20\x01(\x0b2\x13.vaccel.VaccelErrorB\0:\0\"P\n\x08TFTensor\x12\x0e\
+    \n\x04data\x18\x01\x20\x01(\x0cB\0\x12\x0e\n\x04dims\x18\x02\x20\x03(\
+    \x04B\0\x12\"\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFDataTypeB\0:\
     \0\"(\n\x06TFNode\x12\x0e\n\x04name\x18\x01\x20\x01(\tB\0\x12\x0c\n\x02i\
     d\x18\x02\x20\x01(\x03B\0:\0\"\xcf\x01\n\x19TensorflowModelRunRequest\
     \x12\x14\n\nsession_id\x18\x01\x20\x01(\rB\0\x12\x12\n\x08model_id\x18\

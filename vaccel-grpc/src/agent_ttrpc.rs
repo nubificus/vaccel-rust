@@ -81,6 +81,12 @@ impl VaccelAgentClient {
         Ok(cres)
     }
 
+    pub fn tensorflow_model_unload(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelUnloadResponse> {
+        let mut cres = super::tensorflow::TensorflowModelUnloadResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowModelUnload", cres);
+        Ok(cres)
+    }
+
     pub fn tensorflow_model_run(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
         let mut cres = super::tensorflow::TensorflowModelRunResponse::new();
         ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowModelRun", cres);
@@ -176,6 +182,17 @@ impl ::ttrpc::MethodHandler for TensorflowModelLoadMethod {
     }
 }
 
+struct TensorflowModelUnloadMethod {
+    service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowModelUnloadMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowModelUnloadRequest, tensorflow_model_unload);
+        Ok(())
+    }
+}
+
 struct TensorflowModelRunMethod {
     service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
 }
@@ -212,6 +229,9 @@ pub trait VaccelAgent {
     fn tensorflow_model_load(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::tensorflow::TensorflowModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelLoadResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelLoad is not supported".to_string())))
     }
+    fn tensorflow_model_unload(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::tensorflow::TensorflowModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelUnloadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelUnload is not supported".to_string())))
+    }
     fn tensorflow_model_run(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelRun is not supported".to_string())))
     }
@@ -243,6 +263,9 @@ pub fn create_vaccel_agent(service: Arc<std::boxed::Box<dyn VaccelAgent + Send +
 
     methods.insert("/vaccel.VaccelAgent/TensorflowModelLoad".to_string(),
                     std::boxed::Box::new(TensorflowModelLoadMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowModelUnload".to_string(),
+                    std::boxed::Box::new(TensorflowModelUnloadMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
 
     methods.insert("/vaccel.VaccelAgent/TensorflowModelRun".to_string(),
                     std::boxed::Box::new(TensorflowModelRunMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
