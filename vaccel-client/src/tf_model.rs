@@ -11,7 +11,9 @@ use protobuf::{ProtobufEnum, RepeatedField};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
     tensorflow::{TFNode, TFTensor},
-    tensorflow::{TensorflowModelLoadRequest, TensorflowModelRunRequest},
+    tensorflow::{
+        TensorflowModelLoadRequest, TensorflowModelRunRequest, TensorflowModelUnloadRequest,
+    },
 };
 
 impl VaccelResource for SavedModel {
@@ -57,6 +59,22 @@ impl VsockClient {
         }
 
         Ok(resp.take_graph_def())
+    }
+
+    pub fn tensorflow_session_delete(&self, model_id: i64, session_id: u32) -> Result<()> {
+        let ctx = ttrpc::context::Context::default();
+        let req = TensorflowModelUnloadRequest {
+            session_id,
+            model_id,
+            ..Default::default()
+        };
+
+        let mut resp = self.ttrpc_client.tensorflow_model_unload(ctx, &req)?;
+        if resp.has_error() {
+            return Err(resp.take_error().into());
+        }
+
+        Ok(())
     }
 
     pub fn tensorflow_inference(
@@ -136,6 +154,24 @@ pub extern "C" fn tf_model_load(
     };
 
     match client.tensorflow_load_graph(model_id, sess_id) {
+        Ok(_) => ffi::VACCEL_OK as i32,
+        Err(Error::ClientError(err)) => err as i32,
+        Err(_) => ffi::VACCEL_EIO as i32,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn tf_session_delete(
+    client_ptr: *const VsockClient,
+    model_id: ffi::vaccel_id_t,
+    sess_id: u32,
+) -> i32 {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as i32,
+    };
+
+    match client.tensorflow_session_delete(model_id, sess_id) {
         Ok(_) => ffi::VACCEL_OK as i32,
         Err(Error::ClientError(err)) => err as i32,
         Err(_) => ffi::VACCEL_EIO as i32,
