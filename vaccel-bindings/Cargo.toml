@@ -1,6 +1,6 @@
 [package]
 name = "vaccel"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Babis Chalios <mail@bchalios.io>"]
 edition = "2018"
 build = "build.rs"
@@ -11,7 +11,7 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", tag = "v0.1.0" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", tag = "v0.2.0"  }
 protobuf = "=2.14.0"
 memchr = "2.3.3"
 libc = "0.2.68"

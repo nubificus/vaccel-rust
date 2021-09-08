@@ -24,7 +24,7 @@ fn main() -> utilities::Result<()> {
     info!("Registered model {} with session {}", model.id(), sess.id());
 
     // Load model graph
-    if let Err(err) = model.load_graph(&mut sess) {
+    if let Err(err) = model.session_load(&mut sess) {
         error!("Could not load graph for model {}: {}", model.id(), err);
 
         info!("Destroying session {}", sess.id());
@@ -45,23 +45,28 @@ fn main() -> utilities::Result<()> {
     sess_args.add_input(&in_node, &in_tensor);
     sess_args.request_output(&out_node);
 
-    let result = model.inference(&mut sess, &mut sess_args)?;
+    let result = model.session_run(&mut sess, &mut sess_args)?;
 
-    let out = result.get_output::<f32>(0).unwrap();
+    match result.get_output::<f32>(0) {
+        Ok(out) => {
+            println!("Success!");
+            println!(
+                "Output tensor => type:{:?} nr_dims:{}",
+                out.data_type(),
+                out.nr_dims()
+            );
+            for i in 0..out.nr_dims() {
+                println!("dim[{}]: {}", i, out.dim(i as usize).unwrap());
+            }
+            println!("Result Tensor :");
+            for i in 0..10 {
+                println!("{:.6}", out[i]);
+            }
+        }
+        Err(err) => println!("Inference failed: '{}'", err),
+    }
 
-    println!("Success!");
-    println!(
-        "Output tensor => type:{:?} nr_dims:{}",
-        out.data_type(),
-        out.nr_dims()
-    );
-    for i in 0..out.nr_dims() {
-        println!("dim[{}]: {}", i, out.dim(i as usize).unwrap());
-    }
-    println!("Result Tensor :");
-    for i in 0..10 {
-        println!("{:.6}", out[i]);
-    }
+    model.session_delete(&mut sess)?;
 
     sess.close()?;
 

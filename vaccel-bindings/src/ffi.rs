@@ -5117,12 +5117,13 @@ pub const VACCEL_TF_MODEL_NEW: vaccel_op_type = 6;
 pub const VACCEL_TF_MODEL_DESTROY: vaccel_op_type = 7;
 pub const VACCEL_TF_MODEL_REGISTER: vaccel_op_type = 8;
 pub const VACCEL_TF_MODEL_UNREGISTER: vaccel_op_type = 9;
-pub const VACCEL_TF_MODEL_LOAD_GRAPH: vaccel_op_type = 10;
-pub const VACCEL_TF_MODEL_RUN_GRAPH: vaccel_op_type = 11;
-pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 12;
+pub const VACCEL_TF_SESSION_LOAD: vaccel_op_type = 10;
+pub const VACCEL_TF_SESSION_RUN: vaccel_op_type = 11;
+pub const VACCEL_TF_SESSION_DELETE: vaccel_op_type = 12;
+pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 13;
 pub type vaccel_op_type = u32;
 extern "C" {
-    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 12usize];
+    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 13usize];
 }
 extern "C" {
     pub fn vaccel_sgemm(
@@ -5541,14 +5542,14 @@ impl Default for vaccel_tf_status {
     }
 }
 extern "C" {
-    pub fn vaccel_tf_model_load_graph(
+    pub fn vaccel_tf_session_load(
         session: *mut vaccel_session,
         model: *mut vaccel_tf_saved_model,
         status: *mut vaccel_tf_status,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
-    pub fn vaccel_tf_model_run(
+    pub fn vaccel_tf_session_run(
         session: *mut vaccel_session,
         model: *const vaccel_tf_saved_model,
         run_options: *const vaccel_tf_buffer,
@@ -5558,6 +5559,13 @@ extern "C" {
         out_nodes: *const vaccel_tf_node,
         out: *mut *mut vaccel_tf_tensor,
         nr_outputs: ::std::os::raw::c_int,
+        status: *mut vaccel_tf_status,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_tf_session_delete(
+        session: *mut vaccel_session,
+        model: *mut vaccel_tf_saved_model,
         status: *mut vaccel_tf_status,
     ) -> ::std::os::raw::c_int;
 }

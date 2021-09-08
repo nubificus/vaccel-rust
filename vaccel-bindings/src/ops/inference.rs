@@ -131,7 +131,7 @@ impl InferenceResult {
 }
 
 impl SavedModel {
-    /// Load a TensorFlow graph from a model
+    /// Load a TensorFlow session from a SavedModel
     ///
     /// The TensorFlow model must have been created and registered to
     /// a session. The operation will load the graph and keep the graph
@@ -142,11 +142,11 @@ impl SavedModel {
     /// * `session` - The session in the context of which we perform the operation. The model needs
     /// to be registered with this session.
     ///
-    pub fn load_graph(&mut self, sess: &mut Session) -> Result<tf::Status> {
+    pub fn session_load(&mut self, sess: &mut Session) -> Result<tf::Status> {
         let mut status = tf::Status::new();
 
         match unsafe {
-            ffi::vaccel_tf_model_load_graph(sess.inner_mut(), self.inner_mut(), status.inner_mut())
+            ffi::vaccel_tf_session_load(sess.inner_mut(), self.inner_mut(), status.inner_mut())
                 as u32
         } {
             ffi::VACCEL_OK => Ok(status),
@@ -154,12 +154,12 @@ impl SavedModel {
         }
     }
 
-    /// Run inference on a TensorFlow model
+    /// Run a TensorFlow session
     ///
-    /// This will run inference using a TensorFlow graph that has been previously loaded
-    /// using `vaccel_tf_model::load_graph`.
+    /// This will run using a TensorFlow session that has been previously loaded
+    /// using `vaccel_tf_model::load_session`.
     ///
-    pub fn inference(
+    pub fn session_run(
         &mut self,
         sess: &mut Session,
         args: &mut InferenceArgs,
@@ -167,7 +167,7 @@ impl SavedModel {
         let mut result = InferenceResult::new(args.out_nodes.len());
 
         match unsafe {
-            ffi::vaccel_tf_model_run(
+            ffi::vaccel_tf_session_run(
                 sess.inner_mut(),
                 self.inner_mut(),
                 args.run_options,
@@ -181,6 +181,22 @@ impl SavedModel {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(result),
+            err => Err(Error::Runtime(err)),
+        }
+    }
+
+    /// Delete a TensorFlow session
+    ///
+    /// This will unload a TensorFlow session that was previously loaded in memory
+    /// using `vaccel_tf_model::load_session`.
+    pub fn session_delete(&mut self, sess: &mut Session) -> Result<()> {
+        let mut status = tf::Status::new();
+
+        match unsafe {
+            ffi::vaccel_tf_session_delete(sess.inner_mut(), self.inner_mut(), status.inner_mut())
+                as u32
+        } {
+            ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
     }
