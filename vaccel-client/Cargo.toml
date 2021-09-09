@@ -16,7 +16,7 @@ vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", tag = "v
 vm-memory = { version = ">=0.2.2" }
 
 protobuf = "2.14.0"
-ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", branch = "devel" }
+ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "vaccel-0.1.0" }
 anyhow = "1.0.31"
 nix = "0.17.0"
 libc = "0.2.69"
