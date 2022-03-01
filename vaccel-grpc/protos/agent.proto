@@ -39,6 +39,9 @@ service VaccelAgent {
 	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
 	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
+
+	// Generic Operation API
+	rpc Genop(GenopRequest) returns (GenopResponse); 
 }
 
 message VaccelEmpty {}

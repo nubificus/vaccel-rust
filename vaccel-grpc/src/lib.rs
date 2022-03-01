@@ -2,6 +2,7 @@
 
 pub mod agent;
 pub mod error;
+pub mod genop;
 pub mod image;
 pub mod resources;
 pub mod session;
