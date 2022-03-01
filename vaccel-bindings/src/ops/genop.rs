@@ -1,18 +1,61 @@
-use crate::ffi;
-use crate::Session;
-use crate::{Error, Result};
+use crate::{ffi, Session, Error, Result};
 
+use protocols::genop::GenopArg as ProtGenopArg;
+
+#[derive(Debug)]
 pub struct GenopArg {
     inner: ffi::vaccel_arg,
+    buf: Vec<u8>,
+    size: usize,
 }
 
 impl GenopArg {
-    pub fn new(ptr: *mut u8, size: usize) -> Self {
+    pub fn new(buffer: &mut [u8], size: usize) -> Self {
+        let mut b = buffer.to_owned();
         GenopArg {
             inner: ffi::vaccel_arg {
-                buf: ptr as *mut libc::c_void,
+                buf: b.as_mut_ptr() as *mut libc::c_void,
                 size: size as u32,
             },
+            buf: b,
+            size: size,
+        }
+    }
+    pub fn get_size(&self) -> u32 {
+        self.inner.size
+    }
+
+    pub fn set_size(&mut self, v: usize) {
+        self.size = v;
+        self.inner.size = v as u32;
+    }
+
+    pub fn get_buf(&self) -> *mut u8 {
+        self.inner.buf as *mut u8
+    }
+
+    pub fn set_buf(&mut self, b: &mut [u8]) {
+        self.buf = b.to_owned();
+    }
+}
+
+impl From<&mut ProtGenopArg> for GenopArg {
+    fn from(arg: &mut ProtGenopArg) -> Self {
+        let size = arg.get_size();
+        let buf = arg.mut_buf();
+        GenopArg::new(
+            buf,
+            size as usize
+            )
+    }
+}
+
+impl From<&GenopArg> for ProtGenopArg {
+    fn from(arg: &GenopArg) -> Self {
+        ProtGenopArg {
+            buf: arg.buf.to_owned(),
+            size: arg.size as u32,
+            ..Default::default()
         }
     }
 }

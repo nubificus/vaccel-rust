@@ -11,7 +11,7 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", tag = "v0.2.0"  }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "feat_genop"  }
 protobuf = "=2.14.0"
 memchr = "2.3.3"
 libc = "0.2.68"
@@ -20,7 +20,7 @@ libc = "0.2.68"
 libc = ">=0.2.39"
 bindgen = "0.53.1"
 pkg-config = "0.3.16"
-cmake = "0.1"
+cmake = "=0.1.45"
 
 [dev-dependencies]
 env_logger = "0.8.3"
