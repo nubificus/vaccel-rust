@@ -1,26 +1,18 @@
 use chashmap::*;
-use std::default::Default;
-use std::sync::Arc;
-
-/*
-use vaccel_bindings::resource::VaccelResource;
-use vaccel_bindings::{
-    vaccel_id_t, vaccel_session, vaccel_tf_buffer, vaccel_tf_model, vaccel_tf_node,
-    vaccel_tf_tensor, VACCEL_EINVAL, VACCEL_OK,
-};
-*/
+use std::{default::Default, sync::Arc};
 
 extern crate vaccel;
-use vaccel::tensorflow as tf;
+use vaccel::{tensorflow as tf, ops::genop as genop};
 
-use protocols::error::VaccelError;
-use protocols::resources::{
-    CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
-    CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
-};
-use protocols::session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest};
-use protocols::{agent::VaccelEmpty, resources::DestroyResourceRequest};
 use protocols::{
+    error::VaccelError,
+    resources::{
+        CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
+        CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
+        DestroyResourceRequest
+    },
+    session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest},
+    agent::VaccelEmpty,
     image::{ImageClassificationRequest, ImageClassificationResponse},
     tensorflow::{
         InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
@@ -28,6 +20,7 @@ use protocols::{
         TensorflowModelRunResponse_oneof_result, TensorflowModelUnloadRequest,
         TensorflowModelUnloadResponse,
     },
+    genop::{GenopRequest, GenopResponse, GenopResponse_oneof_result, GenopResult},
 };
 
 fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::error::Error {
@@ -391,6 +384,44 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         };
 
         Ok(TensorflowModelRunResponse {
+            result: Some(response),
+            ..Default::default()
+        })
+    }
+
+    fn genop(
+        &self,
+        _ctx: &ttrpc::TtrpcContext,
+        mut req: GenopRequest,
+    ) -> ttrpc::Result<GenopResponse> {
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
+
+        let mut read_args: Vec<genop::GenopArg> = req.take_read_args()
+            .iter_mut()
+            .map(|e| e.into())
+            .collect();
+        let mut write_args: Vec<genop::GenopArg> = req.take_write_args()
+            .iter_mut()
+            .map(|e| e.into())
+            .collect();
+
+        println!("Genop session {:?}", sess.id());
+        let response = match sess.genop(read_args.as_mut_slice(), write_args.as_mut_slice()) {
+            Ok(_) => {
+                let mut res = GenopResult::new();
+                res.set_write_args(write_args.iter().map(|e| e.into()).collect());
+                GenopResponse_oneof_result::result(res)
+            }
+            Err(e) => GenopResponse_oneof_result::error(vaccel_error(e)),
+        };
+
+        Ok(GenopResponse {
             result: Some(response),
             ..Default::default()
         })
