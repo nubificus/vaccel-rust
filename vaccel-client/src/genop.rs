@@ -66,7 +66,7 @@ pub extern "C" fn genop(
 
     let write_args_ref = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
         Some(slice) => slice,
-        None => return ffi::VACCEL_EINVAL,
+        None => &mut [],
     };
 
     let write_args: Vec<GenopArg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
@@ -89,7 +89,7 @@ pub extern "C" fn genop(
             })
             .collect()
         },
-        None => return ffi::VACCEL_EINVAL,
+        None => vec![],
     };
  
     let client = match unsafe { client_ptr.as_ref() } {
