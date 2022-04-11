@@ -50,9 +50,7 @@ pub extern "C" fn genop(
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                     .unwrap_or(&[])
-                    .into_iter()
-                    .cloned()
-                    .collect()
+                    .to_vec()
                 };
                 GenopArg {
                     buf: buf,
@@ -77,9 +75,7 @@ pub extern "C" fn genop(
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                     .unwrap_or(&[])
-                    .into_iter()
-                    .cloned()
-                    .collect()
+                    .to_vec()
                 };
                 GenopArg {
                     buf: buf,
