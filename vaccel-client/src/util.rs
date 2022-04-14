@@ -64,5 +64,5 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32
         _ => return Err(ffi::VACCEL_ENOTSUP),
     };
 
-    Ok(ttrpc::client::Client::new(fd))
+    Ok(ttrpc::Client::new(fd))
 }
