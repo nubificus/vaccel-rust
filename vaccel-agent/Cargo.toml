@@ -9,7 +9,7 @@ license = "Apache-2.0"
 
 [dependencies]
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_genop" }
-ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "vaccel-0.1.0" }
+ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "v0.6.0-vaccel-1" }
 protobuf = "=2.14.0"
 serde_json = "1.0.39"
 vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings", branch = "feat_genop" }
