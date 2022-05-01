@@ -13,10 +13,6 @@ crate-type = ["staticlib"]
 [dependencies]
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_genop" }
 vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", branch = "feat_genop" }
-vm-memory = { version = ">=0.2.2" }
-
-protobuf = "2.14.0"
 ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "v0.6.0-vaccel-1" }
-anyhow = "1.0.31"
-nix = "0.17.0"
-libc = "0.2.69"
+protobuf = "2.27.1"
+nix = "0.24.1"

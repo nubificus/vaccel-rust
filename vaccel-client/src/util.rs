@@ -2,23 +2,26 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use nix::sys::socket::{connect, socket, AddressFamily, SockAddr, SockFlag, SockType};
+use nix::sys::socket::{
+    connect, socket, AddressFamily, SockaddrIn, SockFlag, SockType
+};
+
 use std::os::unix::io::RawFd;
+use std::str::FromStr;
 
 use vaccel::ffi;
 
-use ttrpc;
-
-fn client_create_vsock_fd(cid: libc::c_uint, port: u32) -> Result<RawFd, u32> {
+fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
     let fd = socket(
-        AddressFamily::Vsock,
+        AddressFamily::Inet,
         SockType::Stream,
         SockFlag::SOCK_CLOEXEC,
         None,
     )
     .map_err(|_| ffi::VACCEL_EIO)?;
 
-    let sock_addr = SockAddr::new_vsock(cid, port);
+    let sock_addr = SockaddrIn::from_str(address)
+        .map_err(|_| ffi::VACCEL_EINVAL)?;
 
     connect(fd, &sock_addr).map_err(|_| ffi::VACCEL_EIO)?;
 
@@ -38,31 +41,19 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32
 
     let scheme = fields[0].to_lowercase();
 
-    let fd: RawFd = match scheme.as_str() {
-        "vsock" => {
-            let addr: Vec<&str> = fields[1].split(':').collect();
-
-            if addr.len() != 2 {
-                return Err(ffi::VACCEL_EINVAL);
-            }
-
-            let cid: u32 = match addr[0] {
-                "-1" | "" => libc::VMADDR_CID_ANY,
-                _ => match addr[0].parse::<u32>() {
-                    Ok(c) => c,
-                    Err(_) => return Err(ffi::VACCEL_EINVAL),
-                },
-            };
-
-            let port: u32 = match addr[1].parse::<u32>() {
-                Ok(p) => p,
-                Err(_) => return Err(ffi::VACCEL_EINVAL),
-            };
-
-            client_create_vsock_fd(cid, port).map_err(|_| ffi::VACCEL_EINVAL)?
+    let client: ttrpc::Client = match scheme.as_str() {
+        "vsock" | "unix" => {
+            ttrpc::Client::connect(&server_address)
+                .map_err(|_| ffi::VACCEL_EINVAL)?
         }
+        "tcp" => {
+            let fd = client_create_sock_fd(fields[1])?;
+
+            ttrpc::Client::new(fd)
+        }
+
         _ => return Err(ffi::VACCEL_ENOTSUP),
     };
 
-    Ok(ttrpc::Client::new(fd))
+    Ok(client)
 }
