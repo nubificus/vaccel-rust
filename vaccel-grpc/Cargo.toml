@@ -5,11 +5,9 @@ authors = ["Babis Chalios <mail@bchalios.io>"]
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "v0.6.0-vaccel-1" }
-protobuf = "=2.14.0"
+protobuf = "=2.27.1"
 
 [build-dependencies]
-ttrpc-codegen = "0.2"
+ttrpc-codegen = "0.3.0"
