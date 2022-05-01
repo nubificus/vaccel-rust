@@ -1,5 +1,8 @@
 use chashmap::*;
-use std::{default::Default, sync::Arc};
+use std::{
+    default::Default, sync::Arc, os::unix::io::RawFd, time::Instant,
+    str::FromStr, error::Error
+};
 
 extern crate vaccel;
 use vaccel::{tensorflow as tf, ops::genop as genop};
@@ -22,6 +25,13 @@ use protocols::{
     },
     genop::{GenopRequest, GenopResponse, GenopResponse_oneof_result, GenopResult},
 };
+
+use nix::sys::socket::{
+        socket, bind, listen, AddressFamily, SockFlag, SockType, SockaddrIn,
+        sockopt, setsockopt
+};
+
+use nix::fcntl::{fcntl, FcntlArg, OFlag};
 
 fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::error::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
@@ -49,7 +59,7 @@ pub struct Agent {
 unsafe impl Sync for Agent {}
 unsafe impl Send for Agent {}
 
-pub fn start(server_address: &str) -> ttrpc::Server {
+pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
     let vaccel_agent = Box::new(Agent {
         sessions: Arc::new(CHashMap::new()),
         resources: Arc::new(CHashMap::new()),
@@ -59,14 +69,56 @@ pub fn start(server_address: &str) -> ttrpc::Server {
 
     let aservice = protocols::agent_ttrpc::create_vaccel_agent(agent_worker);
 
-    let server = ttrpc::Server::new()
-        .bind(server_address)
-        .unwrap()
-        .register_service(aservice);
+    if server_address == "" {
+        return Err("Server address cannot be empty".into());
+    }
 
-    println!("vaccel ttRPC server started. address:{}", server_address);
+    let fields: Vec<&str> = server_address.split("://").collect();
 
-    server
+    if fields.len() != 2 {
+        return Err("Invalid address".into());
+    }
+
+    let scheme = fields[0].to_lowercase();
+
+    let create_tcp_sock_fd = |address: &str| -> Result<RawFd, Box<dyn Error>> {
+        let fd = socket(
+            AddressFamily::Inet,
+            SockType::Stream,
+            SockFlag::SOCK_CLOEXEC,
+            None,
+            )?;
+
+        let sock_addr = SockaddrIn::from_str(address)?;
+
+        setsockopt(fd, sockopt::ReusePort, &true)?;
+        bind(fd, &sock_addr)?;
+
+        fcntl(fd, FcntlArg::F_SETFL(OFlag::O_NONBLOCK))?;
+        listen(fd, 10)?;
+
+        Ok(fd)
+    };
+
+    let server: ttrpc::Server = match scheme.as_str() {
+        "vsock" | "unix" => {
+            ttrpc::Server::new()
+                .bind(&server_address)?
+                .register_service(aservice)
+
+        }
+        "tcp" => {
+            let fd = create_tcp_sock_fd(fields[1])?;
+
+            ttrpc::Server::new()
+                .add_listener(fd)?
+                .register_service(aservice)
+        }
+
+        _ => return Err("Unsupported protocol".into()),
+    };
+
+    Ok(server)
 }
 
 impl protocols::agent_ttrpc::VaccelAgent for Agent {
@@ -406,6 +458,7 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
             .iter_mut()
             .map(|e| e.into())
             .collect();
+
         let mut write_args: Vec<genop::GenopArg> = req.take_write_args()
             .iter_mut()
             .map(|e| e.into())
