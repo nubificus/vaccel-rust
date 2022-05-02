@@ -1,7 +1,7 @@
 [package]
 name = "vsock"
-version = "0.2.0"
-authors = ["Babis Chalios <mail@bchalios.io>"]
+version = "0.3.0"
+authors = ["Babis Chalios <mail@bchalios.io>", "Kostis Papazafeiropoulos <papazof@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
 
@@ -11,8 +11,8 @@ path = "src/lib.rs"
 crate-type = ["staticlib"]
 
 [dependencies]
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", branch = "feat_genop" }
-vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", branch = "feat_genop" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", tag = "v0.3.0" }
+vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings.git", tag = "v0.4.0" }
 ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "v0.6.0-vaccel-1" }
 protobuf = "2.27.1"
 nix = "0.24.1"
