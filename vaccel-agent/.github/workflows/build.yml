@@ -3,10 +3,10 @@ name: Test Building vAccel
 on:
   pull_request:
     branches:
-      - master
+      - main
   push:
     branches:
-      - master
+      - main
 
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
         then
           echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
+          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
         fi
 
     - name: Checkout code
@@ -35,6 +35,9 @@ jobs:
 
     - name: Install deps
       run: |
+        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
+          gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+        sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
         sudo apt-get update
         sudo apt-get install -y cmake
 
@@ -46,6 +49,8 @@ jobs:
         else
           cargo build -j $(nproc)
         fi
+        mkdir -p binary
+        cp target/${{matrix.build_type}}/vaccelrt-agent ./binary
 
     - name: Upload artifact
       uses: cloudkernels/minio-upload@master
@@ -53,5 +58,6 @@ jobs:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
         secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        local-path: target/${{matrix.build_type}}/vaccelrt-agent
-        remote-path: nbfc-assets/github/vaccel-agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
+        local-path: binary/vaccelrt-agent
+        remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
+        policy: 1
