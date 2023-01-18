@@ -27,7 +27,8 @@ jobs:
         then
           echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+          echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
         fi
 
     - name: Checkout code
@@ -52,12 +53,22 @@ jobs:
         mkdir -p binary
         cp target/${{matrix.build_type}}/vaccelrt-agent ./binary
 
+    - name: Upload artifact by name
+      if: ${{ env.ARTIFACT_NAME == 'main' || env.ARTIFACT_NAME == 'master' }}
+      uses: cloudkernels/minio-upload@v3
+      with:
+        url: https://s3.nubificus.co.uk
+        access-key: ${{ secrets.AWS_ACCESS_KEY }}
+        secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        local-path: binary/vaccelrt-agent
+        remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_NAME}}/${{matrix.archconfig}}/${{matrix.build_type}}/
+        policy: 1
+
     - name: Upload artifact
-      uses: cloudkernels/minio-upload@master
+      uses: cloudkernels/minio-upload@v3
       with:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
         secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         local-path: binary/vaccelrt-agent
         remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
-        policy: 1
