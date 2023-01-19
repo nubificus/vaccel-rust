@@ -7,7 +7,7 @@ license = "Apache-2.0"
 
 [dependencies]
 protocols = { git = "https://github.com/cloudkernels/vaccel-grpc.git", tag = "v0.3.0" }
-vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings", tag = "v0.4.0" }
+vaccel = { git = "https://github.com/cloudkernels/vaccel-bindings", tag = "v0.4.1" }
 ttrpc = { git = "https://github.com/cloudkernels/ttrpc-rust.git", tag = "v0.6.0-vaccel-1" }
 protobuf = "=2.27.1"
 ctrlc = { version = "3.2.2", features = ["termination"] }

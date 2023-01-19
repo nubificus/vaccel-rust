@@ -9,10 +9,10 @@ on:
 
 jobs:
   build:
-    runs-on: [ self-hosted, "${{ matrix.archconfig }}" ]
+    runs-on: [ self-hosted, "${{ matrix.archconfig }}", mem-high ]
     strategy:
       matrix:
-        archconfig: [ x86_64, aarch64 ]
+        archconfig: [ x86_64, aarch64, aarch32 ]
         build_type: [ Debug, Release ]
       fail-fast: false
     steps:

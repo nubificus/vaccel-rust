@@ -12,11 +12,11 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, cloud, "${{ matrix.archconfig }}", mem-high]
+    runs-on: [self-hosted, "${{ matrix.archconfig }}", mem-high]
 
     strategy:
       matrix:
-        archconfig: [x86_64, aarch64]
+        archconfig: [x86_64, aarch64, aarch32]
         build_type: [debug, release]
       fail-fast: false
 
@@ -33,14 +33,6 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Install deps
-      run: |
-        wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | \
-          gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
-        sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
-        sudo apt-get update
-        sudo apt-get install -y cmake
 
     - name: Build agent
       run: |
