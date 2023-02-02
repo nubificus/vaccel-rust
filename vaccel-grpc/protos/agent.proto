@@ -41,11 +41,16 @@ service VaccelAgent {
 	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 
-	rpc Genop(GenopRequest) returns (GenopResponse);
 	// PyTorch inference API
 	//rpc TorchModelLoad(TorchModelLoadRequest) returns (TorchModelLoadResponse);
 	//rpc TorchModelUnload(TorchModelUnloadRequest) returns (TorchModelUnloadResponse);
 	rpc TorchJitloadForward(TorchJitloadForwardRequest) returns (TorchJitloadForwardResponse);
+
+	// Generic Operation API
+	rpc Genop(GenopRequest) returns (GenopResponse);
+
+	// Profiling Operation API
+	rpc GetTimers(ProfilingRequest) returns (ProfilingResponse);
 }
 
 message VaccelEmpty {}

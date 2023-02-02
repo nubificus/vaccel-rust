@@ -10,7 +10,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", tag = "v0.6.1-vaccel" }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev" }
 protobuf = "2.28.0"
 
 [build-dependencies]
