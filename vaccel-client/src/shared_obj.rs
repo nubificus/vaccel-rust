@@ -6,32 +6,24 @@ use vaccel::ffi;
 
 use vaccel::shared_obj::SharedObject;
 
-use protocols::{
-    resources::{CreateResourceRequest, CreateSharedObjRequest},
-};
+use protocols::resources::{CreateResourceRequest, CreateSharedObjRequest};
 
 impl VaccelResource for SharedObject {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
         let mut sharedobjreq = CreateSharedObjRequest::new();
-	    let vbytes = self.get_bytes();
-        sharedobjreq.set_shared_obj(
-		vbytes
-		.ok_or(Error::InvalidArgument)?
-                .to_owned(),
-        );
+        let vbytes = self.get_bytes();
+        sharedobjreq.set_shared_obj(vbytes.ok_or(Error::InvalidArgument)?.to_owned());
 
         let mut req = CreateResourceRequest::new();
-	    req.set_shared_obj(sharedobjreq);
+        req.set_shared_obj(sharedobjreq);
 
         Ok(req)
     }
 }
 
-impl VsockClient {
+impl VsockClient {}
 
-}
-
-pub(crate) fn create_shared_object (
+pub(crate) fn create_shared_object(
     client: &VsockClient,
     shared_object: *mut ffi::vaccel_shared_object,
 ) -> ffi::vaccel_id_t {

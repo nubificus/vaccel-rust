@@ -1,11 +1,13 @@
 use crate::util::create_ttrpc_client;
 use crate::{Error, Result};
 use protocols::agent_ttrpc::VaccelAgentClient;
-use std::env;
+use std::{collections::BTreeMap, env};
+use vaccel::profiling::ProfRegions;
 
 #[repr(C)]
 pub struct VsockClient {
     pub ttrpc_client: VaccelAgentClient,
+    pub timers: BTreeMap<u32, ProfRegions>,
 }
 
 impl VsockClient {
@@ -15,11 +17,12 @@ impl VsockClient {
             Err(_) => "vsock://2:2048".to_string(),
         };
 
-        let ttrpc_client = create_ttrpc_client(&server_address)
-            .map_err(|e| Error::ClientError(e))?;
+        let ttrpc_client =
+            create_ttrpc_client(&server_address).map_err(|e| Error::ClientError(e))?;
 
         Ok(VsockClient {
             ttrpc_client: VaccelAgentClient::new(ttrpc_client),
+            timers: BTreeMap::new(),
         })
     }
 }

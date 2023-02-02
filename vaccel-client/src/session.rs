@@ -1,7 +1,7 @@
 use crate::client::VsockClient;
 use crate::{Error, Result};
-
 use protocols::session::{CreateSessionRequest, DestroySessionRequest};
+use std::collections::btree_map::Entry;
 use vaccel::ffi;
 
 impl VsockClient {
@@ -39,14 +39,19 @@ pub extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn sess_free(client_ptr: *const VsockClient, sess_id: u32) -> i32 {
-    let client = match unsafe { client_ptr.as_ref() } {
+pub extern "C" fn sess_free(client_ptr: *mut VsockClient, sess_id: u32) -> i32 {
+    let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,
     };
 
     match client.sess_free(sess_id) {
-        Ok(()) => ffi::VACCEL_OK as i32,
+        Ok(()) => {
+            if let Entry::Occupied(t) = client.timers.entry(sess_id) {
+                t.remove_entry();
+            }
+            ffi::VACCEL_OK as i32
+        }
         Err(Error::ClientError(err)) => err as i32,
         Err(_) => ffi::VACCEL_EIO as i32,
     }

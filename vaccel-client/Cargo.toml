@@ -14,8 +14,9 @@ path = "src/lib.rs"
 crate-type = ["staticlib"]
 
 [dependencies]
-protocols = { git = "https://github.com/nubificus/vaccel-grpc.git", tag = "v0.3.4" }
-vaccel = { git = "https://github.com/nubificus/vaccel-bindings.git", tag = "v0.5.4" }
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", tag = "v0.6.1-vaccel" }
+protocols = { git = "https://github.com/nubificus/vaccel-grpc.git", branch="feat_timers" }
+vaccel = { git = "https://github.com/nubificus/vaccel-bindings.git", branch = "feat_timers" }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev" }
 protobuf = "2.28.0"
 nix = "0.24.1"
+libc = "0.2"

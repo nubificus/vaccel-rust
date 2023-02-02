@@ -1,11 +1,7 @@
-use crate::client::VsockClient;
-use crate::{Error, Result};
-
+use crate::{client::VsockClient, Error, Result};
 use protocols::image::ImageClassificationRequest;
+use std::{os::raw::c_uchar, slice};
 use vaccel::ffi;
-
-use std::os::raw::c_uchar;
-use std::slice;
 
 impl VsockClient {
     pub fn image_classify(&self, sess_id: u32, img: Vec<u8>) -> Result<Vec<u8>> {
