@@ -18,6 +18,7 @@ import "session.proto";
 import "resources.proto";
 import "image.proto";
 import "tensorflow.proto";
+import "torch.proto";
 
 package vaccel;
 
@@ -40,8 +41,11 @@ service VaccelAgent {
 	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 
-	// Generic Operation API
-	rpc Genop(GenopRequest) returns (GenopResponse); 
+	rpc Genop(GenopRequest) returns (GenopResponse);
+	// PyTorch inference API
+	//rpc TorchModelLoad(TorchModelLoadRequest) returns (TorchModelLoadResponse);
+	//rpc TorchModelUnload(TorchModelUnloadRequest) returns (TorchModelUnloadResponse);
+	rpc TorchJitloadForward(TorchJitloadForwardRequest) returns (TorchJitloadForwardResponse);
 }
 
 message VaccelEmpty {}

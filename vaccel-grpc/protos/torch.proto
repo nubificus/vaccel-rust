@@ -1,0 +1,113 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package vaccel;
+
+import "error.proto";
+
+enum TorchDataType {
+	// Add unused value here so that we are compatible
+	// with what vAccelRT returns us
+	UNUSED = 0;
+	UInt8 = 1;
+	Int8 = 2;
+	Int16 = 3;
+	Int32 = 4;
+	Int64 = 5;
+	Half = 6;
+	FLOAT = 7;
+
+	// DOUBLE = 2;
+	//INT32 = 3;  // Int32 tensors are always in 'host' memory.
+	// UINT8 = 4;
+	// INT16 = 5;
+	// INT8 = 6;
+	// STRING = 7;
+	// COMPLEX = 8;    // Old identifier kept for API backwards compatibility
+	// INT64 = 9;
+	// BOOL = 10;
+	// QINT8 = 11;     // Quantized int8
+	// QUINT8 = 12;    // Quantized uint8
+	// QINT32 = 13;    // Quantized int32
+	// BFLOAT16 = 14;  // Float32 truncated to 16 bits.  Only for cast ops.
+	// QINT16 = 15;    // Quantized int16
+	// QUINT16 = 16;   // Quantized uint16
+	// UINT16 = 17;
+	// COMPLEX128 = 18;  // Double-precision complex
+	// HALF = 19;
+	// RESOURCE = 20;
+	// VARIANT = 21;
+	// UINT32 = 22;
+	// UINT64 = 23;
+};
+
+message TorchTensor {
+	// Data of the tensor
+	bytes data = 1;
+
+	// Dimensions of the tensor
+	repeated uint32 dims = 2;
+
+	// Data type
+	TorchDataType type = 3;
+
+	/*
+	// Data of the tensor
+	bytes data = 1;
+
+	// Size
+	uint64 size = 2;
+
+	// if we owned the data
+	uint32 owned = 3;
+	
+	// out_torch element size
+	int32 nr_dims = 4;
+
+	// Dimensions of the tensor
+	repeated uint64 dims = 5;
+
+	// Data type
+	TorchDataType type = 6;
+	*/
+};
+
+// Jitload_forward
+message TorchJitloadForwardRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+
+	// Run options
+	bytes run_options = 3;
+
+	// Input tensors
+	repeated TorchTensor in_tensors = 4;
+
+	// Output tensors
+	//repeated TorchTensor out_tensors = 5;
+};
+
+message TorchJitloadForwardResult {
+	// An inference result is a number of output tensors
+	repeated TorchTensor out_tensors = 1;
+};
+
+message TorchJitloadForwardResponse {
+	oneof result {
+		VaccelError error = 1;
+		TorchJitloadForwardResult result = 2;
+	}
+};

@@ -141,8 +141,8 @@ impl ::protobuf::reflect::ProtobufValue for VaccelEmpty {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0bagent.proto\x12\x06vaccel\x1a\rsession.proto\x1a\x0fresources.prot\
-    o\x1a\x0bimage.proto\x1a\x10tensorflow.proto\"\x0f\n\x0bVaccelEmpty:\0B\
-    \0b\x06proto3\
+    o\x1a\x0bimage.proto\x1a\x10tensorflow.proto\x1a\x0btorch.proto\"\x0f\n\
+    \x0bVaccelEmpty:\0B\0b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
