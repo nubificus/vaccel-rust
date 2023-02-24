@@ -80,7 +80,7 @@ where
         }
     }
 }
-pub const VACCELRT_VERSION: &[u8; 18usize] = b"v0.5.0-8-gfcfdcf6\0";
+pub const VACCELRT_VERSION: &[u8; 19usize] = b"v0.5.0-10-g7d5921c\0";
 pub const _ERRNO_H: u32 = 1;
 pub const _FEATURES_H: u32 = 1;
 pub const _DEFAULT_SOURCE: u32 = 1;
@@ -3578,7 +3578,9 @@ pub const VACCEL_RES_TF_MODEL: vaccel_resource_t = 0;
 pub const VACCEL_RES_TF_SAVED_MODEL: vaccel_resource_t = 1;
 pub const VACCEL_RES_CAFFE_MODEL: vaccel_resource_t = 2;
 pub const VACCEL_RES_SHARED_OBJ: vaccel_resource_t = 3;
-pub const VACCEL_RES_MAX: vaccel_resource_t = 4;
+pub const VACCEL_RES_TORCH_MODEL: vaccel_resource_t = 4;
+pub const VACCEL_RES_TORCH_SAVED_MODEL: vaccel_resource_t = 5;
+pub const VACCEL_RES_MAX: vaccel_resource_t = 6;
 pub type vaccel_resource_t = ::std::os::raw::c_uint;
 extern "C" {
     pub fn resource_get_id(resource: *mut vaccel_resource) -> vaccel_id_t;
@@ -5037,6 +5039,7 @@ extern "C" {
         filename: *const ::std::os::raw::c_char,
         persist: bool,
         dir: *const ::std::os::raw::c_char,
+        randomize: bool,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
@@ -5044,6 +5047,7 @@ extern "C" {
         file: *mut vaccel_file,
         dir: *const ::std::os::raw::c_char,
         filename: *const ::std::os::raw::c_char,
+        randomize: bool,
     ) -> ::std::os::raw::c_int;
 }
 extern "C" {
@@ -5160,10 +5164,12 @@ pub const VACCEL_F_MMULT: vaccel_op_type = 17;
 pub const VACCEL_F_PARALLEL: vaccel_op_type = 18;
 pub const VACCEL_F_VECTORADD: vaccel_op_type = 19;
 pub const VACCEL_EXEC_WITH_RESOURCE: vaccel_op_type = 20;
-pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 21;
+pub const VACCEL_TORCH_JITLOAD_FORWARD: vaccel_op_type = 21;
+pub const VACCEL_TORCH_SGEMM: vaccel_op_type = 22;
+pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 23;
 pub type vaccel_op_type = ::std::os::raw::c_uint;
 extern "C" {
-    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 21usize];
+    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 24usize];
 }
 extern "C" {
     pub fn vaccel_sgemm(
@@ -5486,7 +5492,7 @@ pub struct vaccel_tf_tensor {
     pub size: usize,
     pub owned: bool,
     pub nr_dims: ::std::os::raw::c_int,
-    pub dims: *mut ::std::os::raw::c_longlong,
+    pub dims: *mut u32,
     pub data_type: vaccel_tf_data_type,
 }
 #[test]
@@ -5574,14 +5580,14 @@ impl Default for vaccel_tf_tensor {
 extern "C" {
     pub fn vaccel_tf_tensor_new(
         nr_dims: ::std::os::raw::c_int,
-        dims: *mut ::std::os::raw::c_longlong,
+        dims: *mut u32,
         type_: vaccel_tf_data_type,
     ) -> *mut vaccel_tf_tensor;
 }
 extern "C" {
     pub fn vaccel_tf_tensor_allocate(
         nr_dims: ::std::os::raw::c_int,
-        dims: *mut ::std::os::raw::c_longlong,
+        dims: *mut u32,
         type_: vaccel_tf_data_type,
         total_size: usize,
     ) -> *mut vaccel_tf_tensor;
@@ -6062,6 +6068,355 @@ extern "C" {
 }
 extern "C" {
     pub fn vaccel_prof_region_destroy(region: *mut vaccel_prof_region) -> ::std::os::raw::c_int;
+}
+pub const VACCEL_TORCH_BYTE: vaccel_torch_data_type = 1;
+pub const VACCEL_TORCH_CHAR: vaccel_torch_data_type = 2;
+pub const VACCEL_TORCH_SHORT: vaccel_torch_data_type = 3;
+pub const VACCEL_TORCH_INT: vaccel_torch_data_type = 4;
+pub const VACCEL_TORCH_LONG: vaccel_torch_data_type = 5;
+pub const VACCEL_TORCH_HALF: vaccel_torch_data_type = 6;
+pub const VACCEL_TORCH_FLOAT: vaccel_torch_data_type = 7;
+pub type vaccel_torch_data_type = ::std::os::raw::c_uint;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vaccel_torch_tensor {
+    pub data: *mut ::std::os::raw::c_void,
+    pub size: usize,
+    pub owned: u8,
+    pub nr_dims: ::std::os::raw::c_int,
+    pub dims: *mut i32,
+    pub data_type: vaccel_torch_data_type,
+}
+#[test]
+fn bindgen_test_layout_vaccel_torch_tensor() {
+    assert_eq!(
+        ::std::mem::size_of::<vaccel_torch_tensor>(),
+        40usize,
+        concat!("Size of: ", stringify!(vaccel_torch_tensor))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vaccel_torch_tensor>(),
+        8usize,
+        concat!("Alignment of ", stringify!(vaccel_torch_tensor))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).data as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(data)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).size as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(size)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).owned as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(owned)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).nr_dims as *const _ as usize },
+        20usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(nr_dims)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).dims as *const _ as usize },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(dims)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_tensor>())).data_type as *const _ as usize },
+        32usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_tensor),
+            "::",
+            stringify!(data_type)
+        )
+    );
+}
+impl Default for vaccel_torch_tensor {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+extern "C" {
+    pub fn vaccel_torch_tensor_new(
+        nr_dims: ::std::os::raw::c_int,
+        dims: *mut i64,
+        type_: vaccel_torch_data_type,
+    ) -> *mut vaccel_torch_tensor;
+}
+extern "C" {
+    pub fn vaccel_torch_tensor_allocate(
+        nr_dims: ::std::os::raw::c_int,
+        dims: *mut i64,
+        type_: vaccel_torch_data_type,
+        total_size: usize,
+    ) -> *mut vaccel_torch_tensor;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vaccel_torch_buffer {
+    pub data: *mut ::std::os::raw::c_char,
+    pub size: usize,
+}
+#[test]
+fn bindgen_test_layout_vaccel_torch_buffer() {
+    assert_eq!(
+        ::std::mem::size_of::<vaccel_torch_buffer>(),
+        16usize,
+        concat!("Size of: ", stringify!(vaccel_torch_buffer))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vaccel_torch_buffer>(),
+        8usize,
+        concat!("Alignment of ", stringify!(vaccel_torch_buffer))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_buffer>())).data as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_buffer),
+            "::",
+            stringify!(data)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_buffer>())).size as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_buffer),
+            "::",
+            stringify!(size)
+        )
+    );
+}
+impl Default for vaccel_torch_buffer {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+extern "C" {
+    pub fn vaccel_torch_buffer_destroy(buffer: *mut vaccel_torch_buffer);
+}
+extern "C" {
+    pub fn vaccel_torch_buffer_take_data(
+        buffer: *mut vaccel_torch_buffer,
+        size: *mut usize,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_torch_buffer_get_data(
+        buffer: *mut vaccel_torch_buffer,
+        size: *mut usize,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_torch_tensor_destroy(tensor: *mut vaccel_torch_tensor) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_jitload_forward(
+        sess: *mut vaccel_session,
+        model: *const vaccel_torch_saved_model,
+        run_options: *const vaccel_torch_buffer,
+        in_tensor: *mut *mut vaccel_torch_tensor,
+        nr_read: ::std::os::raw::c_int,
+        out_tensor: *mut *mut vaccel_torch_tensor,
+        nr_write: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_sgemm(
+        sess: *mut vaccel_session,
+        in_A: *mut *mut vaccel_torch_tensor,
+        in_B: *mut *mut vaccel_torch_tensor,
+        in_C: *mut *mut vaccel_torch_tensor,
+        M: ::std::os::raw::c_int,
+        N: ::std::os::raw::c_int,
+        K: ::std::os::raw::c_int,
+        out: *mut *mut vaccel_torch_tensor,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_tensor_set_data(
+        tensor: *mut vaccel_torch_tensor,
+        data: *mut ::std::os::raw::c_void,
+        size: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_tensor_get_data(
+        tensor: *mut vaccel_torch_tensor,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_torch_buffer_new(
+        data: *mut ::std::os::raw::c_char,
+        size: usize,
+    ) -> *mut vaccel_torch_buffer;
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vaccel_torch_saved_model {
+    pub resource: *mut vaccel_resource,
+    pub path: *const ::std::os::raw::c_char,
+    pub model: vaccel_file,
+}
+#[test]
+fn bindgen_test_layout_vaccel_torch_saved_model() {
+    assert_eq!(
+        ::std::mem::size_of::<vaccel_torch_saved_model>(),
+        48usize,
+        concat!("Size of: ", stringify!(vaccel_torch_saved_model))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vaccel_torch_saved_model>(),
+        8usize,
+        concat!("Alignment of ", stringify!(vaccel_torch_saved_model))
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vaccel_torch_saved_model>())).resource as *const _ as usize
+        },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_saved_model),
+            "::",
+            stringify!(resource)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_saved_model>())).path as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_saved_model),
+            "::",
+            stringify!(path)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_torch_saved_model>())).model as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_torch_saved_model),
+            "::",
+            stringify!(model)
+        )
+    );
+}
+impl Default for vaccel_torch_saved_model {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_new() -> *mut vaccel_torch_saved_model;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_set_path(
+        model: *mut vaccel_torch_saved_model,
+        path: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_get_path(
+        model: *mut vaccel_torch_saved_model,
+    ) -> *const ::std::os::raw::c_char;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_set_model(
+        model: *mut vaccel_torch_saved_model,
+        ptr: *const u8,
+        len: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_get_model(
+        model: *mut vaccel_torch_saved_model,
+        len: *mut usize,
+    ) -> *const u8;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_set_checkpoint(
+        model: *mut vaccel_torch_saved_model,
+        ptr: *const u8,
+        len: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_get_checkpoint(
+        model: *mut vaccel_torch_saved_model,
+        len: *mut usize,
+    ) -> *const u8;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_set_var_index(
+        model: *mut vaccel_torch_saved_model,
+        ptr: *const u8,
+        len: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_get_var_index(
+        model: *mut vaccel_torch_saved_model,
+        len: *mut usize,
+    ) -> *const u8;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_register(
+        model: *mut vaccel_torch_saved_model,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_destroy(
+        model: *mut vaccel_torch_saved_model,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_torch_saved_model_id(model: *const vaccel_torch_saved_model) -> vaccel_id_t;
 }
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone)]

@@ -12,6 +12,7 @@ pub mod resource;
 pub mod session;
 pub mod tensorflow;
 pub mod shared_obj;
+pub mod torch;
 
 pub use resource::Resource;
 pub use session::Session;
@@ -29,6 +30,9 @@ pub enum Error {
 
     // A TensorFlow Error
     TensorFlow(tensorflow::Code),
+
+    // A pytorch Error
+    Torch(torch::Code),
 }
 
 impl fmt::Display for Error {
@@ -38,6 +42,7 @@ impl fmt::Display for Error {
             Error::InvalidArgument => write!(f, "An invalid argument was given to us"),
             Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
             Error::TensorFlow(code) => write!(f, "TensorFlow error: {:?}", code),
+            Error::Torch(code) => write!(f, "Torch error: {:?}", code),
         }
     }
 }
