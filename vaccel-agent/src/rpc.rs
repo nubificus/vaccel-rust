@@ -1,4 +1,5 @@
 use chashmap::*;
+// use::std::time::Instant
 use std::{
     default::Default, sync::Arc, os::unix::io::RawFd,
     str::FromStr, error::Error
@@ -6,13 +7,14 @@ use std::{
 
 extern crate vaccel;
 use vaccel::{tensorflow as tf, ops::genop as genop, shared_obj as so};
+use vaccel::torch as torch;
 
 use protocols::{
     error::VaccelError,
     resources::{
         CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
         CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
-        DestroyResourceRequest, CreateSharedObjRequest
+        DestroyResourceRequest, CreateSharedObjRequest, CreateTorchSavedModelRequest, 
     },
     session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest},
     agent::VaccelEmpty,
@@ -23,6 +25,10 @@ use protocols::{
         TensorflowModelRunResponse_oneof_result, TensorflowModelUnloadRequest,
         TensorflowModelUnloadResponse,
     },
+    torch::{
+        TorchJitloadForwardResult, TorchTensor, TorchJitloadForwardRequest,
+        TorchJitloadForwardResponse, TorchJitloadForwardResponse_oneof_result,
+    },
     genop::{GenopRequest, GenopResponse, GenopResponse_oneof_result, GenopResult},
 };
 
@@ -32,6 +38,10 @@ use nix::sys::socket::{
 };
 
 use nix::fcntl::{fcntl, FcntlArg, OFlag};
+
+//fn type_of<T>(_: &T) -> &'static str {
+//        std::any::type_name::<T>()
+//}
 
 fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::error::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
@@ -45,6 +55,7 @@ fn vaccel_error(err: vaccel::Error) -> VaccelError {
         vaccel::Error::InvalidArgument => grpc_error.set_agent_error(1i64),
         vaccel::Error::Uninitialized => grpc_error.set_agent_error(2i64),
         vaccel::Error::TensorFlow(_) => grpc_error.set_agent_error(3i64),
+        vaccel::Error::Torch(_) => grpc_error.set_agent_error(4i64),
     }
 
     grpc_error
@@ -218,6 +229,7 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
                 ttrpc::Code::INVALID_ARGUMENT,
                 "Frozen model not supported yet".to_string(),
             )),
+            CreateResourceRequest_oneof_model::torch_saved(req) => self.create_torch_model(req),
         }
     }
 
@@ -414,6 +426,7 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         let in_tensors = req.get_in_tensors();
         for it in in_nodes.iter().zip(in_tensors.iter()) {
             let (node, tensor) = it;
+            println!("tensor.dim: {:?}", tensor.dims);
             sess_args.add_input(node, tensor);
         }
 
@@ -441,6 +454,96 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
             ..Default::default()
         })
     }
+
+    fn torch_jitload_forward(
+        &self,
+        _ctx: &ttrpc::TtrpcContext,
+        mut req: TorchJitloadForwardRequest,
+    ) -> ttrpc::Result<TorchJitloadForwardResponse> {
+        let mut resource = self
+            .resources
+            .get_mut(&req.model_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown PyTorch model".to_string(),
+            ))?;
+
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
+
+        let model = resource
+            .as_mut_any()
+            .downcast_mut::<torch::SavedModel>()
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                format!("Resource {} is not a pytorch model", req.model_id),
+            ))?;
+
+        // origin: vaccel::ops::inference...
+        let mut sess_args = torch::TorchArgs::new();
+        let mut jitload = torch::TorchJitLoadForward::new();
+
+        let run_options = torch::Buffer::new(req.mut_run_options().as_slice());
+        sess_args.set_run_options(&run_options);
+
+        let in_tensors = req.get_in_tensors();
+        for tensor in in_tensors.iter() {
+            sess_args.add_input(tensor);
+        }
+
+        
+        // TODO: bindings examples
+        /*
+        let response = jitload.jitload_forward(&mut sess, &mut sess_args, &mut model)?;
+        match response.get_output::<f32>(0) {
+            Ok(result) => {
+                println!("Success");
+                println!(
+                    "Output tensor => type:{:?} nr_dims:{}",
+                    result.data_type(),
+                    result.nr_dims()
+                );
+                for i in 0..result.nr_dims() {
+                    println!("dim[{}]: {}", i, result.dim(i as usize).unwrap());
+                }
+            }
+            // Err(e) => println!("Torch JitLoadForward failed: '{}'", e),
+        }
+        Ok(TorchJitloadForwardResponse {
+            result: Some(response),
+           ..Default::default()
+        })
+        */
+       
+        // TODO
+        // let num_outputs = in_tensors.len();
+        let num_outputs: usize = 1;
+
+        //println!("NUM of output: {}, Type: {}", num_outputs, type_of(&num_outputs));
+        let response = match jitload.jitload_forward(&mut sess, &mut sess_args, model) {
+            Ok(result) => {
+                let  mut jitload_forward = TorchJitloadForwardResult::new();
+                let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
+                for i in 0..num_outputs {
+                     out_tensors.push(result.get_grpc_output(i).unwrap());
+                }
+                jitload_forward.set_out_tensors(out_tensors.into());
+                TorchJitloadForwardResponse_oneof_result::result(jitload_forward)
+            }
+            Err(e) => TorchJitloadForwardResponse_oneof_result::error(vaccel_error(e)),
+        };
+
+        Ok(TorchJitloadForwardResponse {
+            result: Some(response),
+            ..Default::default()
+        })
+    }
+    
 
     fn genop(
         &self,
@@ -523,6 +626,28 @@ impl Agent {
                 let mut resp = CreateResourceResponse::new();
                 resp.set_resource_id(shared_obj.id().into());
                 self.resources.insert_new(shared_obj.id(), Box::new(shared_obj));
+                Ok(resp)
+            }
+            Err(e) => {
+                println!("Could not register model");
+                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
+            }
+        }
+    }
+    fn create_torch_model(
+        &self,
+        req: CreateTorchSavedModelRequest,
+    ) -> ttrpc::Result<CreateResourceResponse> {
+        println!("Request to create PyTorch model resource");
+        match torch::SavedModel::new().from_in_memory(
+            req.get_model(),
+        ) {
+            Ok(model) => {
+                println!("Created new Torch model with id: {}", model.id());
+
+                let mut resp = CreateResourceResponse::new();
+                resp.set_resource_id(model.id().into());
+                self.resources.insert_new(model.id(), Box::new(model));
 
                 Ok(resp)
             }

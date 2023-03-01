@@ -1,3 +1,5 @@
+// extern crate signal_hook;
+
 use std::sync::mpsc::{self};
 use std::thread;
 use structopt::StructOpt;
