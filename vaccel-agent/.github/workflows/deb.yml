@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: [ self-hosted, "${{ matrix.archconfig }}", mem-high ]
+    runs-on: [ self-hosted, "${{ matrix.archconfig }}", rust ]
     strategy:
       matrix:
         archconfig: [ x86_64, aarch64, aarch32 ]

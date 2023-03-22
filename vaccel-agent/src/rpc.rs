@@ -5,14 +5,14 @@ use std::{
 };
 
 extern crate vaccel;
-use vaccel::{tensorflow as tf, ops::genop as genop};
+use vaccel::{tensorflow as tf, ops::genop as genop, shared_obj as so};
 
 use protocols::{
     error::VaccelError,
     resources::{
         CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
         CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
-        DestroyResourceRequest
+        DestroyResourceRequest, CreateSharedObjRequest
     },
     session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest},
     agent::VaccelEmpty,
@@ -208,6 +208,7 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
         };
 
         match model {
+            CreateResourceRequest_oneof_model::shared_obj(req) => self.create_shared_object(req),
             CreateResourceRequest_oneof_model::tf_saved(req) => self.create_tf_model(req),
             CreateResourceRequest_oneof_model::caffe(_) => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
@@ -498,6 +499,30 @@ impl Agent {
                 let mut resp = CreateResourceResponse::new();
                 resp.set_resource_id(model.id().into());
                 self.resources.insert_new(model.id(), Box::new(model));
+
+                Ok(resp)
+            }
+            Err(e) => {
+                println!("Could not register model");
+                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
+            }
+        }
+    }
+
+    fn create_shared_object(
+        &self,
+        req: CreateSharedObjRequest,
+    ) -> ttrpc::Result<CreateResourceResponse> {
+        println!("Request to create SharedObject resource");
+        match so::SharedObject::from_in_memory(
+	&req.shared_obj
+        ) {
+            Ok(shared_obj) => {
+                println!("Created new Shared Object with id: {}", shared_obj.id());
+
+                let mut resp = CreateResourceResponse::new();
+                resp.set_resource_id(shared_obj.id().into());
+                self.resources.insert_new(shared_obj.id(), Box::new(shared_obj));
 
                 Ok(resp)
             }
