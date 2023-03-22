@@ -9,7 +9,7 @@ use std::ops::{Deref, DerefMut};
 
 pub struct Tensor<T: TensorType> {
     inner: *mut ffi::vaccel_tf_tensor,
-    dims: Vec<u64>,
+    dims: Vec<usize>,
     data_count: usize,
     data: Vec<T>,
 }
@@ -25,7 +25,7 @@ pub trait TensorType: Default + Clone {
     fn zero() -> Self;
 }
 
-fn product(values: &[u64]) -> u64 {
+fn product(values: &[usize]) -> usize {
     values.iter().product()
 }
 
@@ -54,7 +54,7 @@ impl<T: TensorType> DerefMut for Tensor<T> {
 }
 
 impl<T: TensorType> Tensor<T> {
-    pub fn new(dims: &[u64]) -> Self {
+    pub fn new(dims: &[usize]) -> Self {
         let dims = Vec::from(dims);
         let data_count = product(&dims) as usize;
         let mut data = Vec::with_capacity(data_count);
@@ -72,7 +72,7 @@ impl<T: TensorType> Tensor<T> {
             ffi::vaccel_tf_tensor_set_data(
                 inner,
                 data.as_ptr() as *mut _,
-                (data.len() * std::mem::size_of::<T>()) as u64,
+                (data.len() * std::mem::size_of::<T>()) as usize,
             )
         };
 
@@ -128,11 +128,11 @@ impl<T: TensorType> Tensor<T> {
         Ok(self)
     }
 
-    pub fn nr_dims(&self) -> u64 {
-        self.dims.len() as u64
+    pub fn nr_dims(&self) -> usize {
+        self.dims.len() as usize
     }
 
-    pub fn dim(&self, idx: usize) -> Result<u64> {
+    pub fn dim(&self, idx: usize) -> Result<usize> {
         if idx >= self.dims.len() {
             return Err(Error::TensorFlow(Code::OutOfRange));
         }
@@ -149,9 +149,11 @@ impl<T: TensorType> Tensor<T> {
             std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
         };
 
+	let castdims: Vec<u64>=self.dims.iter().map(|&a| a as u64).collect();
+
         TFTensor {
             data: data.to_owned(),
-            dims: self.dims.clone(),
+            dims: castdims.clone(),
             field_type: TFDataType::from_i32(self.data_type().to_int() as i32).unwrap(),
             ..Default::default()
         }
@@ -201,7 +203,7 @@ impl TensorAny for TFTensor {
             )
         };
 
-        let size = self.get_data().len() as u64;
+        let size = self.get_data().len() as usize;
         let data = self.get_data().to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
@@ -220,7 +222,7 @@ impl TensorAny for TFTensor {
             )
         };
 
-        let size = self.get_data().len() as u64;
+        let size = self.get_data().len() as usize;
         let data = self.get_data().to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
@@ -375,17 +377,17 @@ impl TensorType for u32 {
     }
 }
 
-impl TensorType for u64 {
+impl TensorType for usize {
     fn data_type() -> DataType {
         DataType::UInt64
     }
 
     fn one() -> Self {
-        1u64
+        1usize
     }
 
     fn zero() -> Self {
-        0u64
+        0usize
     }
 }
 

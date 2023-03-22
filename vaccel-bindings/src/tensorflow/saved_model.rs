@@ -73,7 +73,7 @@ impl SavedModel {
     /// Set the in-memory protobuf data
     fn set_protobuf(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_model(self.inner, data.as_ptr(), data.len() as u64)
+            ffi::vaccel_tf_saved_model_set_model(self.inner, data.as_ptr(), data.len() as usize)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),
@@ -84,7 +84,7 @@ impl SavedModel {
     /// Set the in-memory checkpoint data
     fn set_checkpoint(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_checkpoint(self.inner, data.as_ptr(), data.len() as u64)
+            ffi::vaccel_tf_saved_model_set_checkpoint(self.inner, data.as_ptr(), data.len() as usize)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),
@@ -95,7 +95,7 @@ impl SavedModel {
     /// Set the in-memory variable index data
     fn set_var_index(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_var_index(self.inner, data.as_ptr(), data.len() as u64)
+            ffi::vaccel_tf_saved_model_set_var_index(self.inner, data.as_ptr(), data.len() as usize)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),

@@ -22,9 +22,9 @@ impl Session {
                 img.as_ptr() as *mut c_void,
                 tags.as_mut_ptr(),
                 out_img.as_mut_ptr(),
-                img.len() as u64,
-                tags.len() as u64,
-                out_img.len() as u64,
+                img.len() as usize,
+                tags.len() as usize,
+                out_img.len() as usize,
             ) as u32
         } {
             ffi::VACCEL_OK => Ok((tags, out_img)),
@@ -40,8 +40,8 @@ impl Session {
                 self.inner_mut(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
-                img.len() as u64,
-                out_img.len() as u64,
+                img.len() as usize,
+                out_img.len() as usize,
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(out_img),
@@ -57,8 +57,8 @@ impl Session {
                 self.inner_mut(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
-                img.len() as u64,
-                out_img.len() as u64,
+                img.len() as usize,
+                out_img.len() as usize,
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(out_img),

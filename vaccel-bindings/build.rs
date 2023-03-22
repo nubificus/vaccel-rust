@@ -50,6 +50,9 @@ fn main() {
         .derive_default(true)
         // Do not prepend C enum name
         .prepend_enum_name(false)
+	// FIXME: determine if this causes issues
+	// temp add to build on armv7
+	.size_t_is_usize(true)	
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.

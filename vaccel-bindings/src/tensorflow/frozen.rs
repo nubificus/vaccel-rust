@@ -52,7 +52,7 @@ impl FrozenModel {
         let mut model = Box::new(vaccel_tf_model::default());
 
         match unsafe {
-            vaccel_tf_model_new_from_buffer(&mut *model, data.as_ptr(), data.len() as u64) as u32
+            vaccel_tf_model_new_from_buffer(&mut *model, data.as_ptr(), data.len() as usize) as u32
         } {
             VACCEL_OK => Ok(FrozenModel {
                 inner: Box::into_raw(model),

@@ -11,7 +11,7 @@ pub struct Buffer {
 impl Buffer {
     pub fn new(data: &[u8]) -> Self {
         let inner =
-            unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len() as u64) };
+            unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len() as usize) };
         assert!(!inner.is_null(), "Memory allocation failure");
 
         Buffer {
