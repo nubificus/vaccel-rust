@@ -1,7 +1,7 @@
 [package]
 name = "protocols"
-version = "0.3.0"
-authors = ["Babis Chalios <mail@bchalios.io>", "Kostis Papazafeiropoulos <papazof@gmail.com>"]
+version = "0.3.2"
+authors = ["Babis Chalios <mail@bchalios.io>", "Kostis Papazafeiropoulos <papazof@gmail.com>", "Anastassios Nanos <ananos@nubificus.co.uk>"]
 edition = "2018"
 license = "Apache-2.0"
 

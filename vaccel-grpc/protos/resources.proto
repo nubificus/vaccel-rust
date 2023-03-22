@@ -32,11 +32,16 @@ message CreateTensorflowSavedModelRequest {
 	bytes var_index = 3;
 }
 
+message CreateSharedObjRequest {
+	bytes shared_obj = 1;
+}
+
 message CreateResourceRequest {
 	oneof model {
 		CreateTensorflowModelRequest tf = 1;
 		CreateCaffeModelRequest caffe = 2;
 		CreateTensorflowSavedModelRequest tf_saved = 3;
+		CreateSharedObjRequest shared_obj = 4;
 	}
 }
 
