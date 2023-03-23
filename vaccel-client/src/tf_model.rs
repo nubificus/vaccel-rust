@@ -119,7 +119,7 @@ impl VsockClient {
                 ffi::vaccel_tf_tensor_set_data(
                     tensor,
                     data.as_ptr() as *mut std::ffi::c_void,
-                    data.len() as u64,
+                    data.len() as usize,
                 );
 
                 std::mem::forget(data);
