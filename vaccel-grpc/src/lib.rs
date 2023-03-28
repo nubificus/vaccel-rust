@@ -7,5 +7,4 @@ pub mod image;
 pub mod resources;
 pub mod session;
 pub mod tensorflow;
-pub mod torch;
 pub mod agent_ttrpc;
