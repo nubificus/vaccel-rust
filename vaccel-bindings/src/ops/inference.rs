@@ -119,7 +119,7 @@ impl InferenceResult {
 
         unsafe {
             Ok(TFTensor {
-                dims: std::slice::from_raw_parts((*t).dims as *mut u64, (*t).nr_dims as usize)
+                dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
                     .to_owned(),
                 field_type: TFDataType::from_i32((*t).data_type as i32).unwrap(),
                 data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)

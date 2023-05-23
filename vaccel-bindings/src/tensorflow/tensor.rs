@@ -149,7 +149,7 @@ impl<T: TensorType> Tensor<T> {
             std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
         };
 
-	let castdims: Vec<u64>=self.dims.iter().map(|&a| a as u64).collect();
+	let castdims: Vec<u32>=self.dims.iter().map(|&a| a as u32).collect();
 
         TFTensor {
             data: data.to_owned(),
@@ -409,7 +409,7 @@ impl From<&ffi::vaccel_tf_tensor> for TFTensor {
     fn from(tensor: &ffi::vaccel_tf_tensor) -> Self {
         unsafe {
             TFTensor {
-                dims: std::slice::from_raw_parts(tensor.dims as *mut u64, tensor.nr_dims as usize)
+                dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
                     .to_owned(),
                 field_type: TFDataType::from_i32((*tensor).data_type as i32).unwrap(),
                 data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size as usize)

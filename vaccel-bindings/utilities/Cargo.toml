@@ -10,7 +10,7 @@ edition = "2018"
 env_logger = "0.8.3"
 log = "0.4.0"
 vaccel = { path = ".." }
-protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", branch = "master" }
+protocols = { git = "https://github.com/cloudkernels/vaccel-grpc", tag = "v0.3.3" }
 
 [patch.'https://github.com/cloudkernels/vaccel-grpc']
 protocols = { path = "../../../vaccel-grpc" }

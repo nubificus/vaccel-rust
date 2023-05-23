@@ -12,11 +12,11 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, "${{ matrix.archconfig }}", mem-high]
+    runs-on: [self-hosted, "${{ matrix.archconfig }}", rust]
 
     strategy:
       matrix:
-        archconfig: [x86_64, aarch64]
+        archconfig: [x86_64, aarch64, armv7l]
         build_type: [debug, release]
       fail-fast: false
 
@@ -29,11 +29,11 @@ jobs:
     - name: Install deps
       run: |
         sudo apt-get update && \
-        sudo apt-get install -y cmake
+        sudo apt-get install -y protobuf-compiler
 
-    - name: Cargo hack
-      run: |
-        sudo chmod a+w /opt/cargo -R
+        #- name: Cargo hack
+        #run: |
+        #sudo chmod a+w /opt/cargo -R
 
     - name: Build bindings
       run: |
