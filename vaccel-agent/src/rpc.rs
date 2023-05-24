@@ -1,6 +1,6 @@
 use chashmap::*;
 use std::{
-    default::Default, sync::Arc, os::unix::io::RawFd, time::Instant,
+    default::Default, sync::Arc, os::unix::io::RawFd,
     str::FromStr, error::Error
 };
 
@@ -512,11 +512,11 @@ impl Agent {
     fn create_shared_object(
         &self,
         req: CreateSharedObjRequest,
-    ) -> ttrpc::Result<CreateResourceResponse> {
+        ) -> ttrpc::Result<CreateResourceResponse> {
         println!("Request to create SharedObject resource");
         match so::SharedObject::from_in_memory(
-	&req.shared_obj
-        ) {
+            &req.shared_obj
+            ) {
             Ok(shared_obj) => {
                 println!("Created new Shared Object with id: {}", shared_obj.id());
 
