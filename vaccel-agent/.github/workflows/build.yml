@@ -47,7 +47,7 @@ jobs:
 
     - name: Upload artifact by name
       if: ${{ env.ARTIFACT_NAME == 'main' || env.ARTIFACT_NAME == 'master' }}
-      uses: cloudkernels/minio-upload@v3
+      uses: cloudkernels/minio-upload@v4
       with:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
