@@ -1,4 +1,4 @@
-name: Test Building vAccel
+name: Building vaccert-agent 
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       matrix:
         archconfig: [x86_64, aarch64, armv7l]
-        build_type: [debug, release]
+        build_type: [Debug, Release]
       fail-fast: false
 
     steps:
@@ -27,34 +27,39 @@ jobs:
         then
           echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
         else
-          echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
-          echo "ARTIFACT_NAME=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+          #echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
+          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
         fi
 
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build agent
+    - name: Build project
+      id: build_agent
       run: |
-        if [[ ${{matrix.build_type}} == "release" ]]
-        then
-          cargo build --release -j $(nproc)
-        else
-          cargo build -j $(nproc)
-        fi
-        mkdir -p binary
-        cp target/${{matrix.build_type}}/vaccelrt-agent ./binary
+        mkdir -p build_${{matrix.build_type}} && \
+        cd build_${{matrix.build_type}} && \
+        cmake ${{github.workspace}} \
+          -DCMAKE_INSTALL_PREFIX=/usr/local \
+          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} && \
+        make && \
+        export BINARY=$(find ./ -name "vaccelrt-agent")
+        mkdir binary && cp $BINARY ./binary
+        echo "BINARY_NAME=binary/vaccelrt-agent" >> $GITHUB_ENV
 
-    - name: Upload artifact by name
-      if: ${{ env.ARTIFACT_NAME == 'main' || env.ARTIFACT_NAME == 'master' }}
-      uses: cloudkernels/minio-upload@v4
-      with:
-        url: https://s3.nubificus.co.uk
-        access-key: ${{ secrets.AWS_ACCESS_KEY }}
-        secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        local-path: binary/vaccelrt-agent
-        remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_NAME}}/${{matrix.archconfig}}/${{matrix.build_type}}/
-        policy: 1
+    - name: Build deb
+      if: ${{ env.ARTIFACT_SHA == 'main' || env.ARTIFACT_SHA == 'master' }}
+      id: build_agent_deb
+      run: |
+        cd build_${{matrix.build_type}} && \
+        cpack 
+
+    - name: Get package name
+      if: ${{ env.ARTIFACT_SHA == 'main' || env.ARTIFACT_SHA == 'master' }}
+      shell: bash
+      id: get_package
+      run: |
+        echo ::set-output name=NAME::$(basename build_${{ matrix.build_type }}/vaccelrt-*.deb)
 
     - name: Upload artifact
       uses: cloudkernels/minio-upload@v4
@@ -62,5 +67,20 @@ jobs:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
         secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        local-path: binary/vaccelrt-agent
+        local-path: build_${{matrix.build_type}}/${{ env.BINARY_NAME }}
         remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
+        policy: 1
+
+    - name: Upload deb artifact to s3
+      if: ${{ env.ARTIFACT_SHA == 'main' || env.ARTIFACT_SHA == 'master' }}
+      uses: cloudkernels/minio-upload@v4
+      with:
+        url: https://s3.nubificus.co.uk
+        access-key: ${{ secrets.AWS_ACCESS_KEY }}
+        secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        local-path: build_${{ matrix.build_type }}/${{ steps.get_package.outputs.NAME }}
+        remote-path: nbfc-assets/github/vaccelrt/agent/${{ env.ARTIFACT_SHA }}/${{ matrix.archconfig }}/${{ matrix.build_type }}-deb/
+        policy: 1
+
+    - name: Clean-up
+      run: sudo rm -rf artifacts build_${{ matrix.build_type }}
