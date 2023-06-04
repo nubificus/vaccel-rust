@@ -10,8 +10,8 @@ pub mod ffi;
 pub mod ops;
 pub mod resource;
 pub mod session;
-pub mod tensorflow;
 pub mod shared_obj;
+pub mod tensorflow;
 pub mod torch;
 
 pub use resource::Resource;

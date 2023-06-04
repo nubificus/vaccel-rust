@@ -56,20 +56,21 @@ impl SharedObject {
     }
 
     /// Create the resource from in-memory data
-    pub fn from_in_memory(
-        data: &[u8],
-    ) -> Result<Self> {
+    pub fn from_in_memory(data: &[u8]) -> Result<Self> {
         let mut shared_obj = Box::new(ffi::vaccel_shared_object::default());
 
         match unsafe {
-            ffi::vaccel_shared_object_new_from_buffer(&mut *shared_obj, data.as_ptr(), data.len() as usize) as u32
+            ffi::vaccel_shared_object_new_from_buffer(
+                &mut *shared_obj,
+                data.as_ptr(),
+                data.len() as usize,
+            ) as u32
         } {
             ffi::VACCEL_OK => Ok(SharedObject {
                 inner: Box::into_raw(shared_obj),
             }),
             err => Err(Error::Runtime(err)),
         }
-
     }
 
     /// Return bytes
@@ -82,7 +83,6 @@ impl SharedObject {
         } else {
             None
         }
-
     }
 
     pub(crate) fn inner(&self) -> *const ffi::vaccel_shared_object {
@@ -92,7 +92,6 @@ impl SharedObject {
     pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_shared_object {
         self.inner
     }
-
 }
 
 impl crate::resource::Resource for SharedObject {

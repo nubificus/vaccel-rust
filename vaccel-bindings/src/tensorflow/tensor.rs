@@ -149,7 +149,7 @@ impl<T: TensorType> Tensor<T> {
             std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
         };
 
-	let castdims: Vec<u32>=self.dims.iter().map(|&a| a as u32).collect();
+        let castdims: Vec<u32> = self.dims.iter().map(|&a| a as u32).collect();
 
         TFTensor {
             data: data.to_owned(),

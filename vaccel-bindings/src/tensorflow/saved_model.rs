@@ -84,8 +84,11 @@ impl SavedModel {
     /// Set the in-memory checkpoint data
     fn set_checkpoint(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_checkpoint(self.inner, data.as_ptr(), data.len() as usize)
-                as u32
+            ffi::vaccel_tf_saved_model_set_checkpoint(
+                self.inner,
+                data.as_ptr(),
+                data.len() as usize,
+            ) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),

@@ -1,4 +1,4 @@
-use crate::{ffi, Session, Error, Result};
+use crate::{ffi, Error, Result, Session};
 
 use protocols::genop::GenopArg as ProtGenopArg;
 
@@ -43,10 +43,7 @@ impl From<&mut ProtGenopArg> for GenopArg {
     fn from(arg: &mut ProtGenopArg) -> Self {
         let size = arg.get_size();
         let buf = arg.mut_buf();
-        GenopArg::new(
-            buf,
-            size as usize
-            )
+        GenopArg::new(buf, size as usize)
     }
 }
 

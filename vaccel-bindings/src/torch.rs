@@ -1,6 +1,6 @@
 use crate::ffi;
-use crate::VaccelId;
 use crate::session::Session;
+use crate::VaccelId;
 //use crate::client::VsockClient;
 //use crate::resources::VaccelResource;
 use crate::{Error, Result};
@@ -10,9 +10,8 @@ use protocols::torch::{TorchDataType, TorchTensor};
 
 use std::any::Any;
 use std::ffi::{CStr, CString};
-use std::path::{Path, PathBuf};
 use std::ops::{Deref, DerefMut};
-
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum Code {
@@ -58,7 +57,6 @@ impl Code {
         }
     }
 }
-
 
 #[derive(Debug, PartialEq)]
 /**************/
@@ -135,7 +133,7 @@ impl DataType {
             ffi::VACCEL_TORCH_FLOAT => DataType::Float,
 
             // ffi::VACCEL_TORCH_DOUBLE => DataType::Double,
-            // ffi::VACCEL_TORCH_STRING => DataType::String,  
+            // ffi::VACCEL_TORCH_STRING => DataType::String,
             // ffi::VACCEL_TORCH_COMPLEX64 => DataType::Complex64,
             // ffi::VACCEL_TORCH_BOOL => DataType::Bool,
             // ffi::VACCEL_TORCH_QINT8 => DataType::QInt8,
@@ -150,7 +148,6 @@ impl DataType {
             // ffi::VACCEL_TORCH_VARIANT => DataType::Variant,
             // ffi::VACCEL_TORCH_UINT32 => DataType::UInt32,
             // ffi::VACCEL_TORCH_UINT64 => DataType::UInt64,
-            
             unknown => DataType::UnknownValue(unknown),
         }
     }
@@ -168,20 +165,20 @@ impl Default for DataType {
 /*****************/
 // This Tensor should be same as the vaccel tensorflow Tensor
 // difference: owned - bool -> uint8_t,  dims - long long int -> int64_t
-pub struct Tensor <T: TensorType> {
-        inner: *mut ffi::vaccel_torch_tensor,
-        dims: Vec<u32>,
-        data_count: usize,
-        data: Vec<T>,
+pub struct Tensor<T: TensorType> {
+    inner: *mut ffi::vaccel_torch_tensor,
+    dims: Vec<u32>,
+    data_count: usize,
+    data: Vec<T>,
 }
 
-pub trait TensorType:Default + Clone {
+pub trait TensorType: Default + Clone {
     // DataType - should we one to one map to the vaccelrt/src/ops/torch.c?
     fn data_type() -> DataType;
 
     // Unit value of type
     fn one() -> Self;
-   
+
     // Zero value of type
     fn zero() -> Self;
 }
@@ -199,23 +196,23 @@ pub struct TorchArgs {
 impl TorchArgs {
     pub fn new() -> Self {
         TorchArgs {
-            run_options: std::ptr::null::<ffi::vaccel_torch_buffer>() as *const  ffi::vaccel_torch_buffer,
+            run_options: std::ptr::null::<ffi::vaccel_torch_buffer>()
+                as *const ffi::vaccel_torch_buffer,
             in_tensors: vec![],
         }
     }
-    
+
     // torch::Buffer -> Buffer
-    pub fn set_run_options(&mut self, run_opts:&Buffer) {
+    pub fn set_run_options(&mut self, run_opts: &Buffer) {
         self.run_options = run_opts.inner();
     }
-    
+
     // torch::TensorAny -> TensorAny
     // TODO: &TorchTensor -> TensorAny
     pub fn add_input(&mut self, tensor: &dyn TensorAny) {
         self.in_tensors.push(tensor.inner());
     }
 }
-
 
 /*******************************/
 /*  TorchJitloadForwardResult  */
@@ -229,9 +226,7 @@ impl TorchJitloadForwardResult {
     pub fn new(len: usize) -> Self {
         let out_tensors = vec![std::ptr::null_mut(); len];
 
-        TorchJitloadForwardResult {
-            out_tensors,
-        }
+        TorchJitloadForwardResult { out_tensors }
     }
 
     pub fn from_vec(tensors: Vec<*mut ffi::vaccel_torch_tensor>) -> Self {
@@ -239,7 +234,7 @@ impl TorchJitloadForwardResult {
             out_tensors: tensors,
         }
     }
-    
+
     // torch::TensorType -> TensorType
     pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
@@ -257,11 +252,11 @@ impl TorchJitloadForwardResult {
             return Err(Error::Torch(Code::InvalidArgument));
         }
 
-        Ok(unsafe {Tensor::from_vaccel_tensor(t).unwrap() })
+        Ok(unsafe { Tensor::from_vaccel_tensor(t).unwrap() })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TorchTensor> {
-        if id>= self.out_tensors.len() {
+        if id >= self.out_tensors.len() {
             return Err(Error::Torch(Code::OutOfRange));
         }
 
@@ -272,20 +267,19 @@ impl TorchJitloadForwardResult {
 
         unsafe {
             Ok(TorchTensor {
-                dims: std::slice::from_raw_parts((*t).dims as *mut u32, 
-                                                 (*t).nr_dims as usize).to_owned(),
+                dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
+                    .to_owned(),
                 field_type: TorchDataType::from_i32((*t).data_type as i32).unwrap(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, 
-                                                 (*t).size as usize).to_owned(),
+                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)
+                    .to_owned(),
                 ..Default::default()
             })
         }
     }
 }
 
-
 // What should we do with the product func?
-fn product(values: &[u32]) -> u32{
+fn product(values: &[u32]) -> u32 {
     values.iter().product()
 }
 
@@ -295,15 +289,15 @@ pub struct Buffer {
     vaccel_owned: bool,
 }
 
-// Struct for the pytorch model - vaccel_torch_saved_model, model path was required 
+// Struct for the pytorch model - vaccel_torch_saved_model, model path was required
 pub struct SavedModel {
     inner: *mut ffi::vaccel_torch_saved_model,
 }
 
 // TODO: original inner would be mapping to vaccel_torch_jitload_forward
 pub struct TorchJitLoadForward {
-   // inner: *mut ffi::vaccel_torch_jitload_forward,
-   inner: *mut ffi::vaccel_torch_saved_model,
+    // inner: *mut ffi::vaccel_torch_jitload_forward,
+    inner: *mut ffi::vaccel_torch_saved_model,
 }
 
 // TensorType, refers to TorchTensor
@@ -352,7 +346,6 @@ impl<T: TensorType> Tensor<T> {
                 data.as_ptr() as *mut _,
                 (data.len() * std::mem::size_of::<T>()) as usize,
             )
-
         };
 
         Tensor {
@@ -413,7 +406,7 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn dim(&self, idx: usize) -> Result<u32> {
         if idx >= self.dims.len() {
-            return Err(Error::InvalidArgument)
+            return Err(Error::InvalidArgument);
         }
 
         Ok(self.dims[idx])
@@ -426,7 +419,6 @@ impl<T: TensorType> Tensor<T> {
     pub fn as_grpc(&self) -> TorchTensor {
         let data = unsafe {
             std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
-
         };
 
         TorchTensor {
@@ -484,7 +476,9 @@ impl TensorAny for TorchTensor {
         let size = self.get_data().len() as usize;
         let data = self.get_data().to_owned();
 
-        unsafe { ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
+        unsafe {
+            ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
+        };
 
         std::mem::forget(data);
 
@@ -503,7 +497,9 @@ impl TensorAny for TorchTensor {
         let size = self.get_data().len() as usize;
         let data = self.get_data().to_owned();
 
-        unsafe { ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
+        unsafe {
+            ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
+        };
 
         std::mem::forget(data);
 
@@ -784,7 +780,6 @@ impl DerefMut for Buffer {
 
 /*------------------------------*/
 
-
 // Function for saved model - vaccel_torch_saved_model_new
 // Create - SetPath - Destroy
 impl SavedModel {
@@ -822,12 +817,15 @@ impl SavedModel {
     }
 
     fn set_path(&mut self, path: &Path) -> Result<()> {
-        let c_path = CString::new(path.as_os_str().to_str().ok_or(Error::InvalidArgument)?).map_err(|_| Error::InvalidArgument)?;
+        let c_path = CString::new(path.as_os_str().to_str().ok_or(Error::InvalidArgument)?)
+            .map_err(|_| Error::InvalidArgument)?;
 
-        match  unsafe { ffi::vaccel_torch_saved_model_set_path(self.inner, c_path.into_raw()) as u32 } {
+        match unsafe {
+            ffi::vaccel_torch_saved_model_set_path(self.inner, c_path.into_raw()) as u32
+        } {
             ffi::VACCEL_OK => Ok(()),
-            err  => Err(Error::Runtime(err)),
-      }
+            err => Err(Error::Runtime(err)),
+        }
     }
 
     // Create Resource from the exported saved model
@@ -842,9 +840,7 @@ impl SavedModel {
     // Set the in-memory protobuf data
     fn set_protobuf(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_torch_saved_model_set_model(self.inner, 
-                                                 data.as_ptr(), 
-                                                 data.len() as usize) 
+            ffi::vaccel_torch_saved_model_set_model(self.inner, data.as_ptr(), data.len() as usize)
                 as u32
         } {
             ffi::VACCEL_OK => Ok(()),
@@ -853,10 +849,7 @@ impl SavedModel {
     }
 
     // Create Resource from in-memory data
-    pub fn from_in_memory(
-        mut self,
-        protobuf: &[u8],
-    ) -> Result<Self> {
+    pub fn from_in_memory(mut self, protobuf: &[u8]) -> Result<Self> {
         self.set_protobuf(&protobuf)?;
         match unsafe { ffi::vaccel_torch_saved_model_register(self.inner) } as u32 {
             ffi::VACCEL_OK => Ok(self),
@@ -871,12 +864,12 @@ impl SavedModel {
     pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_saved_model {
         self.inner
     }
-    
+
     // Get the path
     pub fn get_path(&self) -> Option<PathBuf> {
         let path_str = match unsafe {
-        CStr::from_ptr(ffi::vaccel_torch_saved_model_get_path(self.inner)).to_str()
-    }   {
+            CStr::from_ptr(ffi::vaccel_torch_saved_model_get_path(self.inner)).to_str()
+        } {
             Ok(s) => s,
             Err(_) => return None,
         };
@@ -890,65 +883,63 @@ impl SavedModel {
         let ptr = unsafe { ffi::vaccel_torch_saved_model_get_model(self.inner, &mut size) };
         if !ptr.is_null() {
             Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
-        } else 
-                {
-                    None
-                }
+        } else {
+            None
+        }
     }
 }
 
-    impl crate::resource::Resource for SavedModel {
-        fn id(&self) -> VaccelId {
-            self.id()
-        }
+impl crate::resource::Resource for SavedModel {
+    fn id(&self) -> VaccelId {
+        self.id()
+    }
 
-        fn initialized(&self) -> bool {
-            self.initialized()
-        }
+    fn initialized(&self) -> bool {
+        self.initialized()
+    }
 
-        fn to_vaccel_ptr(&self) -> Option<*const ffi::vaccel_resource> {
-            if !self.initialized() {
-                None
-            } else {
-                let resource = unsafe { (*self.inner).resource };
-                Some(resource)
-            }
+    fn to_vaccel_ptr(&self) -> Option<*const ffi::vaccel_resource> {
+        if !self.initialized() {
+            None
+        } else {
+            let resource = unsafe { (*self.inner).resource };
+            Some(resource)
         }
+    }
 
-        fn to_mut_vaccel_ptr(&self) -> Option<*mut ffi::vaccel_resource> {
-            if !self.initialized() {
-                None
-            } else {
-                let resource = unsafe { (*self.inner).resource };
-                Some(resource)
-            }
+    fn to_mut_vaccel_ptr(&self) -> Option<*mut ffi::vaccel_resource> {
+        if !self.initialized() {
+            None
+        } else {
+            let resource = unsafe { (*self.inner).resource };
+            Some(resource)
         }
+    }
 
-        fn destroy(&mut self) -> Result<()> {
-            self.destroy()
-        }
+    fn destroy(&mut self) -> Result<()> {
+        self.destroy()
+    }
 
-        fn as_any(&self) -> &dyn Any {
-            self
-        }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 
-        fn as_mut_any(&mut self) -> &mut dyn Any {
-            self
-        }
-    }   
+    fn as_mut_any(&mut self) -> &mut dyn Any {
+        self
+    }
+}
 
 /*------------------------------*/
 
 // Function for the torch jitload
 impl TorchJitLoadForward {
-
     pub fn new() -> Self {
         TorchJitLoadForward {
             inner: unsafe { ffi::vaccel_torch_saved_model_new() },
         }
     }
 
-    pub(crate) fn inner_mut (&mut self) -> *mut ffi::vaccel_torch_saved_model {
+    pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_saved_model {
         self.inner
     }
 
@@ -965,7 +956,7 @@ impl TorchJitLoadForward {
             ffi::vaccel_torch_jitload_forward(
                 sess.inner_mut(),
                 model.inner_mut(),
-                args.run_options,//.as_ptr() as *mut ffi::vaccel_torch_buffer,
+                args.run_options, //.as_ptr() as *mut ffi::vaccel_torch_buffer,
                 //args.in_tensors, //as *mut *mut ffi::vaccel_torch_tensor,
                 args.in_tensors.as_ptr() as *mut *mut ffi::vaccel_torch_tensor,
                 args.in_tensors.len() as i32,
@@ -977,7 +968,4 @@ impl TorchJitLoadForward {
             err => Err(Error::Runtime(err)),
         }
     }
-
-
-    
 }
