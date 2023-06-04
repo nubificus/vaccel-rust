@@ -112,7 +112,7 @@ impl VsockClient {
                 let data = e.take_data();
                 let tensor = ffi::vaccel_tf_tensor_new(
                     dims.len() as i32,
-                    dims.as_ptr() as *mut i64,
+                    dims.as_ptr() as *mut u32,
                     data_type as u32,
                 );
 

@@ -1,6 +1,7 @@
 use crate::client::VsockClient;
 use crate::tf_model::create_tf_model;
 use crate::shared_obj::create_shared_object;
+use crate::torch_model::create_torch_model;
 use crate::{Error, Result};
 
 use protocols::resources::{
@@ -77,7 +78,7 @@ pub extern "C" fn create_resource(
     };
 
     match res_type {
-        ffi::VACCEL_RES_TF_SAVED_MODEL => {
+        ffi::VACCEL_RES_TF_SAVED_MODEL | ffi::VACCEL_RES_TF_MODEL => {
             let model_ptr = data as *mut ffi::vaccel_tf_saved_model;
             let model = unsafe { model_ptr.as_mut().unwrap() };
             create_tf_model(client, model)
@@ -87,8 +88,14 @@ pub extern "C" fn create_resource(
             let shared_obj = unsafe { shared_object.as_mut().unwrap() };
             create_shared_object(client, shared_obj)
         }
-        _ => todo!()
-
+        ffi::VACCEL_RES_TORCH_SAVED_MODEL | ffi::VACCEL_RES_TORCH_MODEL => {
+              let model_ptr = data as *mut ffi::vaccel_torch_saved_model;
+              let model = unsafe { model_ptr.as_mut().unwrap() };
+              create_torch_model(client, model)
+        }
+        2_u32 | 5_u32 ..=u32::MAX => {
+            todo!()
+        }
     }
 }
 

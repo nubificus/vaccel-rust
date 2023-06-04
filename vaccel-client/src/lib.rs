@@ -11,6 +11,7 @@ pub mod genop;
 pub mod resources;
 pub mod session;
 pub mod tf_model;
+pub mod torch_model;
 pub mod util;
 pub mod shared_obj;
 

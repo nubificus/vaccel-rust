@@ -1,7 +1,10 @@
 [package]
 name = "vsock"
-version = "0.3.2"
-authors = ["Babis Chalios <mail@bchalios.io>", "Kostis Papazafeiropoulos <papazof@gmail.com>", "Anastassios Nanos <ananos@nubificus.co.uk>" ]
+version = "0.3.4"
+authors = ["Babis Chalios <mail@bchalios.io>", 
+           "Kostis Papazafeiropoulos <papazof@gmail.com>", 
+           "Anastassios Nanos <ananos@nubificus.co.uk>", 
+           "Shenghao Qiu <shenghao@nubificus.co.uk"]
 edition = "2021"
 license = "Apache-2.0"
 
@@ -12,7 +15,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 protocols = { git = "https://github.com/nubificus/vaccel-grpc.git", tag = "v0.3.4" }
-vaccel = { git = "https://github.com/nubificus/vaccel-bindings.git", tag = "v0.5.3" }
+vaccel = { git = "https://github.com/nubificus/vaccel-bindings.git", tag = "v0.5.4" }
 ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", tag = "v0.6.1-vaccel" }
-protobuf = "2.27.1"
+protobuf = "2.28.0"
 nix = "0.24.1"
