@@ -1,24 +1,32 @@
 use chashmap::*;
 // use::std::time::Instant
 use std::{
-    default::Default, sync::Arc, os::unix::io::RawFd,
-    str::FromStr, error::Error
+    collections::btree_map::Entry,
+    collections::BTreeMap,
+    default::Default,
+    error::Error,
+    os::unix::io::RawFd,
+    str::FromStr,
+    sync::{Arc, Mutex},
 };
-
-extern crate vaccel;
-use vaccel::{tensorflow as tf, ops::genop as genop, shared_obj as so};
-use vaccel::torch as torch;
-
+use nix::{
+    fcntl::{fcntl, FcntlArg, OFlag},
+    sys::socket::{
+        bind, listen, setsockopt, socket, sockopt, AddressFamily, SockFlag, SockType, SockaddrIn,
+    },
+};
 use protocols::{
+    agent::VaccelEmpty,
     error::VaccelError,
+    genop::{GenopRequest, GenopResponse, GenopResponse_oneof_result, GenopResult},
+    image::{ImageClassificationRequest, ImageClassificationResponse},
+    profiling::{ProfilingRequest, ProfilingResponse},
     resources::{
         CreateResourceRequest, CreateResourceRequest_oneof_model, CreateResourceResponse,
-        CreateTensorflowSavedModelRequest, RegisterResourceRequest, UnregisterResourceRequest,
-        DestroyResourceRequest, CreateSharedObjRequest, CreateTorchSavedModelRequest, 
+        CreateTensorflowSavedModelRequest, DestroyResourceRequest, RegisterResourceRequest,
+        UnregisterResourceRequest, CreateSharedObjRequest, CreateTorchSavedModelRequest, 
     },
     session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest},
-    agent::VaccelEmpty,
-    image::{ImageClassificationRequest, ImageClassificationResponse},
     tensorflow::{
         InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
         TensorflowModelRunRequest, TensorflowModelRunResponse,
@@ -29,15 +37,10 @@ use protocols::{
         TorchJitloadForwardResult, TorchTensor, TorchJitloadForwardRequest,
         TorchJitloadForwardResponse, TorchJitloadForwardResponse_oneof_result,
     },
-    genop::{GenopRequest, GenopResponse, GenopResponse_oneof_result, GenopResult},
 };
-
-use nix::sys::socket::{
-        socket, bind, listen, AddressFamily, SockFlag, SockType, SockaddrIn,
-        sockopt, setsockopt
-};
-
-use nix::fcntl::{fcntl, FcntlArg, OFlag};
+extern crate vaccel;
+use vaccel::{ops::genop, profiling::ProfRegions, tensorflow as tf, shared_obj as so};
+use vaccel::torch as torch;
 
 //fn type_of<T>(_: &T) -> &'static str {
 //        std::any::type_name::<T>()
@@ -65,6 +68,7 @@ fn vaccel_error(err: vaccel::Error) -> VaccelError {
 pub struct Agent {
     sessions: Arc<CHashMap<vaccel::VaccelId, Box<vaccel::Session>>>,
     resources: Arc<CHashMap<vaccel::VaccelId, Box<dyn vaccel::Resource>>>,
+    timers: Arc<Mutex<BTreeMap<u32, ProfRegions>>>,
 }
 
 unsafe impl Sync for Agent {}
@@ -74,6 +78,7 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
     let vaccel_agent = Box::new(Agent {
         sessions: Arc::new(CHashMap::new()),
         resources: Arc::new(CHashMap::new()),
+        timers: Arc::new(Mutex::new(BTreeMap::new())),
     }) as Box<dyn protocols::agent_ttrpc::VaccelAgent + Send + Sync>;
 
     let agent_worker = Arc::new(vaccel_agent);
@@ -98,7 +103,7 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
             SockType::Stream,
             SockFlag::SOCK_CLOEXEC,
             None,
-            )?;
+        )?;
 
         let sock_addr = SockaddrIn::from_str(address)?;
 
@@ -112,12 +117,9 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
     };
 
     let server: ttrpc::Server = match scheme.as_str() {
-        "vsock" | "unix" => {
-            ttrpc::Server::new()
-                .bind(&server_address)?
-                .register_service(aservice)
-
-        }
+        "vsock" | "unix" => ttrpc::Server::new()
+            .bind(&server_address)?
+            .register_service(aservice),
         "tcp" => {
             let fd = create_tcp_sock_fd(fields[1])?;
 
@@ -167,6 +169,11 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
             ))?;
 
         println!("Destroying session {:?}", sess.id());
+
+        let mut timers_lock = self.timers.lock().unwrap();
+        if let Entry::Occupied(t) = timers_lock.entry(req.session_id) {
+            t.remove_entry();
+        }
         match sess.close() {
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
             Ok(()) => {
@@ -558,18 +565,27 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        let mut read_args: Vec<genop::GenopArg> = req.take_read_args()
-            .iter_mut()
-            .map(|e| e.into())
-            .collect();
+        let mut timers_lock = self.timers.lock().unwrap();
+        let mut timers = timers_lock
+            .entry(req.session_id)
+            .or_insert(ProfRegions::new("vaccel-agent"));
+        timers.start("genop > read_args");
+        let mut read_args: Vec<genop::GenopArg> =
+            req.take_read_args().iter_mut().map(|e| e.into()).collect();
+        timers.stop("genop > read_args");
 
-        let mut write_args: Vec<genop::GenopArg> = req.take_write_args()
-            .iter_mut()
-            .map(|e| e.into())
-            .collect();
+        timers.start("genop > write_args");
+        let mut write_args: Vec<genop::GenopArg> =
+            req.take_write_args().iter_mut().map(|e| e.into()).collect();
+        timers.stop("genop > write_args");
 
         println!("Genop session {:?}", sess.id());
-        let response = match sess.genop(read_args.as_mut_slice(), write_args.as_mut_slice()) {
+        timers.start("genop > sess.genop");
+        let response = match sess.genop(
+            read_args.as_mut_slice(),
+            write_args.as_mut_slice(),
+            &mut timers,
+        ) {
             Ok(_) => {
                 let mut res = GenopResult::new();
                 res.set_write_args(write_args.iter().map(|e| e.into()).collect());
@@ -577,9 +593,29 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
             }
             Err(e) => GenopResponse_oneof_result::error(vaccel_error(e)),
         };
+        timers.stop("genop > sess.genop");
+
+        //timers.print();
+        //timers.print_total();
 
         Ok(GenopResponse {
             result: Some(response),
+            ..Default::default()
+        })
+    }
+
+    fn get_timers(
+        &self,
+        _ctx: &ttrpc::TtrpcContext,
+        req: ProfilingRequest,
+    ) -> ttrpc::Result<ProfilingResponse> {
+        let mut timers_lock = self.timers.lock().unwrap();
+        let timers = timers_lock
+            .entry(req.session_id)
+            .or_insert(ProfRegions::new("vaccel-agent"));
+
+        Ok(ProfilingResponse {
+            result: Some(timers.clone().into()).into(),
             ..Default::default()
         })
     }
