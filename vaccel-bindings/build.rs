@@ -21,7 +21,7 @@ fn main() {
             println!("cargo:rustc-link-search=native={}/lib", prefix.display());
 
             // Re-create bindings if top-level vaccelrt header file changes
-            println!("cargo:rerun-if-changed=vaccelrt/src/include/vaccel.h");
+            println!("cargo:rerun-if-changed=vaccelrt/src/include");
 
             format!("-I{}/include", prefix.display())
         }

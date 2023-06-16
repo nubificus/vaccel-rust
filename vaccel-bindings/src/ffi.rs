@@ -80,7 +80,7 @@ where
         }
     }
 }
-pub const VACCELRT_VERSION: &[u8; 19usize] = b"v0.5.0-10-g7d5921c\0";
+pub const VACCELRT_VERSION: &[u8; 19usize] = b"v0.5.0-17-ge32f802\0";
 pub const _ERRNO_H: u32 = 1;
 pub const _FEATURES_H: u32 = 1;
 pub const _DEFAULT_SOURCE: u32 = 1;
@@ -5966,9 +5966,43 @@ extern "C" {
     ) -> *const u8;
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct prof_sample {
-    _unused: [u8; 0],
+#[derive(Debug, Default, Copy, Clone)]
+pub struct vaccel_prof_sample {
+    pub start: u64,
+    pub time: u64,
+}
+#[test]
+fn bindgen_test_layout_vaccel_prof_sample() {
+    assert_eq!(
+        ::std::mem::size_of::<vaccel_prof_sample>(),
+        16usize,
+        concat!("Size of: ", stringify!(vaccel_prof_sample))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vaccel_prof_sample>(),
+        8usize,
+        concat!("Alignment of ", stringify!(vaccel_prof_sample))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_prof_sample>())).start as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_prof_sample),
+            "::",
+            stringify!(start)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_prof_sample>())).time as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_prof_sample),
+            "::",
+            stringify!(time)
+        )
+    );
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -5976,7 +6010,7 @@ pub struct vaccel_prof_region {
     pub name: *const ::std::os::raw::c_char,
     pub name_owned: bool,
     pub nr_entries: usize,
-    pub samples: *mut prof_sample,
+    pub samples: *mut vaccel_prof_sample,
     pub size: usize,
 }
 #[test]
@@ -6052,6 +6086,9 @@ impl Default for vaccel_prof_region {
     }
 }
 extern "C" {
+    pub fn vaccel_prof_enabled() -> bool;
+}
+extern "C" {
     pub fn vaccel_prof_region_start(region: *mut vaccel_prof_region) -> ::std::os::raw::c_int;
 }
 extern "C" {
@@ -6068,6 +6105,46 @@ extern "C" {
 }
 extern "C" {
     pub fn vaccel_prof_region_destroy(region: *mut vaccel_prof_region) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_prof_regions_start_by_name(
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+        name: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_prof_regions_stop_by_name(
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+        name: *const ::std::os::raw::c_char,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_prof_regions_clear(
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+    );
+}
+extern "C" {
+    pub fn vaccel_prof_regions_init(
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_prof_regions_print_all(
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_prof_regions_print_all_to_buf(
+        tbuf: *mut *mut ::std::os::raw::c_char,
+        tbuf_len: usize,
+        regions: *mut vaccel_prof_region,
+        nregions: ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
 }
 pub const VACCEL_TORCH_BYTE: vaccel_torch_data_type = 1;
 pub const VACCEL_TORCH_CHAR: vaccel_torch_data_type = 2;
