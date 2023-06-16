@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 set(RUSTC_MINIMUM_REQUIRED 1.56)
 
 project(vaccelrt-agent
-        VERSION "0.3.4"
+        VERSION "0.3.5"
         DESCRIPTION "A simple server to handle vAccel API operations.")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
