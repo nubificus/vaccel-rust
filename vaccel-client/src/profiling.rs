@@ -61,7 +61,7 @@ pub extern "C" fn get_timers(
                 let s = std::ffi::CString::new(rk.as_str()).unwrap();
                 ptr::copy_nonoverlapping(
                     s.as_c_str().as_ptr(),
-                    w.name as *mut i8,
+                    w.name as *mut _,
                     s.to_bytes_with_nul().len() as usize,
                 );
                 ptr::copy_nonoverlapping(
