@@ -59,6 +59,9 @@ pub extern "C" fn get_timers(
         for (w, (rk, rv)) in timers_ref.iter_mut().zip(client_timers.iter()) {
             unsafe {
                 let s = std::ffi::CString::new(rk.as_str()).unwrap();
+                // FIXME: check size of copy, as copy_nonoverlapping
+                // checks the type of src and dest and copies *count*
+                // items, not bytes.
                 ptr::copy_nonoverlapping(
                     s.as_c_str().as_ptr(),
                     w.name as *mut _,
@@ -67,7 +70,7 @@ pub extern "C" fn get_timers(
                 ptr::copy_nonoverlapping(
                     rv.as_ptr(),
                     w.samples,
-                    rv.len() * mem::size_of::<ffi::vaccel_prof_sample>(),
+                    rv.len(),
                 );
                 w.nr_entries = rv.len() as usize;
             }
