@@ -2,13 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-use nix::sys::socket::{
-    connect, socket, AddressFamily, SockaddrIn, SockFlag, SockType
-};
-
-use std::os::unix::io::RawFd;
-use std::str::FromStr;
-
+use nix::sys::socket::{connect, socket, AddressFamily, SockFlag, SockType, SockaddrIn};
+use std::{os::unix::io::RawFd, str::FromStr};
 use vaccel::ffi;
 
 fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
@@ -20,8 +15,7 @@ fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
     )
     .map_err(|_| ffi::VACCEL_EIO)?;
 
-    let sock_addr = SockaddrIn::from_str(address)
-        .map_err(|_| ffi::VACCEL_EINVAL)?;
+    let sock_addr = SockaddrIn::from_str(address).map_err(|_| ffi::VACCEL_EINVAL)?;
 
     connect(fd, &sock_addr).map_err(|_| ffi::VACCEL_EIO)?;
 
@@ -43,8 +37,7 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32
 
     let client: ttrpc::Client = match scheme.as_str() {
         "vsock" | "unix" => {
-            ttrpc::Client::connect(&server_address)
-                .map_err(|_| ffi::VACCEL_EINVAL)?
+            ttrpc::Client::connect(&server_address).map_err(|_| ffi::VACCEL_EINVAL)?
         }
         "tcp" => {
             let fd = client_create_sock_fd(fields[1])?;

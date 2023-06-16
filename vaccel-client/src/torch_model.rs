@@ -11,7 +11,7 @@ use protobuf::{ProtobufEnum, RepeatedField};
 
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
-    torch::{TorchTensor, TorchJitloadForwardRequest},
+    torch::{TorchJitloadForwardRequest, TorchTensor},
 };
 
 impl VaccelResource for SavedModel {
@@ -144,7 +144,6 @@ pub extern "C" fn torch_jitload_forward(
         None => return ffi::VACCEL_EINVAL,
     };
 
-
     let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs) {
         Some(vec) => vec,
         None => return ffi::VACCEL_EINVAL,
@@ -155,12 +154,7 @@ pub extern "C" fn torch_jitload_forward(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    let ret = match client.torch_jitload_forward(
-        sess_id,
-        model_id,
-        run_options,
-        in_tensors,
-    ) {
+    let ret = match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
             ffi::VACCEL_OK

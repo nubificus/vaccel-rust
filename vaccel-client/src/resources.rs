@@ -1,17 +1,14 @@
 use crate::client::VsockClient;
-use crate::tf_model::create_tf_model;
 use crate::shared_obj::create_shared_object;
+use crate::tf_model::create_tf_model;
 use crate::torch_model::create_torch_model;
 use crate::{Error, Result};
-
 use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,
 };
-use vaccel::ffi;
-use vaccel::VaccelId;
-
 use std::ffi::c_void;
+use vaccel::{ffi, VaccelId};
 
 pub trait VaccelResource {
     fn create_resource_request(self) -> Result<CreateResourceRequest>;
@@ -89,11 +86,11 @@ pub extern "C" fn create_resource(
             create_shared_object(client, shared_obj)
         }
         ffi::VACCEL_RES_TORCH_SAVED_MODEL | ffi::VACCEL_RES_TORCH_MODEL => {
-              let model_ptr = data as *mut ffi::vaccel_torch_saved_model;
-              let model = unsafe { model_ptr.as_mut().unwrap() };
-              create_torch_model(client, model)
+            let model_ptr = data as *mut ffi::vaccel_torch_saved_model;
+            let model = unsafe { model_ptr.as_mut().unwrap() };
+            create_torch_model(client, model)
         }
-        2_u32 | 5_u32 ..=u32::MAX => {
+        2_u32 | 5_u32..=u32::MAX => {
             todo!()
         }
     }

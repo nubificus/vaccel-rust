@@ -1,12 +1,4 @@
-use crate::client::VsockClient;
-use crate::resources::VaccelResource;
-use crate::{Error, Result};
-
-use vaccel::ffi;
-use vaccel::tensorflow::SavedModel;
-
-use std::slice;
-
+use crate::{client::VsockClient, resources::VaccelResource, Error, Result};
 use protobuf::{ProtobufEnum, RepeatedField};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
@@ -15,6 +7,8 @@ use protocols::{
         TensorflowModelLoadRequest, TensorflowModelRunRequest, TensorflowModelUnloadRequest,
     },
 };
+use std::slice;
+use vaccel::{ffi, tensorflow::SavedModel};
 
 impl VaccelResource for SavedModel {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
