@@ -8,12 +8,12 @@ use std::fmt;
 
 pub mod ffi;
 pub mod ops;
+pub mod profiling;
 pub mod resource;
 pub mod session;
 pub mod shared_obj;
 pub mod tensorflow;
 pub mod torch;
-pub mod profiling;
 
 pub use resource::Resource;
 pub use session::Session;

@@ -1,4 +1,4 @@
-use crate::{ffi, Session, Error, Result, profiling::ProfRegions};
+use crate::{ffi, profiling::ProfRegions, Error, Result, Session};
 
 use protocols::genop::GenopArg as ProtGenopArg;
 
@@ -77,7 +77,12 @@ impl Session {
     /// * `read` - A slice of `vaccel_arg` with the arguments that are read only. The first
     /// argument of the slice is the type of the operation
     /// * `write` - A slice of `vaccel_arg` with the read-write arguments of the operation.
-    pub fn genop(&mut self, read: &mut [GenopArg], write: &mut [GenopArg], timers: &mut ProfRegions) -> Result<()> {
+    pub fn genop(
+        &mut self,
+        read: &mut [GenopArg],
+        write: &mut [GenopArg],
+        timers: &mut ProfRegions,
+    ) -> Result<()> {
         timers.start("genop > session > read_args");
         let mut read_args: Vec<ffi::vaccel_arg> = read.iter().map(|e| e.inner).collect();
         let mut write_args: Vec<ffi::vaccel_arg> = write.iter().map(|e| e.inner).collect();

@@ -3,13 +3,13 @@ use crate::ffi;
 
 use std::{
     collections::{btree_map, BTreeMap},
-    time::Duration,
     ops::Deref,
+    time::Duration,
 };
 
-use protocols::profiling::ProfRegions as ProtProfRegions;
 use protocols::profiling::ProfRegion as ProtProfRegion;
 use protocols::profiling::ProfRegion_Sample as ProtSample;
+use protocols::profiling::ProfRegions as ProtProfRegions;
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;
 
@@ -53,7 +53,10 @@ impl Timespec {
     }
 
     pub const fn from_nanos(nanos: u64) -> Timespec {
-        Timespec::new(nanos / (NSEC_PER_SEC as u64), (nanos % (NSEC_PER_SEC as u64)) as u32)
+        Timespec::new(
+            nanos / (NSEC_PER_SEC as u64),
+            (nanos % (NSEC_PER_SEC as u64)) as u32,
+        )
     }
 }
 
@@ -107,8 +110,7 @@ impl IntoIterator for ProfRegions {
     }
 }
 
-impl Extend<(String, Vec<Sample>)> for ProfRegions
-{
+impl Extend<(String, Vec<Sample>)> for ProfRegions {
     fn extend<T: IntoIterator<Item = (String, Vec<Sample>)>>(&mut self, iter: T) {
         self.map.extend(iter)
     }
@@ -280,13 +282,19 @@ impl ProfRegions {
 
 impl From<&mut ProtSample> for Sample {
     fn from(arg: &mut ProtSample) -> Self {
-        Sample::new(Timespec::from_nanos(arg.get_start()), Duration::from_nanos(arg.get_time()))
+        Sample::new(
+            Timespec::from_nanos(arg.get_start()),
+            Duration::from_nanos(arg.get_time()),
+        )
     }
 }
 
 impl From<&ProtSample> for Sample {
     fn from(arg: &ProtSample) -> Self {
-        Sample::new(Timespec::from_nanos(arg.get_start()), Duration::from_nanos(arg.get_time()))
+        Sample::new(
+            Timespec::from_nanos(arg.get_start()),
+            Duration::from_nanos(arg.get_time()),
+        )
     }
 }
 
