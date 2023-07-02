@@ -176,6 +176,193 @@ impl ::protobuf::reflect::ProtobufValue for CreateSessionRequest {
 }
 
 #[derive(PartialEq,Clone,Default)]
+pub struct UpdateSessionRequest {
+    // message fields
+    pub session_id: u32,
+    pub flags: u32,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a UpdateSessionRequest {
+    fn default() -> &'a UpdateSessionRequest {
+        <UpdateSessionRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl UpdateSessionRequest {
+    pub fn new() -> UpdateSessionRequest {
+        ::std::default::Default::default()
+    }
+
+    // uint32 session_id = 1;
+
+
+    pub fn get_session_id(&self) -> u32 {
+        self.session_id
+    }
+    pub fn clear_session_id(&mut self) {
+        self.session_id = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_session_id(&mut self, v: u32) {
+        self.session_id = v;
+    }
+
+    // uint32 flags = 2;
+
+
+    pub fn get_flags(&self) -> u32 {
+        self.flags
+    }
+    pub fn clear_flags(&mut self) {
+        self.flags = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_flags(&mut self, v: u32) {
+        self.flags = v;
+    }
+}
+
+impl ::protobuf::Message for UpdateSessionRequest {
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.session_id = tmp;
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.flags = tmp;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.session_id != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.session_id, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if self.flags != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.flags, ::protobuf::wire_format::WireTypeVarint);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.session_id != 0 {
+            os.write_uint32(1, self.session_id)?;
+        }
+        if self.flags != 0 {
+            os.write_uint32(2, self.flags)?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> UpdateSessionRequest {
+        UpdateSessionRequest::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::LazyV2<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::LazyV2::INIT;
+        descriptor.get(|| {
+            let mut fields = ::std::vec::Vec::new();
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "session_id",
+                |m: &UpdateSessionRequest| { &m.session_id },
+                |m: &mut UpdateSessionRequest| { &mut m.session_id },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "flags",
+                |m: &UpdateSessionRequest| { &m.flags },
+                |m: &mut UpdateSessionRequest| { &mut m.flags },
+            ));
+            ::protobuf::reflect::MessageDescriptor::new_pb_name::<UpdateSessionRequest>(
+                "UpdateSessionRequest",
+                fields,
+                file_descriptor_proto()
+            )
+        })
+    }
+
+    fn default_instance() -> &'static UpdateSessionRequest {
+        static instance: ::protobuf::rt::LazyV2<UpdateSessionRequest> = ::protobuf::rt::LazyV2::INIT;
+        instance.get(UpdateSessionRequest::new)
+    }
+}
+
+impl ::protobuf::Clear for UpdateSessionRequest {
+    fn clear(&mut self) {
+        self.session_id = 0;
+        self.flags = 0;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for UpdateSessionRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for UpdateSessionRequest {
+    fn as_ref(&self) -> ::protobuf::reflect::ReflectValueRef {
+        ::protobuf::reflect::ReflectValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
 pub struct DestroySessionRequest {
     // message fields
     pub session_id: u32,
@@ -481,10 +668,12 @@ impl ::protobuf::reflect::ProtobufValue for CreateSessionResponse {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rsession.proto\x12\x06vaccel\"0\n\x14CreateSessionRequest\x12\x16\n\
-    \x05flags\x18\x01\x20\x01(\rR\x05flagsB\0:\0\":\n\x15DestroySessionReque\
-    st\x12\x1f\n\nsession_id\x18\x01\x20\x01(\rR\tsessionIdB\0:\0\":\n\x15Cr\
-    eateSessionResponse\x12\x1f\n\nsession_id\x18\x01\x20\x01(\rR\tsessionId\
-    B\0:\0B\0b\x06proto3\
+    \x05flags\x18\x01\x20\x01(\rR\x05flagsB\0:\0\"Q\n\x14UpdateSessionReques\
+    t\x12\x1f\n\nsession_id\x18\x01\x20\x01(\rR\tsessionIdB\0\x12\x16\n\x05f\
+    lags\x18\x02\x20\x01(\rR\x05flagsB\0:\0\":\n\x15DestroySessionRequest\
+    \x12\x1f\n\nsession_id\x18\x01\x20\x01(\rR\tsessionIdB\0:\0\":\n\x15Crea\
+    teSessionResponse\x12\x1f\n\nsession_id\x18\x01\x20\x01(\rR\tsessionIdB\
+    \0:\0B\0b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;

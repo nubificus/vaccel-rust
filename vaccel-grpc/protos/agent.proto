@@ -25,6 +25,7 @@ package vaccel;
 service VaccelAgent {
 	// Session handling
 	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
+	rpc UpdateSession(UpdateSessionRequest) returns (VaccelEmpty);
 	rpc DestroySession(DestroySessionRequest) returns (VaccelEmpty);
 
 	// vAccelRT resource handling

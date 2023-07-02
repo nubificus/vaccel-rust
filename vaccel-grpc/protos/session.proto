@@ -20,6 +20,11 @@ message CreateSessionRequest {
 	uint32 flags = 1;
 }
 
+message UpdateSessionRequest {
+	uint32 session_id = 1;
+	uint32 flags = 2;
+}
+
 message DestroySessionRequest {
 	uint32 session_id = 1;
 }

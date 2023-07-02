@@ -1,6 +1,6 @@
 [package]
 name = "protocols"
-version = "0.3.5"
+version = "0.3.6"
 authors = [ "Babis Chalios <mail@bchalios.io>", 
             "Kostis Papazafeiropoulos <papazof@gmail.com>", 
             "Anastassios Nanos <ananos@nubificus.co.uk>",

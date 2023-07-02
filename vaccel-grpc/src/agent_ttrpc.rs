@@ -39,6 +39,12 @@ impl VaccelAgentClient {
         Ok(cres)
     }
 
+    pub fn update_session(&self, ctx: ttrpc::context::Context, req: &super::session::UpdateSessionRequest) -> ::ttrpc::Result<super::agent::VaccelEmpty> {
+        let mut cres = super::agent::VaccelEmpty::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "UpdateSession", cres);
+        Ok(cres)
+    }
+
     pub fn destroy_session(&self, ctx: ttrpc::context::Context, req: &super::session::DestroySessionRequest) -> ::ttrpc::Result<super::agent::VaccelEmpty> {
         let mut cres = super::agent::VaccelEmpty::new();
         ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "DestroySession", cres);
@@ -119,6 +125,17 @@ struct CreateSessionMethod {
 impl ::ttrpc::MethodHandler for CreateSessionMethod {
     fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
         ::ttrpc::request_handler!(self, ctx, req, session, CreateSessionRequest, create_session);
+        Ok(())
+    }
+}
+
+struct UpdateSessionMethod {
+    service: Arc<std::boxed::Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for UpdateSessionMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, session, UpdateSessionRequest, update_session);
         Ok(())
     }
 }
@@ -259,6 +276,9 @@ pub trait VaccelAgent {
     fn create_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::session::CreateSessionRequest) -> ::ttrpc::Result<super::session::CreateSessionResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/CreateSession is not supported".to_string())))
     }
+    fn update_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::session::UpdateSessionRequest) -> ::ttrpc::Result<super::agent::VaccelEmpty> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/UpdateSession is not supported".to_string())))
+    }
     fn destroy_session(&self, _ctx: &::ttrpc::TtrpcContext, _req: super::session::DestroySessionRequest) -> ::ttrpc::Result<super::agent::VaccelEmpty> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/DestroySession is not supported".to_string())))
     }
@@ -302,6 +322,9 @@ pub fn create_vaccel_agent(service: Arc<std::boxed::Box<dyn VaccelAgent + Send +
 
     methods.insert("/vaccel.VaccelAgent/CreateSession".to_string(),
                     std::boxed::Box::new(CreateSessionMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/UpdateSession".to_string(),
+                    std::boxed::Box::new(UpdateSessionMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
 
     methods.insert("/vaccel.VaccelAgent/DestroySession".to_string(),
                     std::boxed::Box::new(DestroySessionMethod{service: service.clone()}) as std::boxed::Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
