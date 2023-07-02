@@ -35,6 +35,11 @@ impl Session {
         VaccelId::from(self.inner.session_id as i64)
     }
 
+    /// update hint for session
+    pub fn update(&mut self, flags: u32) -> () {
+        self.inner.hint = flags;
+    }
+
     /// Destroy a vAccel session
     ///
     /// This will close an open session and consume it.
