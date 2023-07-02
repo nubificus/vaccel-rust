@@ -26,7 +26,7 @@ use protocols::{
         CreateTensorflowSavedModelRequest, DestroyResourceRequest, RegisterResourceRequest,
         UnregisterResourceRequest, CreateSharedObjRequest, CreateTorchSavedModelRequest, 
     },
-    session::{CreateSessionRequest, CreateSessionResponse, DestroySessionRequest},
+    session::{CreateSessionRequest, CreateSessionResponse, UpdateSessionRequest, DestroySessionRequest},
     tensorflow::{
         InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
         TensorflowModelRunRequest, TensorflowModelRunResponse,
@@ -153,6 +153,29 @@ impl protocols::agent_ttrpc::VaccelAgent for Agent {
                 Ok(resp)
             }
         }
+    }
+
+    fn update_session(
+        &self,
+        _ctx: &::ttrpc::TtrpcContext,
+        req: UpdateSessionRequest,
+    ) -> ttrpc::Result<VaccelEmpty> {
+	let hint = &req.flags;
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Unknown session".to_string(),
+            ))?;
+
+        println!(
+            "Updating hint {} for session {}",
+            req.flags, req.session_id
+        );
+        vaccel::Session::update(&mut sess, req.flags);
+        Ok(VaccelEmpty::new())
+
     }
 
     fn destroy_session(
