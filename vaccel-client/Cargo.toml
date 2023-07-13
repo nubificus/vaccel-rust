@@ -1,5 +1,5 @@
 [package]
-name = "vsock"
+name = "vaccel-client"
 version = "0.3.7"
 authors = ["Babis Chalios <mail@bchalios.io>", 
            "Kostis Papazafeiropoulos <papazof@gmail.com>", 
@@ -9,7 +9,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [lib]
-name = "vaccel_vsock"
+name = "vaccel_client"
 path = "src/lib.rs"
 crate-type = ["staticlib"]
 
