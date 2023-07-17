@@ -1,6 +1,6 @@
 use crate::{client::VsockClient, Result};
 use protocols::profiling::ProfilingRequest;
-use std::{mem, ptr, slice};
+use std::{ptr, slice};
 use vaccel::{ffi, profiling::ProfRegions};
 
 impl VsockClient {
@@ -67,11 +67,7 @@ pub extern "C" fn get_timers(
                     w.name as *mut _,
                     s.to_bytes_with_nul().len() as usize,
                 );
-                ptr::copy_nonoverlapping(
-                    rv.as_ptr(),
-                    w.samples,
-                    rv.len(),
-                );
+                ptr::copy_nonoverlapping(rv.as_ptr(), w.samples, rv.len());
                 w.nr_entries = rv.len() as usize;
             }
         }

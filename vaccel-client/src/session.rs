@@ -1,6 +1,6 @@
 use crate::client::VsockClient;
 use crate::{Error, Result};
-use protocols::session::{CreateSessionRequest, DestroySessionRequest};
+use protocols::session::{CreateSessionRequest, DestroySessionRequest, UpdateSessionRequest};
 use std::collections::btree_map::Entry;
 use vaccel::ffi;
 
@@ -13,6 +13,16 @@ impl VsockClient {
         let resp = self.ttrpc_client.create_session(ctx, &req)?;
 
         Ok(resp.session_id)
+    }
+
+    pub fn sess_update(&self, sess_id: u32, flags: u32) -> Result<()> {
+        let ctx = ttrpc::context::Context::default();
+        let mut req = UpdateSessionRequest::default();
+        req.session_id = sess_id;
+        req.flags = flags;
+
+        self.ttrpc_client.update_session(ctx, &req)?;
+        Ok(())
     }
 
     pub fn sess_free(&self, sess_id: u32) -> Result<()> {
@@ -35,6 +45,20 @@ pub extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> i32 {
     match client.sess_init(flags) {
         Ok(ret) => ret as i32,
         Err(_) => -(ffi::VACCEL_EIO as i32),
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn sess_update(client_ptr: *const VsockClient, sess_id: u32, flags: u32) -> i32 {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as i32,
+    };
+
+    match client.sess_update(sess_id, flags) {
+        Ok(()) => ffi::VACCEL_OK as i32,
+        Err(Error::ClientError(err)) => err as i32,
+        Err(_) => ffi::VACCEL_EIO as i32,
     }
 }
 
