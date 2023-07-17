@@ -29,6 +29,7 @@ pub extern "C" fn get_timers(
     sess_id: u32,
     timers_ptr: *mut ffi::vaccel_prof_region,
     nr_timers: usize,
+    max_timer_name: usize,
 ) -> usize {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
@@ -57,19 +58,35 @@ pub extern "C" fn get_timers(
     let timers = client.get_timers_entry(sess_id);
     if let Some(client_timers) = timers.get_ffi() {
         for (w, (rk, rv)) in timers_ref.iter_mut().zip(client_timers.iter()) {
+            let n = rk.as_str();
+            let n_len = if n.len() < max_timer_name {
+                n.len()
+            } else {
+                max_timer_name
+            };
+            let cn = std::ffi::CString::new(&n[0..n_len]).unwrap();
             unsafe {
-                let s = std::ffi::CString::new(rk.as_str()).unwrap();
-                // FIXME: check size of copy, as copy_nonoverlapping
-                // checks the type of src and dest and copies *count*
-                // items, not bytes.
                 ptr::copy_nonoverlapping(
-                    s.as_c_str().as_ptr(),
+                    cn.as_c_str().as_ptr(),
                     w.name as *mut _,
-                    s.to_bytes_with_nul().len() as usize,
+                    cn.to_bytes_with_nul().len() as usize,
                 );
-                ptr::copy_nonoverlapping(rv.as_ptr(), w.samples, rv.len());
-                w.nr_entries = rv.len() as usize;
             }
+
+            let cnt = if rv.len() > w.size {
+                println!(
+                        "Warning: Not all vsock timer samples can be returned (allocated: {} vs total: {})",
+                        w.size,
+                        rv.len()
+                    );
+                w.size
+            } else {
+                rv.len()
+            };
+            unsafe {
+                ptr::copy_nonoverlapping(rv.as_ptr(), w.samples, cnt);
+            }
+            w.nr_entries = cnt;
         }
     };
 
