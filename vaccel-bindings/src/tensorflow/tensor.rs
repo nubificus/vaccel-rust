@@ -2,7 +2,7 @@ use crate::ffi;
 use crate::tensorflow::{Code, DataType};
 use crate::{Error, Result};
 
-use protobuf::ProtobufEnum;
+use protobuf::Enum;
 use protocols::tensorflow::{TFDataType, TFTensor};
 
 use std::ops::{Deref, DerefMut};
@@ -154,7 +154,9 @@ impl<T: TensorType> Tensor<T> {
         TFTensor {
             data: data.to_owned(),
             dims: castdims.clone(),
-            field_type: TFDataType::from_i32(self.data_type().to_int() as i32).unwrap(),
+            type_: TFDataType::from_i32(self.data_type().to_int() as i32)
+                .unwrap()
+                .into(),
             ..Default::default()
         }
     }
@@ -197,14 +199,14 @@ impl TensorAny for TFTensor {
     fn inner(&self) -> *const ffi::vaccel_tf_tensor {
         let inner = unsafe {
             ffi::vaccel_tf_tensor_new(
-                self.get_dims().len() as i32,
-                self.get_dims().as_ptr() as *mut _,
-                self.get_field_type().value() as u32,
+                self.dims.len() as i32,
+                self.dims.as_ptr() as *mut _,
+                self.type_.value() as u32,
             )
         };
 
-        let size = self.get_data().len() as usize;
-        let data = self.get_data().to_owned();
+        let size = self.data.len() as usize;
+        let data = self.data.to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
 
@@ -216,14 +218,14 @@ impl TensorAny for TFTensor {
     fn inner_mut(&mut self) -> *mut ffi::vaccel_tf_tensor {
         let inner = unsafe {
             ffi::vaccel_tf_tensor_new(
-                self.get_dims().len() as i32,
-                self.get_dims().as_ptr() as *mut _,
-                self.get_field_type().value() as u32,
+                self.dims.len() as i32,
+                self.dims.as_ptr() as *mut _,
+                self.type_.value() as u32,
             )
         };
 
-        let size = self.get_data().len() as usize;
-        let data = self.get_data().to_owned();
+        let size = self.data.len() as usize;
+        let data = self.data.to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
 
@@ -233,7 +235,7 @@ impl TensorAny for TFTensor {
     }
 
     fn data_type(&self) -> DataType {
-        DataType::from_int(self.get_field_type().value() as u32)
+        DataType::from_int(self.type_.value() as u32)
     }
 }
 
@@ -411,7 +413,9 @@ impl From<&ffi::vaccel_tf_tensor> for TFTensor {
             TFTensor {
                 dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
                     .to_owned(),
-                field_type: TFDataType::from_i32((*tensor).data_type as i32).unwrap(),
+                type_: TFDataType::from_i32((*tensor).data_type as i32)
+                    .unwrap()
+                    .into(),
                 data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size as usize)
                     .to_owned(),
                 ..Default::default()

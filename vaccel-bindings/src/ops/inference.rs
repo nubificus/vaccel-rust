@@ -4,7 +4,7 @@ use crate::tensorflow as tf;
 use crate::tensorflow::saved_model::SavedModel;
 use crate::{Error, Result};
 
-use protobuf::{ProtobufEnum, RepeatedField};
+use protobuf::Enum;
 use protocols::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
 
 pub struct InferenceArgs {
@@ -58,9 +58,9 @@ impl From<InferenceArgs> for TensorflowModelRunRequest {
         .to_owned();
 
         TensorflowModelRunRequest {
-            in_nodes: RepeatedField::from_vec(in_nodes),
-            out_nodes: RepeatedField::from_vec(out_nodes),
-            in_tensors: RepeatedField::from_vec(in_tensors),
+            in_nodes: in_nodes,
+            out_nodes: out_nodes,
+            in_tensors: in_tensors,
             run_options,
             ..Default::default()
         }
@@ -121,7 +121,7 @@ impl InferenceResult {
             Ok(TFTensor {
                 dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
                     .to_owned(),
-                field_type: TFDataType::from_i32((*t).data_type as i32).unwrap(),
+                type_: TFDataType::from_i32((*t).data_type as i32).unwrap().into(),
                 data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)
                     .to_owned(),
                 ..Default::default()

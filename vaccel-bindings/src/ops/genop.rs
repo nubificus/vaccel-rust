@@ -48,9 +48,9 @@ impl GenopArg {
 
 impl From<&mut ProtGenopArg> for GenopArg {
     fn from(arg: &mut ProtGenopArg) -> Self {
-        let argtype = arg.get_argtype();
-        let size = arg.get_size();
-        let buf = arg.mut_buf();
+        let argtype = arg.argtype;
+        let size = arg.size;
+        let buf = arg.buf.as_mut_slice();
         GenopArg::new(buf, size as usize, argtype as usize)
     }
 }

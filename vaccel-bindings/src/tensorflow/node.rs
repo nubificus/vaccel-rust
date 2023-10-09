@@ -72,7 +72,7 @@ impl fmt::Display for Node {
 ///
 impl From<&TFNode> for Node {
     fn from(node: &TFNode) -> Self {
-        Node::new(node.get_name(), node.get_id())
+        Node::new(&node.name, node.id)
     }
 }
 

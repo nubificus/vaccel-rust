@@ -5,7 +5,7 @@ use crate::VaccelId;
 //use crate::resources::VaccelResource;
 use crate::{Error, Result};
 
-use protobuf::ProtobufEnum;
+use protobuf::Enum;
 use protocols::torch::{TorchDataType, TorchTensor};
 
 use std::any::Any;
@@ -269,7 +269,9 @@ impl TorchJitloadForwardResult {
             Ok(TorchTensor {
                 dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
                     .to_owned(),
-                field_type: TorchDataType::from_i32((*t).data_type as i32).unwrap(),
+                type_: TorchDataType::from_i32((*t).data_type as i32)
+                    .unwrap()
+                    .into(),
                 data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)
                     .to_owned(),
                 ..Default::default()
@@ -424,7 +426,9 @@ impl<T: TensorType> Tensor<T> {
         TorchTensor {
             data: data.to_owned(),
             dims: self.dims.clone(),
-            field_type: TorchDataType::from_i32(self.data_type().to_int() as i32).unwrap(),
+            type_: TorchDataType::from_i32(self.data_type().to_int() as i32)
+                .unwrap()
+                .into(),
             ..Default::default()
         }
     }
@@ -467,14 +471,14 @@ impl TensorAny for TorchTensor {
     fn inner(&self) -> *const ffi::vaccel_torch_tensor {
         let inner = unsafe {
             ffi::vaccel_torch_tensor_new(
-                self.get_dims().len() as i32,
-                self.get_dims().as_ptr() as *mut _,
-                self.get_field_type().value() as u32,
+                self.dims.len() as i32,
+                self.dims.as_ptr() as *mut _,
+                self.type_.value() as u32,
             )
         };
 
-        let size = self.get_data().len() as usize;
-        let data = self.get_data().to_owned();
+        let size = self.data.len() as usize;
+        let data = self.data.to_owned();
 
         unsafe {
             ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
@@ -488,14 +492,14 @@ impl TensorAny for TorchTensor {
     fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor {
         let inner = unsafe {
             ffi::vaccel_torch_tensor_new(
-                self.get_dims().len() as i32,
-                self.get_dims().as_ptr() as *mut _,
-                self.get_field_type().value() as u32,
+                self.dims.len() as i32,
+                self.dims.as_ptr() as *mut _,
+                self.type_.value() as u32,
             )
         };
 
-        let size = self.get_data().len() as usize;
-        let data = self.get_data().to_owned();
+        let size = self.data.len() as usize;
+        let data = self.data.to_owned();
 
         unsafe {
             ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
@@ -507,7 +511,7 @@ impl TensorAny for TorchTensor {
     }
 
     fn data_type(&self) -> DataType {
-        DataType::from_int(self.get_field_type().value() as u32)
+        DataType::from_int(self.type_.value() as u32)
     }
 }
 
@@ -690,7 +694,9 @@ impl From<&ffi::vaccel_torch_tensor> for TorchTensor {
             TorchTensor {
                 dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
                     .to_owned(),
-                field_type: TorchDataType::from_i32((*tensor).data_type as i32).unwrap(),
+                type_: TorchDataType::from_i32((*tensor).data_type as i32)
+                    .unwrap()
+                    .into(),
                 data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size as usize)
                     .to_owned(),
                 ..Default::default()
