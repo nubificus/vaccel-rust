@@ -16,7 +16,7 @@ crate-type = ["staticlib"]
 [dependencies]
 protocols = { path = "../vaccel-grpc", version = "0.3.7" }
 vaccel = { path = "../vaccel-bindings", version = "0.5.7" }
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", tag = "v0.6.1-vaccel-1" }
-protobuf = "2.28.0"
+ttrpc = { version = "0.8.1", features = ["async"] }
+protobuf = "3.1.0"
 nix = "0.24.1"
 libc = "0.2"

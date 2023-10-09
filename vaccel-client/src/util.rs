@@ -13,7 +13,7 @@ fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
         SockFlag::SOCK_CLOEXEC,
         None,
     )
-    .map_err(|_| ffi::VACCEL_EIO)?;
+    .map_err(|_| ffi::VACCEL_EBACKEND)?;
 
     let sock_addr = SockaddrIn::from_str(address).map_err(|_| ffi::VACCEL_EINVAL)?;
 
@@ -42,7 +42,7 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<ttrpc::Client, u32
         "tcp" => {
             let fd = client_create_sock_fd(fields[1])?;
 
-            ttrpc::Client::new(fd)
+            ttrpc::Client::new(fd).map_err(|_| ffi::VACCEL_EBACKEND)?
         }
 
         _ => return Err(ffi::VACCEL_ENOTSUP),

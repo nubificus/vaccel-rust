@@ -12,7 +12,7 @@ impl VaccelResource for SharedObject {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
         let mut sharedobjreq = CreateSharedObjRequest::new();
         let vbytes = self.get_bytes();
-        sharedobjreq.set_shared_obj(vbytes.ok_or(Error::InvalidArgument)?.to_owned());
+        sharedobjreq.shared_obj = vbytes.ok_or(Error::InvalidArgument)?.to_owned();
 
         let mut req = CreateResourceRequest::new();
         req.set_shared_obj(sharedobjreq);

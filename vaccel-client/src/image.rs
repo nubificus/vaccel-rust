@@ -7,8 +7,8 @@ impl VsockClient {
     pub fn image_classify(&self, sess_id: u32, img: Vec<u8>) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
         let mut req = ImageClassificationRequest::default();
-        req.set_session_id(sess_id);
-        req.set_image(img);
+        req.session_id = sess_id;
+        req.image = img;
 
         let resp = self.ttrpc_client.image_classification(ctx, &req)?;
         Ok(resp.tags)

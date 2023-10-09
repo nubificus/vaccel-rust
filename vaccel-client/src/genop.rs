@@ -1,5 +1,4 @@
 use crate::{client::VsockClient, Error, Result};
-use protobuf::RepeatedField;
 use protocols::genop::{GenopArg, GenopRequest};
 use std::{convert::TryInto, ptr, slice};
 use vaccel::ffi;
@@ -17,8 +16,8 @@ impl VsockClient {
         timers.start("genop > client > req create");
         let req = GenopRequest {
             session_id: sess_id,
-            read_args: RepeatedField::from_vec(read_args),
-            write_args: RepeatedField::from_vec(write_args),
+            read_args: read_args,
+            write_args: write_args,
             ..Default::default()
         };
         timers.stop("genop > client > req create");
@@ -31,7 +30,7 @@ impl VsockClient {
         let timers = self.get_timers_entry(sess_id);
         timers.stop("genop > client > ttrpc_client.genop");
 
-        Ok(resp.take_result().take_write_args().into())
+        Ok(resp.take_result().write_args.into())
     }
 }
 

@@ -21,13 +21,13 @@ impl VsockClient {
 
         let resp = self.ttrpc_client.create_resource(ctx, &req)?;
 
-        Ok(resp.get_resource_id().into())
+        Ok(resp.resource_id.into())
     }
 
     pub fn destroy_resource(&self, model_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let mut req = DestroyResourceRequest::new();
-        req.set_resource_id(model_id);
+        req.resource_id = model_id;
 
         self.ttrpc_client.destroy_resource(ctx, &req)?;
 
@@ -37,8 +37,8 @@ impl VsockClient {
     pub fn register_resource(&self, model_id: i64, sess_id: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let mut req = RegisterResourceRequest::new();
-        req.set_resource_id(model_id);
-        req.set_session_id(sess_id);
+        req.resource_id = model_id;
+        req.session_id = sess_id;
 
         self.ttrpc_client.register_resource(ctx, &req)?;
 
@@ -48,8 +48,8 @@ impl VsockClient {
     pub fn unregister_resource(&self, model_id: i64, sess_id: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let mut req = UnregisterResourceRequest::new();
-        req.set_resource_id(model_id);
-        req.set_session_id(sess_id);
+        req.resource_id = model_id;
+        req.session_id = sess_id;
 
         self.ttrpc_client.unregister_resource(ctx, &req)?;
 

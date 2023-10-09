@@ -1,5 +1,4 @@
 use crate::{client::VsockClient, resources::VaccelResource, Error, Result};
-use protobuf::{ProtobufEnum, RepeatedField};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
     tensorflow::{TFNode, TFTensor},
@@ -13,23 +12,20 @@ use vaccel::{ffi, tensorflow::SavedModel};
 impl VaccelResource for SavedModel {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
         let mut model = CreateTensorflowSavedModelRequest::new();
-        model.set_model_pb(
-            self.get_protobuf()
-                .ok_or(Error::InvalidArgument)?
-                .to_owned(),
-        );
+        model.model_pb = self
+            .get_protobuf()
+            .ok_or(Error::InvalidArgument)?
+            .to_owned();
 
-        model.set_checkpoint(
-            self.get_checkpoint()
-                .ok_or(Error::InvalidArgument)?
-                .to_owned(),
-        );
+        model.checkpoint = self
+            .get_checkpoint()
+            .ok_or(Error::InvalidArgument)?
+            .to_owned();
 
-        model.set_var_index(
-            self.get_var_index()
-                .ok_or(Error::InvalidArgument)?
-                .to_owned(),
-        );
+        model.var_index = self
+            .get_var_index()
+            .ok_or(Error::InvalidArgument)?
+            .to_owned();
 
         let mut req = CreateResourceRequest::new();
         req.set_tf_saved(model);
@@ -64,11 +60,10 @@ impl VsockClient {
         };
 
         let mut resp = self.ttrpc_client.tensorflow_model_unload(ctx, &req)?;
-        if resp.has_error() {
-            return Err(resp.take_error().into());
+        match resp.error.take() {
+            None => Ok(()),
+            Some(e) => Err(e.into()),
         }
-
-        Ok(())
     }
 
     pub fn tensorflow_inference(
@@ -86,9 +81,9 @@ impl VsockClient {
             model_id,
             session_id,
             run_options,
-            in_nodes: RepeatedField::from_vec(in_nodes),
-            in_tensors: RepeatedField::from_vec(in_tensors),
-            out_nodes: RepeatedField::from_vec(out_nodes),
+            in_nodes: in_nodes,
+            in_tensors: in_tensors,
+            out_nodes: out_nodes,
             ..Default::default()
         };
 
@@ -97,13 +92,13 @@ impl VsockClient {
             return Err(resp.take_error().into());
         }
 
-        let tf_tensors = resp.take_result().take_out_tensors();
+        let tf_tensors = resp.take_result().out_tensors;
         Ok(tf_tensors
             .into_iter()
-            .map(|mut e| unsafe {
-                let dims = e.take_dims();
-                let data_type = e.get_field_type().value();
-                let data = e.take_data();
+            .map(|e| unsafe {
+                let dims = e.dims;
+                let data_type = e.type_.value();
+                let data = e.data;
                 let tensor = ffi::vaccel_tf_tensor_new(
                     dims.len() as i32,
                     dims.as_ptr() as *mut u32,

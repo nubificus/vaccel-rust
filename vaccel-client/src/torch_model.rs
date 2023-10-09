@@ -7,8 +7,6 @@ use vaccel::torch::SavedModel;
 
 use std::slice;
 
-use protobuf::{ProtobufEnum, RepeatedField};
-
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
     torch::{TorchJitloadForwardRequest, TorchTensor},
@@ -17,11 +15,10 @@ use protocols::{
 impl VaccelResource for SavedModel {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
         let mut model = CreateTorchSavedModelRequest::new();
-        model.set_model(
-            self.get_protobuf()
-                .ok_or(Error::InvalidArgument)?
-                .to_owned(),
-        );
+        model.model = self
+            .get_protobuf()
+            .ok_or(Error::InvalidArgument)?
+            .to_owned();
 
         let mut req = CreateResourceRequest::new();
         req.set_torch_saved(model);
@@ -44,7 +41,7 @@ impl VsockClient {
             session_id,
             model_id,
             run_options,
-            in_tensors: RepeatedField::from_vec(in_tensors),
+            in_tensors: in_tensors,
             ..Default::default()
         };
 
@@ -53,13 +50,13 @@ impl VsockClient {
             return Err(resp.take_error().into());
         }
 
-        let torch_tensors = resp.take_result().take_out_tensors();
+        let torch_tensors = resp.take_result().out_tensors;
         Ok(torch_tensors
             .into_iter()
-            .map(|mut e| unsafe {
-                let dims = e.take_dims();
-                let data_type = e.get_field_type().value();
-                let data = e.take_data();
+            .map(|e| unsafe {
+                let dims = e.dims;
+                let data_type = e.type_.value();
+                let data = e.data;
                 let tensor = ffi::vaccel_torch_tensor_new(
                     dims.len() as i32,
                     dims.as_ptr() as *mut i64,

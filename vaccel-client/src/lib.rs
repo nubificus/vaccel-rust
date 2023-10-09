@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use protocols::error::{VaccelError, VaccelError_oneof_error};
+use protocols::error::{vaccel_error::Error as VaccelErrorType, VaccelError};
 
 pub mod client;
 pub mod genop;
@@ -51,8 +51,9 @@ impl From<ttrpc::Error> for Error {
 impl From<protocols::error::VaccelError> for Error {
     fn from(err: VaccelError) -> Self {
         match err.error {
-            Some(VaccelError_oneof_error::vaccel_error(err)) => Error::HostRuntimeError(err as u32),
-            Some(VaccelError_oneof_error::agent_error(err)) => Error::HostAgentError(err as u32),
+            Some(VaccelErrorType::VaccelError(err)) => Error::HostRuntimeError(err as u32),
+            Some(VaccelErrorType::AgentError(err)) => Error::HostAgentError(err as u32),
+            Some(_) => Error::Undefined,
             None => Error::Undefined,
         }
     }

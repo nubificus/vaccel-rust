@@ -1,4 +1,4 @@
-use crate::{client::VsockClient, Result};
+use crate::{client::VsockClient, Error, Result};
 use protocols::profiling::ProfilingRequest;
 use std::{ptr, slice};
 use vaccel::{ffi, profiling::ProfRegions};
@@ -19,7 +19,10 @@ impl VsockClient {
         };
 
         let mut resp = self.ttrpc_client.get_timers(ctx, &req)?;
-        Ok(resp.take_result().into())
+        match resp.result.take() {
+            Some(r) => Ok(r.into()),
+            None => Err(Error::Undefined),
+        }
     }
 }
 
