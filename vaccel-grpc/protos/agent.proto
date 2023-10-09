@@ -19,6 +19,8 @@ import "resources.proto";
 import "image.proto";
 import "tensorflow.proto";
 import "torch.proto";
+import "genop.proto";
+import "profiling.proto";
 
 package vaccel;
 

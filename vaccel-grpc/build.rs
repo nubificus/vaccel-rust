@@ -39,17 +39,21 @@ fn main() {
     libf.write_all(b"pub mod agent_ttrpc;\n")
         .expect("Could not write mod in crate's lib file");
 
+    let protobuf_customized = ProtobufCustomize::default().gen_mod_rs(false);
+
     Codegen::new()
         .out_dir("src")
         .inputs(&protos)
         .include("protos")
         .rust_protobuf()
         .customize(Customize {
+            //    async_all: true,
             ..Default::default()
         })
-        .rust_protobuf_customize(ProtobufCustomize {
-            ..Default::default()
-        })
+        //.rust_protobuf_customize(ProtobufCustomize {
+        //    ..Default::default()
+        //})
+        .rust_protobuf_customize(protobuf_customized.clone())
         .run()
         .expect("Protocol generation failed.");
 }
