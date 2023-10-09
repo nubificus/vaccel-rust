@@ -1,3 +1,5 @@
+mod utilities;
+
 use env_logger::Env;
 use log::{error, info};
 
@@ -6,8 +8,6 @@ use std::path::PathBuf;
 use vaccel::ops::inference;
 use vaccel::tensorflow as tf;
 use vaccel::Session;
-
-extern crate utilities;
 
 fn main() -> utilities::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();

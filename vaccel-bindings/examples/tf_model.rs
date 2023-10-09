@@ -1,3 +1,5 @@
+mod utilities;
+
 use env_logger::Env;
 use log::info;
 
@@ -6,10 +8,7 @@ use vaccel::Session;
 
 use std::path::PathBuf;
 
-extern crate utilities;
-use utilities::*;
-
-fn main() -> Result<()> {
+fn main() -> utilities::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
 
     let mut sess = Session::new(0)?;

@@ -3,13 +3,11 @@ use std::fmt;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-
-extern crate vaccel;
+use crate::Error as VaccelError;
 
 pub enum Error {
     IO(std::io::Error),
-
-    Vaccel(vaccel::Error),
+    Vaccel(VaccelError),
 }
 
 impl fmt::Debug for Error {
@@ -21,8 +19,8 @@ impl fmt::Debug for Error {
     }
 }
 
-impl From<vaccel::Error> for Error {
-    fn from(error: vaccel::Error) -> Self {
+impl From<VaccelError> for Error {
+    fn from(error: VaccelError) -> Self {
         Error::Vaccel(error)
     }
 }
