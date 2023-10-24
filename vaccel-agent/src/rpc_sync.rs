@@ -7,7 +7,7 @@ use nix::{
     },
 };
 use protocols::{
-    agent::VaccelEmpty,
+    sync::agent::VaccelEmpty,
     error::VaccelError,
     genop::{GenopRequest, GenopResponse, GenopResult},
     image::{ImageClassificationRequest, ImageClassificationResponse},
@@ -79,11 +79,11 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
         sessions: Arc::new(CHashMap::new()),
         resources: Arc::new(CHashMap::new()),
         timers: Arc::new(Mutex::new(BTreeMap::new())),
-    }) as Box<dyn protocols::agent_ttrpc::VaccelAgent + Send + Sync>;
+    }) as Box<dyn protocols::sync::agent_ttrpc::VaccelAgent + Send + Sync>;
 
     let agent_worker = Arc::new(vaccel_agent);
 
-    let aservice = protocols::agent_ttrpc::create_vaccel_agent(agent_worker);
+    let aservice = protocols::sync::agent_ttrpc::create_vaccel_agent(agent_worker);
 
     if server_address == "" {
         return Err("Server address cannot be empty".into());
@@ -134,7 +134,7 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
     Ok(server)
 }
 
-impl protocols::agent_ttrpc::VaccelAgent for Agent {
+impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
     fn create_session(
         &self,
         _ctx: &::ttrpc::TtrpcContext,
