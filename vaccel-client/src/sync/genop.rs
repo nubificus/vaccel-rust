@@ -1,7 +1,7 @@
-use crate::{Error, Result};
+use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::client::VsockClient;
 use protocols::genop::{GenopArg, GenopRequest};
-use std::{convert::TryInto, ptr, slice};
+use std::{convert::TryInto, ptr};
 use vaccel::ffi;
 
 impl VsockClient {
@@ -56,7 +56,6 @@ pub extern "C" fn genop(
             .into_iter()
             .map(|e| {
                 let size = e.size;
-                let argtype = e.argtype;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                         .unwrap_or(&[])
@@ -65,7 +64,6 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
-                    argtype: argtype,
                     ..Default::default()
                 }
             })
@@ -84,7 +82,6 @@ pub extern "C" fn genop(
         Some(slice) => slice
             .into_iter()
             .map(|e| {
-                let argtype = e.argtype;
                 let size = e.size;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
@@ -94,7 +91,6 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
-                    argtype: argtype,
                     ..Default::default()
                 }
             })
@@ -127,20 +123,4 @@ pub extern "C" fn genop(
     //timers.print();
 
     ret
-}
-
-fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts(buf, len) })
-    }
-}
-
-fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
-    }
 }

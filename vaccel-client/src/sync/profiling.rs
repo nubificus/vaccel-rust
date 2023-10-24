@@ -1,6 +1,7 @@
-use crate::{client::VsockClient, Error, Result};
+use crate::{Error, Result, c_pointer_to_mut_slice};
+use super::client::VsockClient;
 use protocols::profiling::ProfilingRequest;
-use std::{ptr, slice};
+use std::ptr;
 use vaccel::{ffi, profiling::ProfRegions};
 
 impl VsockClient {
@@ -94,20 +95,4 @@ pub extern "C" fn get_timers(
     };
 
     0
-}
-
-fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts(buf, len) })
-    }
-}
-
-fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
-    }
 }

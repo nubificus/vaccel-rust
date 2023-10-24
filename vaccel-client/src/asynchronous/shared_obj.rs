@@ -1,11 +1,6 @@
-use crate::client::VsockClient;
-use crate::resources::VaccelResource;
 use crate::{Error, Result};
-
-use vaccel::ffi;
-
-use vaccel::shared_obj::SharedObject;
-
+use super::{client::VsockClient, resources::VaccelResource};
+use vaccel::{ffi, shared_obj::SharedObject};
 use protocols::resources::{CreateResourceRequest, CreateSharedObjRequest};
 
 impl VaccelResource for SharedObject {

@@ -1,31 +1,11 @@
-use crate::util::create_ttrpc_client;
-use crate::{Error, Result};
-use protocols::agent_ttrpc::VaccelAgentClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+use super::{Error, Result};
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::{collections::BTreeMap, env};
 use vaccel::profiling::ProfRegions;
-
-#[repr(C)]
-pub struct VsockClient {
-    pub ttrpc_client: VaccelAgentClient,
-    pub timers: BTreeMap<u32, ProfRegions>,
-}
-
-impl VsockClient {
-    pub fn new() -> Result<Self> {
-        let server_address = match env::var("VACCEL_VSOCK") {
-            Ok(addr) => addr,
-            Err(_) => "vsock://2:2048".to_string(),
-        };
-
-        let ttrpc_client =
-            create_ttrpc_client(&server_address).map_err(|e| Error::ClientError(e))?;
-
-        Ok(VsockClient {
-            ttrpc_client: VaccelAgentClient::new(ttrpc_client),
-            timers: BTreeMap::new(),
-        })
-    }
-}
 
 #[no_mangle]
 pub extern "C" fn create_client() -> *mut VsockClient {

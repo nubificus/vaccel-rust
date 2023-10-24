@@ -1,12 +1,6 @@
-use crate::client::VsockClient;
-use crate::resources::VaccelResource;
-use crate::{Error, Result};
-
-use vaccel::ffi;
-use vaccel::torch::SavedModel;
-
-use std::slice;
-
+use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
+use super::{client::VsockClient, resources::VaccelResource};
+use vaccel::{ffi, torch::SavedModel};
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
     torch::{TorchJitloadForwardRequest, TorchTensor},
@@ -86,30 +80,6 @@ pub(crate) fn create_torch_model(
         Ok(id) => id.into(),
         Err(Error::ClientError(err)) => -(err as ffi::vaccel_id_t),
         Err(_) => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
-    }
-}
-
-fn c_pointer_to_vec<T>(buf: *mut T, len: usize, capacity: usize) -> Option<Vec<T>> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { Vec::from_raw_parts(buf, len, capacity) })
-    }
-}
-
-fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts(buf, len) })
-    }
-}
-
-fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
     }
 }
 

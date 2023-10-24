@@ -1,19 +1,14 @@
-#![allow(non_upper_case_globals)]
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 #![allow(dead_code)]
 
 use protocols::error::{vaccel_error::Error as VaccelErrorType, VaccelError};
+use std::slice;
 
-pub mod client;
-pub mod genop;
-pub mod image;
-pub mod profiling;
-pub mod resources;
-pub mod session;
-pub mod shared_obj;
-pub mod tf_model;
-pub mod torch_model;
+#[cfg(not(feature = "async"))]
+pub mod sync;
+#[cfg(feature = "async")]
+pub mod asynchronous;
+#[cfg(feature = "async")]
+pub use asynchronous as r#async;
 pub mod util;
 
 extern crate ttrpc;
@@ -25,6 +20,10 @@ pub enum Error {
 
     /// Socket Error
     TtrpcError(ttrpc::Error),
+
+    /// Async Runtime Error
+    #[cfg(feature = "async")]
+    AsyncRuntimeError(tokio::task::JoinError),
 
     /// File reading error
     FileReadingError,
@@ -48,6 +47,13 @@ impl From<ttrpc::Error> for Error {
     }
 }
 
+#[cfg(feature = "async")]
+impl From<tokio::task::JoinError> for Error {
+    fn from(err: tokio::task::JoinError) -> Self {
+        Error::AsyncRuntimeError(err)
+    }
+}
+
 impl From<protocols::error::VaccelError> for Error {
     fn from(err: VaccelError) -> Self {
         match err.error {
@@ -60,3 +66,27 @@ impl From<protocols::error::VaccelError> for Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub(crate) fn c_pointer_to_vec<T>(buf: *mut T, len: usize, capacity: usize) -> Option<Vec<T>> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { Vec::from_raw_parts(buf, len, capacity) })
+    }
+}
+
+pub(crate) fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { slice::from_raw_parts(buf, len) })
+    }
+}
+
+pub(crate) fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
+    }
+}

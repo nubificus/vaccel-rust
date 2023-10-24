@@ -1,4 +1,5 @@
-use crate::{client::VsockClient, resources::VaccelResource, Error, Result};
+use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
+use super::{client::VsockClient, resources::VaccelResource};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
     tensorflow::{TFNode, TFTensor},
@@ -6,7 +7,6 @@ use protocols::{
         TensorflowModelLoadRequest, TensorflowModelRunRequest, TensorflowModelUnloadRequest,
     },
 };
-use std::slice;
 use vaccel::{ffi, tensorflow::SavedModel};
 
 impl VaccelResource for SavedModel {
@@ -164,30 +164,6 @@ pub extern "C" fn tf_session_delete(
         Ok(_) => ffi::VACCEL_OK as i32,
         Err(Error::ClientError(err)) => err as i32,
         Err(_) => ffi::VACCEL_EIO as i32,
-    }
-}
-
-fn c_pointer_to_vec<T>(buf: *mut T, len: usize, capacity: usize) -> Option<Vec<T>> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { Vec::from_raw_parts(buf, len, capacity) })
-    }
-}
-
-fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts(buf, len) })
-    }
-}
-
-fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
     }
 }
 

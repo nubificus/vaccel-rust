@@ -1,5 +1,5 @@
-use crate::client::VsockClient;
 use crate::{Error, Result};
+use super::client::VsockClient;
 use protocols::session::{CreateSessionRequest, DestroySessionRequest, UpdateSessionRequest};
 use std::collections::btree_map::Entry;
 use vaccel::ffi;
