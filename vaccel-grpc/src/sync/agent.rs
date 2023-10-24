@@ -19,7 +19,7 @@
 #![allow(unused_results)]
 #![allow(unused_mut)]
 
-//! Generated file from `agent.proto`
+//! Generated file from `sync/agent.proto`
 
 /// Generated files are compatible only with the same version
 /// of protobuf runtime.
@@ -129,29 +129,29 @@ impl ::protobuf::reflect::ProtobufValue for VaccelEmpty {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0bagent.proto\x12\x06vaccel\x1a\rsession.proto\x1a\x0fresources.prot\
-    o\x1a\x0bimage.proto\x1a\x10tensorflow.proto\x1a\x0btorch.proto\x1a\x0bg\
-    enop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xf1\x08\n\x0bVac\
-    celAgent\x12L\n\rCreateSession\x12\x1c.vaccel.CreateSessionRequest\x1a\
-    \x1d.vaccel.CreateSessionResponse\x12B\n\rUpdateSession\x12\x1c.vaccel.U\
-    pdateSessionRequest\x1a\x13.vaccel.VaccelEmpty\x12D\n\x0eDestroySession\
-    \x12\x1d.vaccel.DestroySessionRequest\x1a\x13.vaccel.VaccelEmpty\x12O\n\
-    \x0eCreateResource\x12\x1d.vaccel.CreateResourceRequest\x1a\x1e.vaccel.C\
-    reateResourceResponse\x12H\n\x10RegisterResource\x12\x1f.vaccel.Register\
-    ResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12L\n\x12UnregisterResource\
-    \x12!.vaccel.UnregisterResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12F\n\
-    \x0fDestroyResource\x12\x1e.vaccel.DestroyResourceRequest\x1a\x13.vaccel\
-    .VaccelEmpty\x12^\n\x13ImageClassification\x12\".vaccel.ImageClassificat\
-    ionRequest\x1a#.vaccel.ImageClassificationResponse\x12^\n\x13TensorflowM\
-    odelLoad\x12\".vaccel.TensorflowModelLoadRequest\x1a#.vaccel.TensorflowM\
-    odelLoadResponse\x12d\n\x15TensorflowModelUnload\x12$.vaccel.TensorflowM\
-    odelUnloadRequest\x1a%.vaccel.TensorflowModelUnloadResponse\x12[\n\x12Te\
-    nsorflowModelRun\x12!.vaccel.TensorflowModelRunRequest\x1a\".vaccel.Tens\
-    orflowModelRunResponse\x12^\n\x13TorchJitloadForward\x12\".vaccel.TorchJ\
-    itloadForwardRequest\x1a#.vaccel.TorchJitloadForwardResponse\x124\n\x05G\
-    enop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopResponse\x12@\n\tGe\
-    tTimers\x12\x18.vaccel.ProfilingRequest\x1a\x19.vaccel.ProfilingResponse\
-    b\x06proto3\
+    \n\x10sync/agent.proto\x12\x06vaccel\x1a\rsession.proto\x1a\x0fresources\
+    .proto\x1a\x0bimage.proto\x1a\x10tensorflow.proto\x1a\x0btorch.proto\x1a\
+    \x0bgenop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xf1\x08\n\
+    \x0bVaccelAgent\x12L\n\rCreateSession\x12\x1c.vaccel.CreateSessionReques\
+    t\x1a\x1d.vaccel.CreateSessionResponse\x12B\n\rUpdateSession\x12\x1c.vac\
+    cel.UpdateSessionRequest\x1a\x13.vaccel.VaccelEmpty\x12D\n\x0eDestroySes\
+    sion\x12\x1d.vaccel.DestroySessionRequest\x1a\x13.vaccel.VaccelEmpty\x12\
+    O\n\x0eCreateResource\x12\x1d.vaccel.CreateResourceRequest\x1a\x1e.vacce\
+    l.CreateResourceResponse\x12H\n\x10RegisterResource\x12\x1f.vaccel.Regis\
+    terResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12L\n\x12UnregisterResour\
+    ce\x12!.vaccel.UnregisterResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12F\
+    \n\x0fDestroyResource\x12\x1e.vaccel.DestroyResourceRequest\x1a\x13.vacc\
+    el.VaccelEmpty\x12^\n\x13ImageClassification\x12\".vaccel.ImageClassific\
+    ationRequest\x1a#.vaccel.ImageClassificationResponse\x12^\n\x13Tensorflo\
+    wModelLoad\x12\".vaccel.TensorflowModelLoadRequest\x1a#.vaccel.Tensorflo\
+    wModelLoadResponse\x12d\n\x15TensorflowModelUnload\x12$.vaccel.Tensorflo\
+    wModelUnloadRequest\x1a%.vaccel.TensorflowModelUnloadResponse\x12[\n\x12\
+    TensorflowModelRun\x12!.vaccel.TensorflowModelRunRequest\x1a\".vaccel.Te\
+    nsorflowModelRunResponse\x12^\n\x13TorchJitloadForward\x12\".vaccel.Torc\
+    hJitloadForwardRequest\x1a#.vaccel.TorchJitloadForwardResponse\x124\n\
+    \x05Genop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopResponse\x12@\
+    \n\tGetTimers\x12\x18.vaccel.ProfilingRequest\x1a\x19.vaccel.ProfilingRe\
+    sponseb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

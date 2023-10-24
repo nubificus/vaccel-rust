@@ -41,3 +41,7 @@ message GenopResponse {
 		GenopResult result = 2;
 	}
 };
+
+message GenopStreamRequest {
+	bytes data = 1;
+};
