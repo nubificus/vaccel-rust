@@ -9,6 +9,7 @@ pub mod sync;
 pub mod asynchronous;
 #[cfg(feature = "async")]
 pub use asynchronous as r#async;
+pub mod client;
 pub mod util;
 
 extern crate ttrpc;

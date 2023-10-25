@@ -265,6 +265,7 @@ pub extern "C" fn genop(
             .into_iter()
             .map(|e| {
                 let size = e.size;
+                let argtype = e.argtype;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                         .unwrap_or(&[])
@@ -273,6 +274,7 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
+                    argtype: argtype,
                     ..Default::default()
                 }
             })
@@ -292,6 +294,7 @@ pub extern "C" fn genop(
             .into_iter()
             .map(|e| {
                 let size = e.size;
+                let argtype = e.argtype;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                         .unwrap_or(&[])
@@ -300,6 +303,7 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
+                    argtype: argtype,
                     ..Default::default()
                 }
             })
@@ -311,8 +315,11 @@ pub extern "C" fn genop(
     //std::mem::drop(lock);
     timers.start("genop > client.genop");
     std::mem::drop(lock);
-    //let ret = match client.genop(sess_id, read_args, write_args) {
-    let ret = match client.genop_stream(sess_id, read_args, write_args) {
+    #[cfg(feature = "async-stream")]
+    let do_genop = client.genop_stream(sess_id, read_args, write_args);
+    #[cfg(not(feature = "async-stream"))]
+    let do_genop = client.genop(sess_id, read_args, write_args);
+    let ret = match do_genop {
         Ok(result) => {
             let mut lock = client.timers.lock().unwrap();
             let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));

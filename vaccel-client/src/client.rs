@@ -2,10 +2,6 @@
 use crate::sync::client::VsockClient;
 #[cfg(feature = "async")]
 use crate::asynchronous::client::VsockClient;
-use super::{Error, Result};
-use protocols::sync::agent_ttrpc::VaccelAgentClient;
-use std::{collections::BTreeMap, env};
-use vaccel::profiling::ProfRegions;
 
 #[no_mangle]
 pub extern "C" fn create_client() -> *mut VsockClient {

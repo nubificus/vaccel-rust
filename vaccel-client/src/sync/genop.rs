@@ -56,6 +56,7 @@ pub extern "C" fn genop(
             .into_iter()
             .map(|e| {
                 let size = e.size;
+                let argtype = e.argtype;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                         .unwrap_or(&[])
@@ -64,6 +65,7 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
+                    argtype: argtype,
                     ..Default::default()
                 }
             })
@@ -83,6 +85,7 @@ pub extern "C" fn genop(
             .into_iter()
             .map(|e| {
                 let size = e.size;
+                let argtype = e.argtype;
                 let buf: Vec<u8> = {
                     c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
                         .unwrap_or(&[])
@@ -91,6 +94,7 @@ pub extern "C" fn genop(
                 GenopArg {
                     buf: buf,
                     size: size,
+                    argtype: argtype,
                     ..Default::default()
                 }
             })
