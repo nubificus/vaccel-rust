@@ -7,7 +7,6 @@ use nix::{
     },
 };
 use protocols::{
-    sync::agent::VaccelEmpty,
     error::VaccelError,
     genop::{GenopRequest, GenopResponse, GenopResult},
     image::{ImageClassificationRequest, ImageClassificationResponse},
@@ -19,6 +18,7 @@ use protocols::{
         UnregisterResourceRequest,
     },
     session::{CreateSessionRequest, CreateSessionResponse, UpdateSessionRequest, DestroySessionRequest},
+    sync::agent::VaccelEmpty,
     tensorflow::{
         InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
         TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
@@ -39,6 +39,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 extern crate vaccel;
+use log::{debug, error, info};
 use vaccel::torch;
 use vaccel::{ops::genop, profiling::ProfRegions, shared_obj as so, tensorflow as tf};
 
@@ -149,7 +150,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 assert!(!self.sessions.contains_key(&sess.id()));
                 self.sessions.insert_new(sess.id(), Box::new(sess));
 
-                println!("Created session {:?}", resp.session_id);
+                info!("Created session {}", resp.session_id);
                 Ok(resp)
             }
         }
@@ -191,8 +192,6 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        println!("Destroying session {:?}", sess.id());
-
         let mut timers_lock = self.timers.lock().unwrap();
         if let Entry::Occupied(t) = timers_lock.entry(req.session_id) {
             t.remove_entry();
@@ -200,7 +199,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         match sess.close() {
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
             Ok(()) => {
-                println!("Destroyed session {:?}", req.session_id);
+                info!("Destroyed session {}", req.session_id);
                 Ok(VaccelEmpty::new())
             }
         }
@@ -219,10 +218,10 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown Session".to_string(),
             ))?;
 
-        println!("session:{:?} Image classification", sess.id());
+        info!("session:{} Image classification", sess.id());
         match sess.image_classification(&req.image) {
             Err(e) => {
-                println!("Could not perform classification");
+                error!("Could not perform classification");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
             Ok((tags, _)) => {
@@ -310,7 +309,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        println!(
+        info!(
             "Registering resource {} to session {}",
             req.resource_id, req.session_id
         );
@@ -462,7 +461,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let in_tensors = req.in_tensors;
         for it in in_nodes.iter().zip(in_tensors.iter()) {
             let (node, tensor) = it;
-            println!("tensor.dim: {:?}", tensor.dims);
+            debug!("tensor.dim: {:?}", tensor.dims);
             sess_args.add_input(node, tensor);
         }
 
@@ -540,17 +539,17 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let response = jitload.jitload_forward(&mut sess, &mut sess_args, &mut model)?;
         match response.get_output::<f32>(0) {
             Ok(result) => {
-                println!("Success");
-                println!(
+                info!("Success");
+                info!(
                     "Output tensor => type:{:?} nr_dims:{}",
                     result.data_type(),
                     result.nr_dims()
                 );
                 for i in 0..result.nr_dims() {
-                    println!("dim[{}]: {}", i, result.dim(i as usize).unwrap());
+                    info!("dim[{}]: {}", i, result.dim(i as usize).unwrap());
                 }
             }
-            // Err(e) => println!("Torch JitLoadForward failed: '{}'", e),
+            // Err(e) => info!("Torch JitLoadForward failed: '{}'", e),
         }
         Ok(TorchJitloadForwardResponse {
             result: Some(response),
@@ -562,7 +561,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         // let num_outputs = in_tensors.len();
         let num_outputs: usize = 1;
 
-        //println!("NUM of output: {}, Type: {}", num_outputs, type_of(&num_outputs));
+        //info!("NUM of output: {}, Type: {}", num_outputs, type_of(&num_outputs));
         let response = match jitload.jitload_forward(&mut sess, &mut sess_args, model) {
             Ok(result) => {
                 let mut jitload_forward = TorchJitloadForwardResult::new();
@@ -612,7 +611,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
             req.write_args.iter_mut().map(|e| e.into()).collect();
         timers.stop("genop > write_args");
 
-        println!("Genop session {:?}", sess.id());
+        info!("Genop session {}", sess.id());
         timers.start("genop > sess.genop");
         let response = match sess.genop(
             read_args.as_mut_slice(),
@@ -662,10 +661,10 @@ impl Agent {
         &self,
         req: CreateTensorflowSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create TensorFlow model resource");
+        info!("Request to create TensorFlow model resource");
         match tf::SavedModel::new().from_in_memory(&req.model_pb, &req.checkpoint, &req.var_index) {
             Ok(model) => {
-                println!("Created new TensorFlow model with id: {}", model.id());
+                info!("Created new TensorFlow model with id: {}", model.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = model.id().into();
@@ -674,7 +673,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }
@@ -684,10 +683,10 @@ impl Agent {
         &self,
         req: CreateSharedObjRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create SharedObject resource");
+        info!("Request to create SharedObject resource");
         match so::SharedObject::from_in_memory(&req.shared_obj) {
             Ok(shared_obj) => {
-                println!("Created new Shared Object with id: {}", shared_obj.id());
+                info!("Created new Shared Object with id: {}", shared_obj.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = shared_obj.id().into();
@@ -696,7 +695,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }
@@ -705,10 +704,10 @@ impl Agent {
         &self,
         req: CreateTorchSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create PyTorch model resource");
+        info!("Request to create PyTorch model resource");
         match torch::SavedModel::new().from_in_memory(&req.model) {
             Ok(model) => {
-                println!("Created new Torch model with id: {}", model.id());
+                info!("Created new Torch model with id: {}", model.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = model.id().into();
@@ -717,7 +716,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }

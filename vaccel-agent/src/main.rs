@@ -21,18 +21,22 @@ mod rpc_sync;
 use rpc_sync as rpc;
 #[cfg(feature = "async")]
 mod rpc_async;
+use env_logger::Env;
+#[allow(unused_imports)]
+use log::{debug, info};
 #[cfg(feature = "async")]
 use rpc_async as rpc;
 
 #[cfg(not(feature = "async"))]
 fn main() {
-    let cli = cli::VaccelAgentCli::from_args();
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
+    let cli = cli::VaccelAgentCli::from_args();
     let mut server = rpc::new(&cli.uri).unwrap();
 
     server.start().unwrap();
 
-    println!("vaccel ttRPC server started. address: {}", &cli.uri);
+    info!("vaccel sync ttRPC server started. address: {}", &cli.uri);
 
     // Hold the main thread until receiving signal SIGTERM
     let (tx, rx) = mpsc::channel();
@@ -41,7 +45,7 @@ fn main() {
             tx.send(()).unwrap();
         })
         .expect("Error setting Ctrl-C handler");
-        println!("Server is running, press Ctrl + C to exit");
+        info!("Server is running, press Ctrl + C to exit");
     });
 
     let _ = rx.recv().unwrap();
@@ -50,6 +54,7 @@ fn main() {
 #[cfg(feature = "async")]
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
+    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
     /*
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::TRACE)
@@ -65,23 +70,23 @@ async fn main() {
     let mut interrupt = signal(SignalKind::interrupt()).unwrap();
     server.start().await.unwrap();
 
-    println!("vaccel ttRPC server started. address: {}", &cli.uri);
+    info!("vaccel async ttRPC server started. address: {}", &cli.uri);
 
-	tokio::select! {
-		_ = hangup.recv() => {
-			// test stop_listen -> start
-			println!("stop listen");
-			server.stop_listen().await;
-			println!("start listen");
-			server.start().await.unwrap();
+    tokio::select! {
+        _ = hangup.recv() => {
+            // test stop_listen -> start
+            debug!("stop listen");
+            server.stop_listen().await;
+            debug!("start listen");
+            server.start().await.unwrap();
 
-			// hold some time for the new test connection.
-			sleep(std::time::Duration::from_secs(100)).await;
-		}
-		_ = interrupt.recv() => {
-			// test graceful shutdown
-			println!("graceful shutdown");
-			server.shutdown().await.unwrap();
-		}
-	};
+            // hold some time for the new test connection.
+            sleep(std::time::Duration::from_secs(100)).await;
+        }
+        _ = interrupt.recv() => {
+            // test graceful shutdown
+            debug!("graceful shutdown");
+            server.shutdown().await.unwrap();
+        }
+    };
 }

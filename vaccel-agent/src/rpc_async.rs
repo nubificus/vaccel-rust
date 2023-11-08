@@ -9,7 +9,7 @@ use nix::{
 use protocols::{
     asynchronous::agent::VaccelEmpty,
     error::VaccelError,
-    genop::{GenopRequest, GenopStreamRequest, GenopResponse, GenopResult},
+    genop::{GenopArg, GenopRequest, GenopResponse, GenopResult},
     image::{ImageClassificationRequest, ImageClassificationResponse},
     profiling::{ProfilingRequest, ProfilingResponse},
     resources::{
@@ -42,10 +42,10 @@ extern crate vaccel;
 use vaccel::torch;
 use vaccel::{ops::genop, profiling::ProfRegions, shared_obj as so, tensorflow as tf};
 
-use ttrpc::asynchronous::Server;
 use async_trait::async_trait;
+use ttrpc::asynchronous::Server;
 //use tracing::{info, instrument, Instrument};
-use protobuf::Message;
+use log::{debug, error, info};
 
 //fn type_of<T>(_: &T) -> &'static str {
 //        std::any::type_name::<T>()
@@ -84,7 +84,8 @@ pub fn new(server_address: &str) -> Result<Server, Box<dyn Error>> {
         sessions: Arc::new(CHashMap::new()),
         resources: Arc::new(CHashMap::new()),
         timers: Arc::new(Mutex::new(BTreeMap::new())),
-    }) as Box<dyn protocols::asynchronous::agent_ttrpc::VaccelAgent + Send + Sync>;
+    })
+        as Box<dyn protocols::asynchronous::agent_ttrpc::VaccelAgent + Send + Sync>;
 
     let agent_worker = Arc::new(vaccel_agent);
 
@@ -128,9 +129,7 @@ pub fn new(server_address: &str) -> Result<Server, Box<dyn Error>> {
         "tcp" => {
             let fd = create_tcp_sock_fd(fields[1])?;
 
-            Server::new()
-                .add_listener(fd)?
-                .register_service(aservice)
+            Server::new().add_listener(fd)?.register_service(aservice)
         }
 
         _ => return Err("Unsupported protocol".into()),
@@ -155,7 +154,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
                 assert!(!self.sessions.contains_key(&sess.id()));
                 self.sessions.insert_new(sess.id(), Box::new(sess));
 
-                println!("Created session {:?}", resp.session_id);
+                info!("Created session {}", resp.session_id);
                 Ok(resp)
             }
         }
@@ -174,8 +173,6 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        println!("Destroying session {:?}", sess.id());
-
         let mut timers_lock = self.timers.lock().unwrap();
         if let Entry::Occupied(t) = timers_lock.entry(req.session_id) {
             t.remove_entry();
@@ -183,7 +180,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
         match sess.close() {
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
             Ok(()) => {
-                println!("Destroyed session {:?}", req.session_id);
+                info!("Destroyed session {}", req.session_id);
                 Ok(VaccelEmpty::new())
             }
         }
@@ -202,10 +199,10 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown Session".to_string(),
             ))?;
 
-        println!("session:{:?} Image classification", sess.id());
+        info!("session:{:?} Image classification", sess.id());
         match sess.image_classification(&req.image) {
             Err(e) => {
-                println!("Could not perform classification");
+                error!("Could not perform classification");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
             Ok((tags, _)) => {
@@ -293,7 +290,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        println!(
+        info!(
             "Registering resource {} to session {}",
             req.resource_id, req.session_id
         );
@@ -445,7 +442,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
         let in_tensors = req.in_tensors;
         for it in in_nodes.iter().zip(in_tensors.iter()) {
             let (node, tensor) = it;
-            println!("tensor.dim: {:?}", tensor.dims);
+            debug!("tensor.dim: {:?}", tensor.dims);
             sess_args.add_input(node, tensor);
         }
 
@@ -581,7 +578,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
                 "Unknown session".to_string(),
             ))?;
 
-        // TODO: This will lock until the function finishes
+        // FIXME: This will lock until the function finishes
         let mut timers_lock = self.timers.lock().unwrap();
         let mut timers = timers_lock
             .entry(req.session_id)
@@ -596,7 +593,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
             req.write_args.iter_mut().map(|e| e.into()).collect();
         timers.stop("genop > write_args");
 
-        println!("Genop session {:?}", sess.id());
+        info!("Genop session {}", sess.id());
         timers.start("genop > sess.genop");
         let response = match sess.genop(
             read_args.as_mut_slice(),
@@ -627,15 +624,49 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
     async fn genop_stream(
         &self,
         _ctx: &::ttrpc::asynchronous::TtrpcContext,
-        mut r: ::ttrpc::asynchronous::ServerStreamReceiver<GenopStreamRequest>
+        mut r: ::ttrpc::asynchronous::ServerStreamReceiver<GenopRequest>,
     ) -> ttrpc::Result<GenopResponse> {
-        let mut bytes: Vec<u8> = Vec::new();
         let mut req = GenopRequest::default();
-        while let Some(mut r) = r.recv().await? {
-            bytes.append(&mut r.data);
+        let mut r_arg = vec![GenopArg::new()];
+        let mut w_arg = vec![GenopArg::new()];
+        while let Some(mut data) = r.recv().await? {
+            req.session_id = data.session_id;
+            if data.read_args.len() == 1 && data.read_args[0].parts > 0 {
+                if data.read_args[0].part_no < data.read_args[0].parts {
+                    r_arg[0].buf.append(&mut data.read_args[0].buf);
+                } else {
+                    //println!("ASSEMBLED: {:?}", req.read_args);
+                    r_arg[0].buf.append(&mut data.read_args[0].buf);
+                    r_arg[0].size = data.read_args[0].size;
+                    //println!("APPEND IN");
+                    req.read_args.append(&mut r_arg);
+                    r_arg = vec![GenopArg::new()];
+                }
+                if data.write_args.len() == 1 && data.write_args[0].parts > 0 {
+                    if data.write_args[0].part_no < data.write_args[0].parts {
+                        w_arg[0].buf.append(&mut data.write_args[0].buf);
+                    } else {
+                        //println!("ASSEMBLED: {:?}", req.read_args);
+                        w_arg[0].buf.append(&mut data.write_args[0].buf);
+                        w_arg[0].size = data.write_args[0].size;
+                        //println!("APPEND IN");
+                        req.write_args.append(&mut w_arg);
+                        w_arg = vec![GenopArg::new()];
+                    }
+                }
+            } else {
+                //println!("APPEND");
+                req.read_args.append(&mut data.read_args);
+                req.write_args.append(&mut data.write_args);
+            }
         }
+        //println!("LEN: {:?}", &req.read_args.len());
+        //for r in &req.read_args {
+        //    println!("LEN: {:?}", r.buf.len());
+        //}
         //println!("BYTES: {:?}", bytes);
-        req.merge_from_bytes(&bytes).unwrap();
+        //req.merge_from_bytes(&bytes).unwrap();
+        //let mut req = GenopStreamRequestRaw::from_bytes(&bytes);
 
         let mut sess = self
             .sessions
@@ -660,7 +691,7 @@ impl protocols::asynchronous::agent_ttrpc::VaccelAgent for Agent {
             req.write_args.iter_mut().map(|e| e.into()).collect();
         timers.stop("genop > write_args");
 
-        println!("Genop session {:?}", sess.id());
+        info!("Genop stream session {}", sess.id());
         timers.start("genop > sess.genop");
         let response = match sess.genop(
             read_args.as_mut_slice(),
@@ -710,10 +741,10 @@ impl Agent {
         &self,
         req: CreateTensorflowSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create TensorFlow model resource");
+        info!("Request to create TensorFlow model resource");
         match tf::SavedModel::new().from_in_memory(&req.model_pb, &req.checkpoint, &req.var_index) {
             Ok(model) => {
-                println!("Created new TensorFlow model with id: {}", model.id());
+                info!("Created new TensorFlow model with id: {}", model.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = model.id().into();
@@ -722,7 +753,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }
@@ -732,10 +763,10 @@ impl Agent {
         &self,
         req: CreateSharedObjRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create SharedObject resource");
+        info!("Request to create SharedObject resource");
         match so::SharedObject::from_in_memory(&req.shared_obj) {
             Ok(shared_obj) => {
-                println!("Created new Shared Object with id: {}", shared_obj.id());
+                info!("Created new Shared Object with id: {}", shared_obj.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = shared_obj.id().into();
@@ -744,7 +775,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }
@@ -753,10 +784,10 @@ impl Agent {
         &self,
         req: CreateTorchSavedModelRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        println!("Request to create PyTorch model resource");
+        info!("Request to create PyTorch model resource");
         match torch::SavedModel::new().from_in_memory(&req.model) {
             Ok(model) => {
-                println!("Created new Torch model with id: {}", model.id());
+                info!("Created new Torch model with id: {}", model.id());
 
                 let mut resp = CreateResourceResponse::new();
                 resp.resource_id = model.id().into();
@@ -765,7 +796,7 @@ impl Agent {
                 Ok(resp)
             }
             Err(e) => {
-                println!("Could not register model");
+                error!("Could not register model");
                 Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
             }
         }
