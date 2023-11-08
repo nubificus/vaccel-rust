@@ -51,7 +51,7 @@ service VaccelAgent {
 
 	// Generic Operation API
 	rpc Genop(GenopRequest) returns (GenopResponse);
-	rpc GenopStream(stream GenopStreamRequest) returns (GenopResponse);
+	rpc GenopStream(stream GenopRequest) returns (GenopResponse);
 
 	// Profiling Operation API
 	rpc GetTimers(ProfilingRequest) returns (ProfilingResponse);

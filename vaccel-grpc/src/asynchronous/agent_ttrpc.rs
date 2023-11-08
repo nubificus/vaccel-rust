@@ -97,7 +97,7 @@ impl VaccelAgentClient {
         ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "Genop", cres);
     }
 
-    pub async fn genop_stream(&self, ctx: ttrpc::context::Context) -> ::ttrpc::Result<::ttrpc::r#async::ClientStreamSender<super::genop::GenopStreamRequest, super::genop::GenopResponse>> {
+    pub async fn genop_stream(&self, ctx: ttrpc::context::Context) -> ::ttrpc::Result<::ttrpc::r#async::ClientStreamSender<super::genop::GenopRequest, super::genop::GenopResponse>> {
         ::ttrpc::async_client_stream_send!(self, ctx, "vaccel.VaccelAgent", "GenopStream");
     }
 
@@ -313,7 +313,7 @@ pub trait VaccelAgent: Sync {
     async fn genop(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::genop::GenopRequest) -> ::ttrpc::Result<super::genop::GenopResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/Genop is not supported".to_string())))
     }
-    async fn genop_stream(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: ::ttrpc::r#async::ServerStreamReceiver<super::genop::GenopStreamRequest>) -> ::ttrpc::Result<super::genop::GenopResponse> {
+    async fn genop_stream(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: ::ttrpc::r#async::ServerStreamReceiver<super::genop::GenopRequest>) -> ::ttrpc::Result<super::genop::GenopResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/GenopStream is not supported".to_string())))
     }
     async fn get_timers(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::profiling::ProfilingRequest) -> ::ttrpc::Result<super::profiling::ProfilingResponse> {

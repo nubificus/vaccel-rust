@@ -131,7 +131,7 @@ impl ::protobuf::reflect::ProtobufValue for VaccelEmpty {
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x11async/agent.proto\x12\x06vaccel\x1a\rsession.proto\x1a\x0fresource\
     s.proto\x1a\x0bimage.proto\x1a\x10tensorflow.proto\x1a\x0btorch.proto\
-    \x1a\x0bgenop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xb3\t\n\
+    \x1a\x0bgenop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xad\t\n\
     \x0bVaccelAgent\x12L\n\rCreateSession\x12\x1c.vaccel.CreateSessionReques\
     t\x1a\x1d.vaccel.CreateSessionResponse\x12B\n\rUpdateSession\x12\x1c.vac\
     cel.UpdateSessionRequest\x1a\x13.vaccel.VaccelEmpty\x12D\n\x0eDestroySes\
@@ -149,10 +149,10 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     TensorflowModelRun\x12!.vaccel.TensorflowModelRunRequest\x1a\".vaccel.Te\
     nsorflowModelRunResponse\x12^\n\x13TorchJitloadForward\x12\".vaccel.Torc\
     hJitloadForwardRequest\x1a#.vaccel.TorchJitloadForwardResponse\x124\n\
-    \x05Genop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopResponse\x12@\
-    \n\x0bGenopStream\x12\x1a.vaccel.GenopStreamRequest\x1a\x15.vaccel.Genop\
-    Response\x12@\n\tGetTimers\x12\x18.vaccel.ProfilingRequest\x1a\x19.vacce\
-    l.ProfilingResponseb\x06proto3\
+    \x05Genop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopResponse\x12:\
+    \n\x0bGenopStream\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopRespon\
+    se\x12@\n\tGetTimers\x12\x18.vaccel.ProfilingRequest\x1a\x19.vaccel.Prof\
+    ilingResponseb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
