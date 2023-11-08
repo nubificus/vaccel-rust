@@ -1,5 +1,5 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::{client::VsockClient, resources::VaccelResource};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
     tensorflow::{TFNode, TFTensor},
@@ -44,15 +44,11 @@ impl VsockClient {
         };
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.tensorflow_model_load(ctx, &req).await
-            }).await
-        };
+        let mut resp = self
+            .runtime
+            .block_on(async { tc.tensorflow_model_load(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        Ok(resp?.take_graph_def())
+        Ok(resp.take_graph_def())
     }
 
     pub fn tensorflow_session_delete(&self, model_id: i64, session_id: u32) -> Result<()> {
@@ -64,15 +60,11 @@ impl VsockClient {
         };
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.tensorflow_model_unload(ctx, &req).await
-            }).await
-        };
+        let mut resp = self
+            .runtime
+            .block_on(async { tc.tensorflow_model_unload(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        match resp?.error.take() {
+        match resp.error.take() {
             None => Ok(()),
             Some(e) => Err(e.into()),
         }
@@ -100,15 +92,11 @@ impl VsockClient {
         };
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.tensorflow_model_run(ctx, &req).await
-            }).await
-        };
+        let mut resp = self
+            .runtime
+            .block_on(async { tc.tensorflow_model_run(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        let tf_tensors = resp?.take_result().out_tensors;
+        let tf_tensors = resp.take_result().out_tensors;
         Ok(tf_tensors
             .into_iter()
             .map(|e| unsafe {

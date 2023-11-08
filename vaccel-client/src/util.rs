@@ -4,11 +4,11 @@
 
 use nix::sys::socket::{connect, socket, AddressFamily, SockFlag, SockType, SockaddrIn};
 use std::{os::unix::io::RawFd, str::FromStr};
-use vaccel::ffi;
-#[cfg(not(feature = "async"))]
-use ttrpc::Client as TtrpcClient;
 #[cfg(feature = "async")]
 use ttrpc::asynchronous::Client as TtrpcClient;
+#[cfg(not(feature = "async"))]
+use ttrpc::Client as TtrpcClient;
+use vaccel::ffi;
 
 fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
     let fd = socket(
@@ -48,11 +48,11 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<TtrpcClient, u32> 
 
             #[cfg(not(feature = "async"))]
             {
-            TtrpcClient::new(fd).map_err(|_| ffi::VACCEL_EBACKEND)?
+                TtrpcClient::new(fd).map_err(|_| ffi::VACCEL_EBACKEND)?
             }
             #[cfg(feature = "async")]
             {
-            TtrpcClient::new(fd)
+                TtrpcClient::new(fd)
             }
         }
 

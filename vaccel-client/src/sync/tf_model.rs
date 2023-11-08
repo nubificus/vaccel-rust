@@ -1,5 +1,5 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::{client::VsockClient, resources::VaccelResource};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
     tensorflow::{TFNode, TFTensor},

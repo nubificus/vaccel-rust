@@ -1,10 +1,10 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::{client::VsockClient, resources::VaccelResource};
-use vaccel::{ffi, torch::SavedModel};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
     torch::{TorchJitloadForwardRequest, TorchTensor},
 };
+use vaccel::{ffi, torch::SavedModel};
 
 impl VaccelResource for SavedModel {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {
@@ -40,15 +40,11 @@ impl VsockClient {
         };
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.torch_jitload_forward(ctx, &req).await
-            }).await
-        };
+        let mut resp = self
+            .runtime
+            .block_on(async { tc.torch_jitload_forward(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        let torch_tensors = resp?.take_result().out_tensors;
+        let torch_tensors = resp.take_result().out_tensors;
         Ok(torch_tensors
             .into_iter()
             .map(|e| unsafe {

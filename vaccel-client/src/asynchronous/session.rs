@@ -1,5 +1,5 @@
-use crate::{Error, Result};
 use super::client::VsockClient;
+use crate::{Error, Result};
 use protocols::session::{CreateSessionRequest, DestroySessionRequest};
 use std::collections::btree_map::Entry;
 use vaccel::ffi;
@@ -12,15 +12,11 @@ impl VsockClient {
         req.flags = flags;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.create_session(ctx, &req).await
-            }).await
-        };
+        let resp = self
+            .runtime
+            .block_on(async { tc.create_session(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        Ok(resp?.session_id)
+        Ok(resp.session_id)
     }
 
     pub fn sess_free(&self, sess_id: u32) -> Result<()> {
@@ -29,13 +25,10 @@ impl VsockClient {
         req.session_id = sess_id;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.destroy_session(ctx, &req).await
-            }).await
-        };
+        let _resp = self
+            .runtime
+            .block_on(async { tc.destroy_session(ctx, &req).await })?;
 
-        let _resp = self.runtime.block_on(task)?;
         Ok(())
     }
 }

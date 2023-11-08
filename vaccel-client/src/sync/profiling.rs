@@ -1,5 +1,5 @@
-use crate::{Error, Result, c_pointer_to_mut_slice};
 use super::client::VsockClient;
+use crate::{c_pointer_to_mut_slice, Error, Result};
 use protocols::profiling::ProfilingRequest;
 use std::ptr;
 use vaccel::{ffi, profiling::ProfRegions};

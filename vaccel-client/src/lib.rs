@@ -3,10 +3,10 @@
 use protocols::error::{vaccel_error::Error as VaccelErrorType, VaccelError};
 use std::slice;
 
-#[cfg(not(feature = "async"))]
-pub mod sync;
 #[cfg(feature = "async")]
 pub mod asynchronous;
+#[cfg(not(feature = "async"))]
+pub mod sync;
 #[cfg(feature = "async")]
 pub use asynchronous as r#async;
 pub mod client;

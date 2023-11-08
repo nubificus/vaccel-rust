@@ -1,10 +1,10 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::{client::VsockClient, resources::VaccelResource};
-use vaccel::{ffi, torch::SavedModel};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
     torch::{TorchJitloadForwardRequest, TorchTensor},
 };
+use vaccel::{ffi, torch::SavedModel};
 
 impl VaccelResource for SavedModel {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {

@@ -1,8 +1,8 @@
-use crate::{Error, Result};
 use super::{
     client::VsockClient, shared_obj::create_shared_object, tf_model::create_tf_model,
     torch_model::create_torch_model,
 };
+use crate::{Error, Result};
 use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,

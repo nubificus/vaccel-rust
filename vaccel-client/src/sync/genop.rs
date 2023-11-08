@@ -1,5 +1,5 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::client::VsockClient;
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protocols::genop::{GenopArg, GenopRequest};
 use std::{convert::TryInto, ptr};
 use vaccel::ffi;

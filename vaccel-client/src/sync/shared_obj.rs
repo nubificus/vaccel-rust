@@ -1,7 +1,7 @@
-use crate::{Error, Result};
 use super::{client::VsockClient, resources::VaccelResource};
-use vaccel::{ffi, shared_obj::SharedObject};
+use crate::{Error, Result};
 use protocols::resources::{CreateResourceRequest, CreateSharedObjRequest};
+use vaccel::{ffi, shared_obj::SharedObject};
 
 impl VaccelResource for SharedObject {
     fn create_resource_request(self) -> Result<CreateResourceRequest> {

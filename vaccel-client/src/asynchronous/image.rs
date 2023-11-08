@@ -1,5 +1,5 @@
-use crate::{Error, Result};
 use super::client::VsockClient;
+use crate::{Error, Result};
 use protocols::image::ImageClassificationRequest;
 use std::{os::raw::c_uchar, slice};
 use vaccel::ffi;
@@ -12,15 +12,11 @@ impl VsockClient {
         req.image = img;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.image_classification(ctx, &req).await
-            }).await
-        };
+        let resp = self
+            .runtime
+            .block_on(async { tc.image_classification(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        Ok(resp?.tags)
+        Ok(resp.tags)
     }
 }
 

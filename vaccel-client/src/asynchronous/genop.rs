@@ -1,9 +1,10 @@
-use crate::{Error, Result, c_pointer_to_mut_slice, c_pointer_to_slice};
 use super::client::VsockClient;
-use protocols::genop::{GenopArg, GenopRequest, GenopStreamRequest};
-use std::{convert::TryInto, ptr};
-use vaccel::{ffi, profiling::ProfRegions};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 use protobuf::Message;
+use protocols::genop::{GenopArg, GenopRequest, GenopResponse};
+use std::{convert::TryInto, ptr};
+use ttrpc::asynchronous::ClientStreamSender;
+use vaccel::ffi;
 
 impl VsockClient {
     pub fn genop(
@@ -14,39 +15,100 @@ impl VsockClient {
     ) -> Result<Vec<GenopArg>> {
         let ctx = ttrpc::context::Context::default();
 
-        let mut lock = self.timers.lock().unwrap();
-        let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-        //let timers = self.get_timers_entry(sess_id);
-        timers.start("genop > client > req create");
+        self.timer_start(sess_id, "genop > client > req create");
         let req = GenopRequest {
             session_id: sess_id,
             read_args: read_args,
             write_args: write_args,
             ..Default::default()
         };
-        timers.stop("genop > client > req create");
+        self.timer_stop(sess_id, "genop > client > req create");
 
-        timers.start("genop > client > ttrpc_client clone");
+        self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
         let tc = self.ttrpc_client.clone();
-        timers.stop("genop > client > ttrpc_client clone");
-        timers.start("genop > client > ttrpc_client.genop");
-        let task = async {
-            tokio::spawn(async move {
-                tc.genop(ctx, &req).await
-            }).await
+        let mut resp = self.runtime.block_on(async { tc.genop(ctx, &req).await })?;
+        self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
+
+        Ok(resp.take_result().write_args.into())
+    }
+
+    const MAX_REQ_LEN: u64 = 4194304;
+
+    async fn genop_stream_send_args(
+        &mut self,
+        sess_id: u32,
+        stream: &ClientStreamSender<GenopRequest, GenopResponse>,
+        args: Vec<GenopArg>,
+        is_read: bool,
+    ) {
+        let mut req = GenopRequest {
+            session_id: sess_id,
+            ..Default::default()
         };
 
-        let resp = self.runtime.block_on(task)?;
- 
-        /*
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
-        */
-        //let timers = self.get_timers_entry(sess_id);
-        timers.stop("genop > client > ttrpc_client.genop");
+        for a in args {
+            if req.compute_size() + a.compute_size() < Self::MAX_REQ_LEN {
+                self.timer_start(sess_id, "genop > client > ttrpc_client.genop > req create");
+                match is_read {
+                    true => req.read_args.push(a),
+                    false => req.write_args.push(a),
+                };
+                self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > req create");
+            } else {
+                self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
+                stream.send(&req).await.unwrap();
+                self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
 
-        Ok(resp?.take_result().write_args.into())
+                let b = a
+                    .buf
+                    .chunks(Self::MAX_REQ_LEN as usize - std::mem::size_of::<GenopArg>() as usize);
+                let parts = b.len();
+                let mut no = 0;
+                for i in b {
+                    no = no + 1;
+                    self.timer_start(sess_id, "genop > client > ttrpc_client.genop > req create");
+                    let arg = GenopArg {
+                        buf: i.to_vec(),
+                        size: a.buf.len() as u32,
+                        parts: parts as u32,
+                        part_no: no,
+                        ..Default::default()
+                    };
+                    req = match is_read {
+                        true => GenopRequest {
+                            session_id: sess_id,
+                            read_args: vec![arg],
+                            ..Default::default()
+                        },
+                        false => GenopRequest {
+                            session_id: sess_id,
+                            write_args: vec![arg],
+                            ..Default::default()
+                        },
+                    };
+                    self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > req create");
+
+                    self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
+                    stream.send(&req).await.unwrap();
+                    self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
+                }
+                req = GenopRequest {
+                    session_id: sess_id,
+                    ..Default::default()
+                };
+                continue;
+            }
+        }
+
+        let args_len = match is_read {
+            true => req.read_args.len(),
+            false => req.write_args.len(),
+        };
+        if args_len > 0 {
+            self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
+            stream.send(&req).await.unwrap();
+            self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
+        }
     }
 
     pub fn genop_stream(
@@ -57,165 +119,28 @@ impl VsockClient {
     ) -> Result<Vec<GenopArg>> {
         let ctx = ttrpc::context::Context::default();
 
-        let mut lock = self.timers.lock().unwrap();
-        let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-        //let timers = self.get_timers_entry(sess_id);
-        timers.start("genop > client > req create");
-        //let (a, b) = read_args.split
-        //println!("VEC: {:?}", &read_args);
-        /*
-        let r_args: Vec<GenopArg> = Vec::new();
-        for arg in read_args.iter() {
-            r_args.push(GenopArg { size: arg.size, buf: arg.buf };
-            println!("ARG: {:?}", arg);
-        }
-        */
-        let req = GenopRequest {
-            session_id: sess_id,
-            read_args: read_args,
-            //read_args: r_args,
-            write_args: write_args,
-            ..Default::default()
-        };
-        let max_len = 4194304 - 4 - 1;
-        /*
-        let mut frombytes = GenopRequest::default();
-            let c = frombytes.merge_from_bytes(&[bytes[i]]);
-            println!("BYTE: {:?}", c); 
-        };
-        */
-        //let frombytes = GenopRequest::parse_from_bytes(&bytes);
-        timers.stop("genop > client > req create");
-
-        timers.start("genop > client > ttrpc_client.genop");
-        std::mem::drop(lock);
+        self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
         let tc = self.ttrpc_client.clone();
-        let tmrs = self.timers.clone();
-        let task = async {
-            tokio::spawn(async move {
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.start("genop > client > ttrpc_client.genop > stream");
-                }
-                let mut stream = tc.genop_stream(ctx).await.unwrap();
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.stop("genop > client > ttrpc_client.genop > stream");
-                }
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.start("genop > client > ttrpc_client.genop > b");
-                }
-                let bytes = req.write_to_bytes().unwrap();
-                let mut len = bytes.len();
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.stop("genop > client > ttrpc_client.genop > b");
-                }
-                //println!("BYTES: {:?}", bytes);
-                /*
-                for i in 0..bytes.len() {
-                    let b = GenopStreamRequest {
-                        data: vec![bytes[i]],
-                        ..Default::default()
-                    };
-                    stream.send(&b).await.unwrap();
-                }
-                */
-                let mut s = 0;
-                while len > max_len {
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.start("genop > client > ttrpc_client.genop > b");
-                    }
-                    let b = GenopStreamRequest {
-                        data: bytes[s..s+max_len].to_vec(),
-                        ..Default::default()
-                    };
-                    s = s + max_len ;
-                    len = len - max_len;
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.stop("genop > client > ttrpc_client.genop > b");
-                    }
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.start("genop > client > ttrpc_client.genop > stream");
-                    }
-                    stream.send(&b).await.unwrap();
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.stop("genop > client > ttrpc_client.genop > stream");
-                    }
-                }
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.start("genop > client > ttrpc_client.genop > b");
-                    }
-                let b = GenopStreamRequest {
-                    data: bytes[s..s+len].to_vec(),
-                    ..Default::default()
-                };
-                    {
-                    let mut lock = tmrs.lock().unwrap();
-                    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                    timers.stop("genop > client > ttrpc_client.genop > b");
-                    }
+        let runtime = self.runtime.clone();
+        let mut resp = runtime.block_on(async {
+            self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
+            let mut stream = tc.genop_stream(ctx).await.unwrap();
+            self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
 
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.start("genop > client > ttrpc_client.genop > stream");
-                }
-                stream.send(&b).await.unwrap();
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.stop("genop > client > ttrpc_client.genop > stream");
-                }
-                /*
-                for a in read_args.iter() {
-                    r_args.push(GenopArg { size: arg.size, buf: arg.buf };
-                                println!("ARG: {:?}", arg);
-                                }
-                                */
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.start("genop > client > ttrpc_client.genop > stream");
-                }
-                let res = stream.close_and_recv().await;
-                {
-                let mut lock = tmrs.lock().unwrap();
-                let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-                timers.stop("genop > client > ttrpc_client.genop > stream");
-                }
-                res
-            }).await
-        };
+            self.genop_stream_send_args(sess_id, &stream, read_args, true)
+                .await;
+            self.genop_stream_send_args(sess_id, &stream, write_args, false)
+                .await;
 
-        let resp = self.runtime.block_on(task)?;
- 
-        /*
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
-        */
-        //let timers = self.get_timers_entry(sess_id);
-        let mut lock = self.timers.lock().unwrap();
-        let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-        timers.stop("genop > client > ttrpc_client.genop");
+            self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
+            let res = stream.close_and_recv().await;
+            self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
 
-        Ok(resp?.take_result().write_args.into())
+            res
+        })?;
+        self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
+
+        Ok(resp.take_result().write_args.into())
     }
 }
 
@@ -233,34 +158,8 @@ pub extern "C" fn genop(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    // FIXME: 1) this will lock until the function finishes
-    // 2) should check about lock errors
-    let mut lock = client.timers.lock().unwrap();
-    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-    timers.start("genop > read_args");
+    client.timer_start(sess_id, "genop > read_args");
     let read_args: Vec<GenopArg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
-        /*
-        Some(slice) => {
-            let args: Vec<GenopArg> = Vec::new();
-            for a in slice.into_iter() {
-                let size = e.size / 2;
-                let buf: Vec<u8> = {
-                    c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
-                        .unwrap_or(&[])
-                        .to_vec()
-                };
-                args.push(GenopArg {
-                    buf: buf,
-                    size: size,
-                    ..Default::default()
-                });
-                args.push(GenopArg {
-                    buf: buf,
-                    size: size,
-                    ..Default::default()
-                });
-            }
-        },*/
         Some(slice) => slice
             .into_iter()
             .map(|e| {
@@ -281,9 +180,9 @@ pub extern "C" fn genop(
             .collect(),
         None => return ffi::VACCEL_EINVAL,
     };
-    timers.stop("genop > read_args");
+    client.timer_stop(sess_id, "genop > read_args");
 
-    timers.start("genop > write_args");
+    client.timer_start(sess_id, "genop > write_args");
     let write_args_ref = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
         Some(slice) => slice,
         None => &mut [],
@@ -310,41 +209,32 @@ pub extern "C" fn genop(
             .collect(),
         None => vec![],
     };
-    timers.stop("genop > write_args");
+    client.timer_stop(sess_id, "genop > write_args");
 
-    //std::mem::drop(lock);
-    timers.start("genop > client.genop");
-    std::mem::drop(lock);
+    client.timer_start(sess_id, "genop > client.genop");
     #[cfg(feature = "async-stream")]
     let do_genop = client.genop_stream(sess_id, read_args, write_args);
     #[cfg(not(feature = "async-stream"))]
     let do_genop = client.genop(sess_id, read_args, write_args);
     let ret = match do_genop {
         Ok(result) => {
-            let mut lock = client.timers.lock().unwrap();
-            let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-            //let mut mg: Option<std::sync::MutexGuard::<'_, std::collections::BTreeMap<u32, ProfRegions>>> = None;
-            //let timers = client.get_timers_entry(sess_id, &mut mg);
-            timers.start("genop > write_args copy");
+            client.timer_start(sess_id, "genop > write_args copy");
             for (w, r) in write_args_ref.iter_mut().zip(result.iter()) {
                 unsafe {
                     ptr::copy_nonoverlapping(r.buf.as_ptr(), w.buf as *mut u8, r.size as usize)
                 }
             }
-            timers.stop("genop > write_args copy");
+            client.timer_stop(sess_id, "genop > write_args copy");
 
             ffi::VACCEL_OK
         }
         Err(Error::ClientError(err)) => err,
-        Err(_) => ffi::VACCEL_EINVAL,
+        Err(e) => {
+            println!("-- {:#?}", e);
+            ffi::VACCEL_EINVAL
+        }
     };
-    let mut lock = client.timers.lock().unwrap();
-    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-    //let timers = client.get_timers_entry(sess_id);
-    timers.stop("genop > client.genop");
-
-    //timers.print_total();
-    //timers.print();
+    client.timer_stop(sess_id, "genop > client.genop");
 
     ret
 }

@@ -1,4 +1,5 @@
 use crate::{util::create_ttrpc_client, Error, Result};
+use log::debug;
 use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::{collections::BTreeMap, env};
 use vaccel::profiling::ProfRegions;
@@ -11,6 +12,8 @@ pub struct VsockClient {
 
 impl VsockClient {
     pub fn new() -> Result<Self> {
+        debug!("Client is sync");
+
         let server_address = match env::var("VACCEL_VSOCK") {
             Ok(addr) => addr,
             Err(_) => "vsock://2:2048".to_string(),

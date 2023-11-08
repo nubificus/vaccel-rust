@@ -1,5 +1,5 @@
-use crate::{Error, Result};
 use super::client::VsockClient;
+use crate::{Error, Result};
 use protocols::image::ImageClassificationRequest;
 use std::{os::raw::c_uchar, slice};
 use vaccel::ffi;

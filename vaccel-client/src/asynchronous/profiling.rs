@@ -1,17 +1,28 @@
-use crate::{Error, Result, c_pointer_to_mut_slice};
 use super::client::VsockClient;
+use crate::{c_pointer_to_mut_slice, Error, Result};
 use protocols::profiling::ProfilingRequest;
 use std::ptr;
 use vaccel::{ffi, profiling::ProfRegions};
 
 impl VsockClient {
     pub const TIMERS_PREFIX: &str = "vaccel-client";
-    pub async fn get_timers_lock(&self) -> std::sync::MutexGuard::<'_, std::collections::BTreeMap<u32, ProfRegions>> {
-        self.timers.lock().unwrap()
+
+    pub fn timer_start(&mut self, sess_id: u32, name: &str) {
+        self.timers
+            .lock()
+            .unwrap()
+            .entry(sess_id)
+            .or_insert(ProfRegions::new(Self::TIMERS_PREFIX))
+            .start(name);
     }
 
-    pub async fn get_timers_entry<'a>(sess_id: u32, lock: &'a mut std::sync::MutexGuard::<'a, std::collections::BTreeMap<u32, ProfRegions>>) -> &mut ProfRegions {
-        lock.entry(sess_id).or_insert(ProfRegions::new("vaccel-client"))
+    pub fn timer_stop(&mut self, sess_id: u32, name: &str) {
+        self.timers
+            .lock()
+            .unwrap()
+            .entry(sess_id)
+            .or_insert(ProfRegions::new(Self::TIMERS_PREFIX))
+            .stop(name);
     }
 
     pub fn get_timers(&mut self, sess_id: u32) -> Result<ProfRegions> {
@@ -23,15 +34,11 @@ impl VsockClient {
         };
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.get_timers(ctx, &req).await
-            }).await
-        };
+        let mut resp = self
+            .runtime
+            .block_on(async { tc.get_timers(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
- 
-        match resp?.result.take() {
+        match resp.result.take() {
             Some(r) => Ok(r.into()),
             None => Err(Error::Undefined),
         }
@@ -54,7 +61,9 @@ pub extern "C" fn get_timers(
     let _ret = match client.get_timers(sess_id) {
         Ok(agent_timers) => {
             let mut lock = client.timers.lock().unwrap();
-            let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
+            let timers = lock
+                .entry(sess_id)
+                .or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
             //let timers = client.get_timers_entry(sess_id);
             timers.extend(agent_timers);
             ffi::VACCEL_OK
@@ -62,7 +71,9 @@ pub extern "C" fn get_timers(
         Err(_) => ffi::VACCEL_EINVAL,
     };
     let mut lock = client.timers.lock().unwrap();
-    let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
+    let timers = lock
+        .entry(sess_id)
+        .or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
     //let timers = client.get_timers_entry(sess_id);
 
     if nr_timers == 0 {

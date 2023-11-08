@@ -1,8 +1,8 @@
-use crate::{Error, Result};
 use super::{
     client::VsockClient, shared_obj::create_shared_object, tf_model::create_tf_model,
     torch_model::create_torch_model,
 };
+use crate::{Error, Result};
 use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,
@@ -20,15 +20,11 @@ impl VsockClient {
         let req = resource.create_resource_request()?;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.create_resource(ctx, &req).await
-            }).await
-        };
+        let resp = self
+            .runtime
+            .block_on(async { tc.create_resource(ctx, &req).await })?;
 
-        let resp = self.runtime.block_on(task)?;
-
-        Ok(resp?.resource_id.into())
+        Ok(resp.resource_id.into())
     }
 
     pub fn destroy_resource(&self, model_id: i64) -> Result<()> {
@@ -37,13 +33,9 @@ impl VsockClient {
         req.resource_id = model_id;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.destroy_resource(ctx, &req).await
-            }).await
-        };
-
-        let _resp = self.runtime.block_on(task)?;
+        let _resp = self
+            .runtime
+            .block_on(async { tc.destroy_resource(ctx, &req).await })?;
 
         Ok(())
     }
@@ -55,13 +47,9 @@ impl VsockClient {
         req.session_id = sess_id;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.register_resource(ctx, &req).await
-            }).await
-        };
-
-        let _resp = self.runtime.block_on(task)?;
+        let _resp = self
+            .runtime
+            .block_on(async { tc.register_resource(ctx, &req).await })?;
 
         Ok(())
     }
@@ -73,13 +61,9 @@ impl VsockClient {
         req.session_id = sess_id;
 
         let tc = self.ttrpc_client.clone();
-        let task = async {
-            tokio::spawn(async move {
-                tc.unregister_resource(ctx, &req).await
-            }).await
-        };
-
-        let _resp = self.runtime.block_on(task)?;
+        let _resp = self
+            .runtime
+            .block_on(async { tc.unregister_resource(ctx, &req).await })?;
 
         Ok(())
     }

@@ -1,8 +1,13 @@
-use crate::{util::create_ttrpc_client, Error, Result};
-use std::{collections::BTreeMap, env, sync::{Arc, Mutex}};
-use vaccel::profiling::ProfRegions;
-use tokio::runtime::Runtime;
+use crate::{util::create_ttrpc_client, Result};
+use log::debug;
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
+use std::{
+    collections::BTreeMap,
+    env,
+    sync::{Arc, Mutex},
+};
+use tokio::runtime::Runtime;
+use vaccel::profiling::ProfRegions;
 
 #[repr(C)]
 pub struct VsockClient {
@@ -13,6 +18,8 @@ pub struct VsockClient {
 
 impl VsockClient {
     pub fn new() -> Result<Self> {
+        debug!("Client is async");
+
         let r = Runtime::new().unwrap();
         let server_address = match env::var("VACCEL_VSOCK") {
             Ok(addr) => addr,
@@ -20,9 +27,8 @@ impl VsockClient {
         };
 
         let _guard = r.enter();
-        let ttrpc_client = tokio::task::block_in_place(|| {
-            create_ttrpc_client(&server_address).map_err(|e| Error::ClientError(e)).unwrap()
-        });
+        let ttrpc_client =
+            tokio::task::block_in_place(|| create_ttrpc_client(&server_address).unwrap());
 
         Ok(VsockClient {
             ttrpc_client: VaccelAgentClient::new(ttrpc_client),
