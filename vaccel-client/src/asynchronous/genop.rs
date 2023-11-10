@@ -1,5 +1,6 @@
 use super::client::VsockClient;
 use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+use log::error;
 use protobuf::Message;
 use protocols::genop::{GenopArg, GenopRequest, GenopResponse};
 use std::{convert::TryInto, ptr};
@@ -18,8 +19,8 @@ impl VsockClient {
         self.timer_start(sess_id, "genop > client > req create");
         let req = GenopRequest {
             session_id: sess_id,
-            read_args: read_args,
-            write_args: write_args,
+            read_args,
+            write_args,
             ..Default::default()
         };
         self.timer_stop(sess_id, "genop > client > req create");
@@ -29,7 +30,7 @@ impl VsockClient {
         let mut resp = self.runtime.block_on(async { tc.genop(ctx, &req).await })?;
         self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
 
-        Ok(resp.take_result().write_args.into())
+        Ok(resp.take_result().write_args)
     }
 
     const MAX_REQ_LEN: u64 = 4194304;
@@ -59,19 +60,17 @@ impl VsockClient {
                 stream.send(&req).await.unwrap();
                 self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
 
-                let b = a
+                let chunks = a
                     .buf
-                    .chunks(Self::MAX_REQ_LEN as usize - std::mem::size_of::<GenopArg>() as usize);
-                let parts = b.len();
-                let mut no = 0;
-                for i in b {
-                    no = no + 1;
+                    .chunks(Self::MAX_REQ_LEN as usize - std::mem::size_of::<GenopArg>());
+                let parts = chunks.len();
+                for (no, c) in chunks.enumerate() {
                     self.timer_start(sess_id, "genop > client > ttrpc_client.genop > req create");
                     let arg = GenopArg {
-                        buf: i.to_vec(),
+                        buf: c.to_vec(),
                         size: a.buf.len() as u32,
                         parts: parts as u32,
-                        part_no: no,
+                        part_no: no as u32,
                         ..Default::default()
                     };
                     req = match is_read {
@@ -140,12 +139,12 @@ impl VsockClient {
         })?;
         self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
 
-        Ok(resp.take_result().write_args.into())
+        Ok(resp.take_result().write_args)
     }
 }
 
 #[no_mangle]
-pub extern "C" fn genop(
+pub unsafe extern "C" fn genop(
     client_ptr: *mut VsockClient,
     sess_id: u32,
     read_args_ptr: *mut ffi::vaccel_arg,
@@ -161,7 +160,7 @@ pub extern "C" fn genop(
     client.timer_start(sess_id, "genop > read_args");
     let read_args: Vec<GenopArg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
         Some(slice) => slice
-            .into_iter()
+            .iter()
             .map(|e| {
                 let size = e.size;
                 let argtype = e.argtype;
@@ -171,9 +170,9 @@ pub extern "C" fn genop(
                         .to_vec()
                 };
                 GenopArg {
-                    buf: buf,
-                    size: size,
-                    argtype: argtype,
+                    buf,
+                    size,
+                    argtype,
                     ..Default::default()
                 }
             })
@@ -183,14 +182,11 @@ pub extern "C" fn genop(
     client.timer_stop(sess_id, "genop > read_args");
 
     client.timer_start(sess_id, "genop > write_args");
-    let write_args_ref = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
-        Some(slice) => slice,
-        None => &mut [],
-    };
+    let write_args_ref = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
 
     let write_args: Vec<GenopArg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
         Some(slice) => slice
-            .into_iter()
+            .iter_mut()
             .map(|e| {
                 let size = e.size;
                 let argtype = e.argtype;
@@ -200,9 +196,9 @@ pub extern "C" fn genop(
                         .to_vec()
                 };
                 GenopArg {
-                    buf: buf,
-                    size: size,
-                    argtype: argtype,
+                    buf,
+                    size,
+                    argtype,
                     ..Default::default()
                 }
             })
@@ -230,7 +226,7 @@ pub extern "C" fn genop(
         }
         Err(Error::ClientError(err)) => err,
         Err(e) => {
-            println!("-- {:#?}", e);
+            error!("Genop: {:?}", e);
             ffi::VACCEL_EINVAL
         }
     };

@@ -47,6 +47,9 @@ impl VsockClient {
         let mut resp = self
             .runtime
             .block_on(async { tc.tensorflow_model_load(ctx, &req).await })?;
+        if resp.has_error() {
+            return Err(resp.take_error().into());
+        }
 
         Ok(resp.take_graph_def())
     }
@@ -85,9 +88,9 @@ impl VsockClient {
             model_id,
             session_id,
             run_options,
-            in_nodes: in_nodes,
-            in_tensors: in_tensors,
-            out_nodes: out_nodes,
+            in_nodes,
+            in_tensors,
+            out_nodes,
             ..Default::default()
         };
 
@@ -95,6 +98,9 @@ impl VsockClient {
         let mut resp = self
             .runtime
             .block_on(async { tc.tensorflow_model_run(ctx, &req).await })?;
+        if resp.has_error() {
+            return Err(resp.take_error().into());
+        }
 
         let tf_tensors = resp.take_result().out_tensors;
         Ok(tf_tensors
@@ -112,7 +118,7 @@ impl VsockClient {
                 ffi::vaccel_tf_tensor_set_data(
                     tensor,
                     data.as_ptr() as *mut std::ffi::c_void,
-                    data.len() as usize,
+                    data.len(),
                 );
 
                 std::mem::forget(data);
@@ -136,7 +142,7 @@ pub(crate) fn create_tf_model(
 }
 
 #[no_mangle]
-pub extern "C" fn tf_model_load(
+pub unsafe extern "C" fn tf_model_load(
     client_ptr: *const VsockClient,
     model_id: ffi::vaccel_id_t,
     sess_id: u32,
@@ -154,7 +160,7 @@ pub extern "C" fn tf_model_load(
 }
 
 #[no_mangle]
-pub extern "C" fn tf_session_delete(
+pub unsafe extern "C" fn tf_session_delete(
     client_ptr: *const VsockClient,
     model_id: ffi::vaccel_id_t,
     sess_id: u32,
@@ -172,7 +178,7 @@ pub extern "C" fn tf_session_delete(
 }
 
 #[no_mangle]
-pub extern "C" fn tf_model_run(
+pub unsafe extern "C" fn tf_model_run(
     client_ptr: *const VsockClient,
     model_id: ffi::vaccel_id_t,
     sess_id: u32,
@@ -185,29 +191,26 @@ pub extern "C" fn tf_model_run(
     nr_outputs: usize,
 ) -> u32 {
     let run_options = unsafe {
-        c_pointer_to_slice(
-            (*run_options_ptr).data as *mut u8,
-            (*run_options_ptr).size as usize,
-        )
-        .unwrap_or(&[])
-        .to_owned()
+        c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
+            .unwrap_or(&[])
+            .to_owned()
     };
 
     let in_nodes: Vec<TFNode> = match c_pointer_to_slice(in_nodes_ptr, nr_inputs) {
-        Some(slice) => slice.into_iter().map(|e| e.into()).collect(),
+        Some(slice) => slice.iter().map(|e| e.into()).collect(),
         None => return ffi::VACCEL_EINVAL,
     };
 
     let in_tensors: Vec<TFTensor> = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
         Some(slice) => slice
-            .into_iter()
+            .iter()
             .map(|e| unsafe { e.as_ref().unwrap().into() })
             .collect(),
         None => return ffi::VACCEL_EINVAL,
     };
 
     let out_nodes: Vec<TFNode> = match c_pointer_to_slice(out_nodes_ptr, nr_outputs) {
-        Some(vec) => vec.into_iter().map(|e| e.into()).collect(),
+        Some(vec) => vec.iter().map(|e| e.into()).collect(),
         None => return ffi::VACCEL_EINVAL,
     };
 
@@ -221,7 +224,7 @@ pub extern "C" fn tf_model_run(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    let ret = match client.tensorflow_inference(
+    match client.tensorflow_inference(
         model_id,
         sess_id,
         run_options,
@@ -235,7 +238,5 @@ pub extern "C" fn tf_model_run(
         }
         Err(Error::ClientError(err)) => err,
         Err(_) => ffi::VACCEL_EINVAL,
-    };
-
-    ret
+    }
 }

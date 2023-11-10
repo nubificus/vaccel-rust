@@ -58,7 +58,7 @@ impl VsockClient {
 }
 
 #[no_mangle]
-pub extern "C" fn create_resource(
+pub unsafe extern "C" fn create_resource(
     client_ptr: *const VsockClient,
     res_type: ffi::vaccel_resource_t,
     data: *mut c_void,
@@ -97,7 +97,10 @@ pub extern "C" fn create_resource(
 }
 
 #[no_mangle]
-pub extern "C" fn destroy_resource(client_ptr: *const VsockClient, id: ffi::vaccel_id_t) -> i32 {
+pub unsafe extern "C" fn destroy_resource(
+    client_ptr: *const VsockClient,
+    id: ffi::vaccel_id_t,
+) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,

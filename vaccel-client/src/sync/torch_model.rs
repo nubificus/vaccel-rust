@@ -35,7 +35,7 @@ impl VsockClient {
             session_id,
             model_id,
             run_options,
-            in_tensors: in_tensors,
+            in_tensors,
             ..Default::default()
         };
 
@@ -60,7 +60,7 @@ impl VsockClient {
                 ffi::vaccel_torch_tensor_set_data(
                     tensor,
                     data.as_ptr() as *mut std::ffi::c_void,
-                    data.len() as usize,
+                    data.len(),
                 );
 
                 std::mem::forget(data);
@@ -84,7 +84,7 @@ pub(crate) fn create_torch_model(
 }
 
 #[no_mangle]
-pub extern "C" fn torch_jitload_forward(
+pub unsafe extern "C" fn torch_jitload_forward(
     client_ptr: *const VsockClient,
     sess_id: u32,
     model_id: ffi::vaccel_id_t,
@@ -95,17 +95,14 @@ pub extern "C" fn torch_jitload_forward(
     nr_outputs: usize,
 ) -> u32 {
     let run_options = unsafe {
-        c_pointer_to_slice(
-            (*run_options_ptr).data as *mut u8,
-            (*run_options_ptr).size as usize,
-        )
-        .unwrap_or(&[])
-        .to_owned()
+        c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
+            .unwrap_or(&[])
+            .to_owned()
     };
 
     let in_tensors: Vec<TorchTensor> = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
         Some(slice) => slice
-            .into_iter()
+            .iter()
             .map(|e| unsafe { e.as_ref().unwrap().into() })
             .collect(),
         None => return ffi::VACCEL_EINVAL,
@@ -121,14 +118,12 @@ pub extern "C" fn torch_jitload_forward(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    let ret = match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors) {
+    match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
             ffi::VACCEL_OK
         }
         Err(Error::ClientError(err)) => err,
         Err(_) => ffi::VACCEL_EINVAL,
-    };
-
-    ret
+    }
 }

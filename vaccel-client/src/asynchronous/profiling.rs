@@ -12,7 +12,7 @@ impl VsockClient {
             .lock()
             .unwrap()
             .entry(sess_id)
-            .or_insert(ProfRegions::new(Self::TIMERS_PREFIX))
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .start(name);
     }
 
@@ -21,7 +21,7 @@ impl VsockClient {
             .lock()
             .unwrap()
             .entry(sess_id)
-            .or_insert(ProfRegions::new(Self::TIMERS_PREFIX))
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .stop(name);
     }
 
@@ -46,7 +46,7 @@ impl VsockClient {
 }
 
 #[no_mangle]
-pub extern "C" fn get_timers(
+pub unsafe extern "C" fn get_timers(
     client_ptr: *mut VsockClient,
     sess_id: u32,
     timers_ptr: *mut ffi::vaccel_prof_region,
@@ -63,8 +63,7 @@ pub extern "C" fn get_timers(
             let mut lock = client.timers.lock().unwrap();
             let timers = lock
                 .entry(sess_id)
-                .or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-            //let timers = client.get_timers_entry(sess_id);
+                .or_insert_with(|| ProfRegions::new(VsockClient::TIMERS_PREFIX));
             timers.extend(agent_timers);
             ffi::VACCEL_OK
         }
@@ -73,21 +72,14 @@ pub extern "C" fn get_timers(
     let mut lock = client.timers.lock().unwrap();
     let timers = lock
         .entry(sess_id)
-        .or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-    //let timers = client.get_timers_entry(sess_id);
+        .or_insert_with(|| ProfRegions::new(VsockClient::TIMERS_PREFIX));
 
     if nr_timers == 0 {
         return timers.len();
     }
 
-    let timers_ref = match c_pointer_to_mut_slice(timers_ptr, nr_timers) {
-        Some(slice) => slice,
-        None => &mut [],
-    };
+    let timers_ref = c_pointer_to_mut_slice(timers_ptr, nr_timers).unwrap_or(&mut []);
 
-    //let mut lock = client.timers.lock().unwrap();
-    //let timers = lock.entry(sess_id).or_insert(ProfRegions::new(VsockClient::TIMERS_PREFIX));
-    //let timers = client.get_timers_entry(sess_id);
     if let Some(client_timers) = timers.get_ffi() {
         for (w, (rk, rv)) in timers_ref.iter_mut().zip(client_timers.iter()) {
             let n = rk.as_str();
@@ -101,7 +93,7 @@ pub extern "C" fn get_timers(
                 ptr::copy_nonoverlapping(
                     cn.as_c_str().as_ptr(),
                     w.name as *mut _,
-                    cn.to_bytes_with_nul().len() as usize,
+                    cn.to_bytes_with_nul().len(),
                 );
             }
 

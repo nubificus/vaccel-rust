@@ -27,7 +27,7 @@ fn client_create_sock_fd(address: &str) -> Result<RawFd, u32> {
 }
 
 pub fn create_ttrpc_client(server_address: &String) -> Result<TtrpcClient, u32> {
-    if server_address == "" {
+    if server_address.is_empty() {
         return Err(ffi::VACCEL_EINVAL);
     }
 
@@ -40,9 +40,7 @@ pub fn create_ttrpc_client(server_address: &String) -> Result<TtrpcClient, u32> 
     let scheme = fields[0].to_lowercase();
 
     let client: TtrpcClient = match scheme.as_str() {
-        "vsock" | "unix" => {
-            TtrpcClient::connect(&server_address).map_err(|_| ffi::VACCEL_EINVAL)?
-        }
+        "vsock" | "unix" => TtrpcClient::connect(server_address).map_err(|_| ffi::VACCEL_EINVAL)?,
         "tcp" => {
             let fd = client_create_sock_fd(fields[1])?;
 

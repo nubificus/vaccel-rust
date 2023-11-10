@@ -7,9 +7,11 @@ use vaccel::ffi;
 impl VsockClient {
     pub fn image_classify(&self, sess_id: u32, img: Vec<u8>) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = ImageClassificationRequest::default();
-        req.session_id = sess_id;
-        req.image = img;
+        let req = ImageClassificationRequest {
+            session_id: sess_id,
+            image: img,
+            ..Default::default()
+        };
 
         let resp = self.ttrpc_client.image_classification(ctx, &req)?;
         Ok(resp.tags)
@@ -17,7 +19,7 @@ impl VsockClient {
 }
 
 #[no_mangle]
-pub extern "C" fn image_classify(
+pub unsafe extern "C" fn image_classify(
     client_ptr: *const VsockClient,
     sess_id: u32,
     img: *const c_uchar,
@@ -36,8 +38,6 @@ pub extern "C" fn image_classify(
     match client.image_classify(sess_id, img.to_vec()) {
         Ok(ret) => {
             tags_slice.copy_from_slice(&ret[..tags_slice.len()]);
-            std::mem::forget(tags_slice);
-
             ffi::VACCEL_OK as i32
         }
         Err(Error::ClientError(err)) => err as i32,

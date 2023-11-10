@@ -7,8 +7,10 @@ use vaccel::ffi;
 impl VsockClient {
     pub fn sess_init(&self, flags: u32) -> Result<u32> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = CreateSessionRequest::default();
-        req.flags = flags;
+        let req = CreateSessionRequest {
+            flags,
+            ..Default::default()
+        };
 
         let resp = self.ttrpc_client.create_session(ctx, &req)?;
 
@@ -27,8 +29,10 @@ impl VsockClient {
 
     pub fn sess_free(&self, sess_id: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = DestroySessionRequest::default();
-        req.session_id = sess_id;
+        let req = DestroySessionRequest {
+            session_id: sess_id,
+            ..Default::default()
+        };
 
         self.ttrpc_client.destroy_session(ctx, &req)?;
         Ok(())
@@ -36,7 +40,7 @@ impl VsockClient {
 }
 
 #[no_mangle]
-pub extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> i32 {
+pub unsafe extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,
@@ -49,7 +53,7 @@ pub extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn sess_update(client_ptr: *const VsockClient, sess_id: u32, flags: u32) -> i32 {
+pub unsafe extern "C" fn sess_update(client_ptr: *const VsockClient, sess_id: u32, flags: u32) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,
@@ -63,7 +67,7 @@ pub extern "C" fn sess_update(client_ptr: *const VsockClient, sess_id: u32, flag
 }
 
 #[no_mangle]
-pub extern "C" fn sess_free(client_ptr: *mut VsockClient, sess_id: u32) -> i32 {
+pub unsafe extern "C" fn sess_free(client_ptr: *mut VsockClient, sess_id: u32) -> i32 {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,
@@ -82,7 +86,7 @@ pub extern "C" fn sess_free(client_ptr: *mut VsockClient, sess_id: u32) -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn register_resource(
+pub unsafe extern "C" fn register_resource(
     client_ptr: *const VsockClient,
     res_id: ffi::vaccel_id_t,
     sess_id: u32,
@@ -100,7 +104,7 @@ pub extern "C" fn register_resource(
 }
 
 #[no_mangle]
-pub extern "C" fn unregister_resource(
+pub unsafe extern "C" fn unregister_resource(
     client_ptr: *const VsockClient,
     res_id: ffi::vaccel_id_t,
     sess_id: u32,

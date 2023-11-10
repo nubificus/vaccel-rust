@@ -17,8 +17,8 @@ impl VsockClient {
         timers.start("genop > client > req create");
         let req = GenopRequest {
             session_id: sess_id,
-            read_args: read_args,
-            write_args: write_args,
+            read_args,
+            write_args,
             ..Default::default()
         };
         timers.stop("genop > client > req create");
@@ -31,12 +31,12 @@ impl VsockClient {
         let timers = self.get_timers_entry(sess_id);
         timers.stop("genop > client > ttrpc_client.genop");
 
-        Ok(resp.take_result().write_args.into())
+        Ok(resp.take_result().write_args)
     }
 }
 
 #[no_mangle]
-pub extern "C" fn genop(
+pub unsafe extern "C" fn genop(
     client_ptr: *mut VsockClient,
     sess_id: u32,
     read_args_ptr: *mut ffi::vaccel_arg,
@@ -53,7 +53,7 @@ pub extern "C" fn genop(
     timers.start("genop > read_args");
     let read_args: Vec<GenopArg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
         Some(slice) => slice
-            .into_iter()
+            .iter()
             .map(|e| {
                 let size = e.size;
                 let argtype = e.argtype;
@@ -63,9 +63,9 @@ pub extern "C" fn genop(
                         .to_vec()
                 };
                 GenopArg {
-                    buf: buf,
-                    size: size,
-                    argtype: argtype,
+                    buf,
+                    size,
+                    argtype,
                     ..Default::default()
                 }
             })
@@ -75,14 +75,11 @@ pub extern "C" fn genop(
     timers.stop("genop > read_args");
 
     timers.start("genop > write_args");
-    let write_args_ref = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
-        Some(slice) => slice,
-        None => &mut [],
-    };
+    let write_args_ref = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
 
     let write_args: Vec<GenopArg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
         Some(slice) => slice
-            .into_iter()
+            .iter_mut()
             .map(|e| {
                 let size = e.size;
                 let argtype = e.argtype;
@@ -92,9 +89,9 @@ pub extern "C" fn genop(
                         .to_vec()
                 };
                 GenopArg {
-                    buf: buf,
-                    size: size,
-                    argtype: argtype,
+                    buf,
+                    size,
+                    argtype,
                     ..Default::default()
                 }
             })

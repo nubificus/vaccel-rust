@@ -8,7 +8,7 @@ impl VsockClient {
     pub fn get_timers_entry(&mut self, sess_id: u32) -> &mut ProfRegions {
         self.timers
             .entry(sess_id)
-            .or_insert(ProfRegions::new("vaccel-client"))
+            .or_insert_with(|| ProfRegions::new("vaccel-client"))
     }
 
     pub fn get_timers(&mut self, sess_id: u32) -> Result<ProfRegions> {
@@ -28,7 +28,7 @@ impl VsockClient {
 }
 
 #[no_mangle]
-pub extern "C" fn get_timers(
+pub unsafe extern "C" fn get_timers(
     client_ptr: *mut VsockClient,
     sess_id: u32,
     timers_ptr: *mut ffi::vaccel_prof_region,
@@ -54,10 +54,7 @@ pub extern "C" fn get_timers(
         return timers.len();
     }
 
-    let timers_ref = match c_pointer_to_mut_slice(timers_ptr, nr_timers) {
-        Some(slice) => slice,
-        None => &mut [],
-    };
+    let timers_ref = c_pointer_to_mut_slice(timers_ptr, nr_timers).unwrap_or(&mut []);
 
     let timers = client.get_timers_entry(sess_id);
     if let Some(client_timers) = timers.get_ffi() {
@@ -73,7 +70,7 @@ pub extern "C" fn get_timers(
                 ptr::copy_nonoverlapping(
                     cn.as_c_str().as_ptr(),
                     w.name as *mut _,
-                    cn.to_bytes_with_nul().len() as usize,
+                    cn.to_bytes_with_nul().len(),
                 );
             }
 
