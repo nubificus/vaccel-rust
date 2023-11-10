@@ -10,8 +10,7 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn new(data: &[u8]) -> Self {
-        let inner =
-            unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len() as usize) };
+        let inner = unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len()) };
         assert!(!inner.is_null(), "Memory allocation failure");
 
         Buffer {
@@ -37,7 +36,7 @@ impl Buffer {
         unsafe {
             let mut size = Default::default();
             let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *const u8;
-            std::slice::from_raw_parts(ptr, size as usize)
+            std::slice::from_raw_parts(ptr, size)
         }
     }
 
@@ -45,7 +44,7 @@ impl Buffer {
         unsafe {
             let mut size = Default::default();
             let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *mut u8;
-            std::slice::from_raw_parts_mut(ptr, size as usize)
+            std::slice::from_raw_parts_mut(ptr, size)
         }
     }
 

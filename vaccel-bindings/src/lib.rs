@@ -82,10 +82,7 @@ impl From<ffi::vaccel_id_t> for VaccelId {
 
 impl From<VaccelId> for ffi::vaccel_id_t {
     fn from(id: VaccelId) -> Self {
-        match id.inner {
-            None => 0,
-            Some(id) => id,
-        }
+        id.inner.unwrap_or(0)
     }
 }
 

@@ -56,7 +56,7 @@ impl<T: TensorType> DerefMut for Tensor<T> {
 impl<T: TensorType> Tensor<T> {
     pub fn new(dims: &[usize]) -> Self {
         let dims = Vec::from(dims);
-        let data_count = product(&dims) as usize;
+        let data_count = product(&dims);
         let mut data = Vec::with_capacity(data_count);
         data.resize(data_count, T::zero());
 
@@ -72,7 +72,7 @@ impl<T: TensorType> Tensor<T> {
             ffi::vaccel_tf_tensor_set_data(
                 inner,
                 data.as_ptr() as *mut _,
-                (data.len() * std::mem::size_of::<T>()) as usize,
+                data.len() * std::mem::size_of::<T>(),
             )
         };
 
@@ -95,7 +95,7 @@ impl<T: TensorType> Tensor<T> {
 
         let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, (*tensor).nr_dims as usize);
 
-        let data_count = product(&dims) as usize;
+        let data_count = product(dims);
 
         let ptr = ffi::vaccel_tf_tensor_get_data(tensor);
         let data = if ptr.is_null() {
@@ -103,8 +103,7 @@ impl<T: TensorType> Tensor<T> {
             data.resize(data_count, T::zero());
             data
         } else {
-            let data =
-                std::slice::from_raw_parts(ptr as *mut T, data_count * std::mem::size_of::<T>());
+            let data = std::slice::from_raw_parts(ptr as *mut T, data_count);
             Vec::from(data)
         };
 
@@ -129,7 +128,7 @@ impl<T: TensorType> Tensor<T> {
     }
 
     pub fn nr_dims(&self) -> usize {
-        self.dims.len() as usize
+        self.dims.len()
     }
 
     pub fn dim(&self, idx: usize) -> Result<usize> {
@@ -146,14 +145,14 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn as_grpc(&self) -> TFTensor {
         let data = unsafe {
-            std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
+            std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size)
         };
 
         let castdims: Vec<u32> = self.dims.iter().map(|&a| a as u32).collect();
 
         TFTensor {
             data: data.to_owned(),
-            dims: castdims.clone(),
+            dims: castdims,
             type_: TFDataType::from_i32(self.data_type().to_int() as i32)
                 .unwrap()
                 .into(),
@@ -205,7 +204,7 @@ impl TensorAny for TFTensor {
             )
         };
 
-        let size = self.data.len() as usize;
+        let size = self.data.len();
         let data = self.data.to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
@@ -224,7 +223,7 @@ impl TensorAny for TFTensor {
             )
         };
 
-        let size = self.data.len() as usize;
+        let size = self.data.len();
         let data = self.data.to_owned();
 
         unsafe { ffi::vaccel_tf_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size) };
@@ -413,11 +412,10 @@ impl From<&ffi::vaccel_tf_tensor> for TFTensor {
             TFTensor {
                 dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
                     .to_owned(),
-                type_: TFDataType::from_i32((*tensor).data_type as i32)
+                type_: TFDataType::from_i32(tensor.data_type as i32)
                     .unwrap()
                     .into(),
-                data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size as usize)
-                    .to_owned(),
+                data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size).to_owned(),
                 ..Default::default()
             }
         }

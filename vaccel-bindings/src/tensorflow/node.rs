@@ -40,10 +40,6 @@ impl Node {
         cmsg.to_str().unwrap_or("").to_owned()
     }
 
-    pub fn to_string(&self) -> String {
-        format!("{}:{}", self.name(), self.id())
-    }
-
     pub(crate) fn inner(&self) -> *const ffi::vaccel_tf_node {
         self.inner
     }
@@ -61,7 +57,7 @@ impl Drop for Node {
 
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}:{}", self.name(), self.id())
     }
 }
 

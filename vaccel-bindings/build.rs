@@ -1,11 +1,10 @@
 extern crate bindgen;
 
-use cmake;
 use std::path::PathBuf;
 
 fn main() {
     let clang_arg = match pkg_config::Config::new().probe("vaccel") {
-        Ok(mut lib) => String::from(format!(
+        Ok(mut lib) => format!(
             "-I{}",
             &mut lib
                 .include_paths
@@ -14,7 +13,7 @@ fn main() {
                 .into_os_string()
                 .into_string()
                 .unwrap(),
-        )),
+        ),
         Err(_) => {
             let prefix = cmake::build("vaccelrt");
             // Set the -L search path

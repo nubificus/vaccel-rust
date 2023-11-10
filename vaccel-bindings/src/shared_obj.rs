@@ -13,7 +13,7 @@ pub struct SharedObject {
 impl SharedObject {
     /// Create a new Saved Model object
     pub fn new(path: &Path) -> Result<Self> {
-        let mut shared_obj = Box::new(ffi::vaccel_shared_object::default());
+        let mut shared_obj = Box::<ffi::vaccel_shared_object>::default();
 
         // We create a CString to ensure that the path we pass to libvaccel
         // is null terminated
@@ -57,14 +57,11 @@ impl SharedObject {
 
     /// Create the resource from in-memory data
     pub fn from_in_memory(data: &[u8]) -> Result<Self> {
-        let mut shared_obj = Box::new(ffi::vaccel_shared_object::default());
+        let mut shared_obj = Box::<ffi::vaccel_shared_object>::default();
 
         match unsafe {
-            ffi::vaccel_shared_object_new_from_buffer(
-                &mut *shared_obj,
-                data.as_ptr(),
-                data.len() as usize,
-            ) as u32
+            ffi::vaccel_shared_object_new_from_buffer(&mut *shared_obj, data.as_ptr(), data.len())
+                as u32
         } {
             ffi::VACCEL_OK => Ok(SharedObject {
                 inner: Box::into_raw(shared_obj),
@@ -79,7 +76,7 @@ impl SharedObject {
         let ptr = unsafe { ffi::vaccel_shared_object_get(self.inner, &mut size) };
 
         if !ptr.is_null() {
-            Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
+            Some(unsafe { std::slice::from_raw_parts(ptr, size) })
         } else {
             None
         }

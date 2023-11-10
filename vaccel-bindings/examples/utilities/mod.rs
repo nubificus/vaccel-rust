@@ -30,10 +30,10 @@ impl From<VaccelError> for Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub fn vec_from_file(path: &Path) -> Result<Vec<u8>> {
-    let mut file = File::open(path).map_err(|e| Error::IO(e))?;
+    let mut file = File::open(path).map_err(Error::IO)?;
 
     let mut data = Vec::new();
-    file.read_to_end(&mut data).map_err(|e| Error::IO(e))?;
+    file.read_to_end(&mut data).map_err(Error::IO)?;
 
     Ok(data)
 }

@@ -56,7 +56,7 @@ fn main() -> utilities::Result<()> {
                 out.nr_dims()
             );
             for i in 0..out.nr_dims() {
-                println!("dim[{}]: {}", i, out.dim(i as usize).unwrap());
+                println!("dim[{}]: {}", i, out.dim(i).unwrap());
             }
             println!("Result Tensor :");
             for i in 0..10 {

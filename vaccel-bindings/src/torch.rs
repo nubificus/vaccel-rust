@@ -193,6 +193,11 @@ pub struct TorchArgs {
     in_tensors: Vec<*const ffi::vaccel_torch_tensor>,
 }
 
+impl Default for TorchArgs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl TorchArgs {
     pub fn new() -> Self {
         TorchArgs {
@@ -272,8 +277,7 @@ impl TorchJitloadForwardResult {
                 type_: TorchDataType::from_i32((*t).data_type as i32)
                     .unwrap()
                     .into(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)
-                    .to_owned(),
+                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_owned(),
                 ..Default::default()
             })
         }
@@ -346,7 +350,7 @@ impl<T: TensorType> Tensor<T> {
             ffi::vaccel_torch_tensor_set_data(
                 inner,
                 data.as_ptr() as *mut _,
-                (data.len() * std::mem::size_of::<T>()) as usize,
+                data.len() * std::mem::size_of::<T>(),
             )
         };
 
@@ -369,7 +373,7 @@ impl<T: TensorType> Tensor<T> {
 
         let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, (*tensor).nr_dims as usize);
 
-        let data_count = product(&dims) as usize;
+        let data_count = product(dims) as usize;
 
         let ptr = ffi::vaccel_torch_tensor_get_data(tensor);
         let data = if ptr.is_null() {
@@ -377,8 +381,7 @@ impl<T: TensorType> Tensor<T> {
             data.resize(data_count, T::zero());
             data
         } else {
-            let data =
-                std::slice::from_raw_parts(ptr as *mut T, data_count * std::mem::size_of::<T>());
+            let data = std::slice::from_raw_parts(ptr as *mut T, data_count);
             Vec::from(data)
         };
 
@@ -420,7 +423,7 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn as_grpc(&self) -> TorchTensor {
         let data = unsafe {
-            std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size as usize)
+            std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size)
         };
 
         TorchTensor {
@@ -477,7 +480,7 @@ impl TensorAny for TorchTensor {
             )
         };
 
-        let size = self.data.len() as usize;
+        let size = self.data.len();
         let data = self.data.to_owned();
 
         unsafe {
@@ -498,7 +501,7 @@ impl TensorAny for TorchTensor {
             )
         };
 
-        let size = self.data.len() as usize;
+        let size = self.data.len();
         let data = self.data.to_owned();
 
         unsafe {
@@ -694,11 +697,10 @@ impl From<&ffi::vaccel_torch_tensor> for TorchTensor {
             TorchTensor {
                 dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
                     .to_owned(),
-                type_: TorchDataType::from_i32((*tensor).data_type as i32)
+                type_: TorchDataType::from_i32(tensor.data_type as i32)
                     .unwrap()
                     .into(),
-                data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size as usize)
-                    .to_owned(),
+                data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size).to_owned(),
                 ..Default::default()
             }
         }
@@ -709,8 +711,7 @@ impl From<&ffi::vaccel_torch_tensor> for TorchTensor {
 
 impl Buffer {
     pub fn new(data: &[u8]) -> Self {
-        let inner =
-            unsafe { ffi::vaccel_torch_buffer_new(data.as_ptr() as *mut _, data.len() as usize) };
+        let inner = unsafe { ffi::vaccel_torch_buffer_new(data.as_ptr() as *mut _, data.len()) };
         assert!(!inner.is_null(), "Memory allocation failure");
 
         Buffer {
@@ -736,7 +737,7 @@ impl Buffer {
         unsafe {
             let mut size = Default::default();
             let ptr = ffi::vaccel_torch_buffer_get_data(self.inner, &mut size) as *const u8;
-            std::slice::from_raw_parts(ptr, size as usize)
+            std::slice::from_raw_parts(ptr, size)
         }
     }
 
@@ -744,7 +745,7 @@ impl Buffer {
         unsafe {
             let mut size = Default::default();
             let ptr = ffi::vaccel_torch_buffer_get_data(self.inner, &mut size) as *mut u8;
-            std::slice::from_raw_parts_mut(ptr, size as usize)
+            std::slice::from_raw_parts_mut(ptr, size)
         }
     }
 
@@ -788,6 +789,12 @@ impl DerefMut for Buffer {
 
 // Function for saved model - vaccel_torch_saved_model_new
 // Create - SetPath - Destroy
+impl Default for SavedModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SavedModel {
     // New Saved Model Object
     pub fn new() -> Self {
@@ -846,8 +853,7 @@ impl SavedModel {
     // Set the in-memory protobuf data
     fn set_protobuf(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_torch_saved_model_set_model(self.inner, data.as_ptr(), data.len() as usize)
-                as u32
+            ffi::vaccel_torch_saved_model_set_model(self.inner, data.as_ptr(), data.len()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
@@ -856,7 +862,7 @@ impl SavedModel {
 
     // Create Resource from in-memory data
     pub fn from_in_memory(mut self, protobuf: &[u8]) -> Result<Self> {
-        self.set_protobuf(&protobuf)?;
+        self.set_protobuf(protobuf)?;
         match unsafe { ffi::vaccel_torch_saved_model_register(self.inner) } as u32 {
             ffi::VACCEL_OK => Ok(self),
             err => Err(Error::Runtime(err)),
@@ -888,7 +894,7 @@ impl SavedModel {
         let mut size = Default::default();
         let ptr = unsafe { ffi::vaccel_torch_saved_model_get_model(self.inner, &mut size) };
         if !ptr.is_null() {
-            Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
+            Some(unsafe { std::slice::from_raw_parts(ptr, size) })
         } else {
             None
         }
@@ -938,6 +944,12 @@ impl crate::resource::Resource for SavedModel {
 /*------------------------------*/
 
 // Function for the torch jitload
+impl Default for TorchJitLoadForward {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TorchJitLoadForward {
     pub fn new() -> Self {
         TorchJitLoadForward {

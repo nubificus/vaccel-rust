@@ -74,8 +74,8 @@ impl Sample {
                 start: start.as_nanos() as u64,
                 time: time.as_nanos() as u64,
             },
-            start: start,
-            time: time,
+            start,
+            time,
         }
     }
 }
@@ -128,6 +128,10 @@ impl ProfRegions {
         self.map.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
     pub fn clear(&mut self) {
         #[cfg(debug_assertions)]
         self.map.clear();
@@ -144,7 +148,7 @@ impl ProfRegions {
             self.map
                 .entry(format!("[{}] {}", self.name, name))
                 .and_modify(|e| e.push(Sample::default()))
-                .or_insert(vec![Sample::default()]);
+                .or_insert_with(|| vec![Sample::default()]);
         }
     }
 
@@ -234,7 +238,7 @@ impl ProfRegions {
         {
             for (n, e) in &self.map {
                 if let Some(t) = e.last() {
-                    println!("{}", ProfRegions::format(&n, t.time.as_nanos(), 1));
+                    println!("{}", ProfRegions::format(n, t.time.as_nanos(), 1));
                 }
             }
         }
@@ -245,7 +249,7 @@ impl ProfRegions {
         {
             for (n, e) in &self.map {
                 let s: u128 = e.iter().map(|x| x.time.as_nanos()).sum();
-                println!("{}", ProfRegions::format(&n, s, e.len()));
+                println!("{}", ProfRegions::format(n, s, e.len()));
             }
         }
     }
@@ -256,7 +260,7 @@ impl ProfRegions {
             let mut buf = Vec::new();
             for (n, e) in &self.map {
                 if let Some(t) = e.last() {
-                    buf.push(ProfRegions::format(&n, t.time.as_nanos(), 1));
+                    buf.push(ProfRegions::format(n, t.time.as_nanos(), 1));
                 }
             }
             buf.join("\n")
@@ -271,7 +275,7 @@ impl ProfRegions {
             let mut buf = Vec::new();
             for (n, e) in &self.map {
                 let s: u128 = e.iter().map(|x| x.time.as_nanos()).sum();
-                buf.push(ProfRegions::format(&n, s, e.len()));
+                buf.push(ProfRegions::format(n, s, e.len()));
             }
             buf.join("\n")
         }
@@ -329,7 +333,7 @@ impl From<ProfRegions> for ProtProfRegions {
             pt.push(p);
         }
         let mut t = ProtProfRegions::new();
-        t.timer = pt.into();
+        t.timer = pt;
         t
     }
 }

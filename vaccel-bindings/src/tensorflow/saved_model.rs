@@ -10,6 +10,12 @@ pub struct SavedModel {
     inner: *mut ffi::vaccel_tf_saved_model,
 }
 
+impl Default for SavedModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SavedModel {
     /// Create a new Saved Model object
     pub fn new() -> Self {
@@ -73,8 +79,7 @@ impl SavedModel {
     /// Set the in-memory protobuf data
     fn set_protobuf(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_model(self.inner, data.as_ptr(), data.len() as usize)
-                as u32
+            ffi::vaccel_tf_saved_model_set_model(self.inner, data.as_ptr(), data.len()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
@@ -84,11 +89,7 @@ impl SavedModel {
     /// Set the in-memory checkpoint data
     fn set_checkpoint(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_checkpoint(
-                self.inner,
-                data.as_ptr(),
-                data.len() as usize,
-            ) as u32
+            ffi::vaccel_tf_saved_model_set_checkpoint(self.inner, data.as_ptr(), data.len()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
@@ -98,8 +99,7 @@ impl SavedModel {
     /// Set the in-memory variable index data
     fn set_var_index(&mut self, data: &[u8]) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tf_saved_model_set_var_index(self.inner, data.as_ptr(), data.len() as usize)
-                as u32
+            ffi::vaccel_tf_saved_model_set_var_index(self.inner, data.as_ptr(), data.len()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
@@ -113,9 +113,9 @@ impl SavedModel {
         checkpoint: &[u8],
         variable_index: &[u8],
     ) -> Result<Self> {
-        self.set_protobuf(&protobuf)?;
-        self.set_checkpoint(&checkpoint)?;
-        self.set_var_index(&variable_index)?;
+        self.set_protobuf(protobuf)?;
+        self.set_checkpoint(checkpoint)?;
+        self.set_var_index(variable_index)?;
 
         match unsafe { ffi::vaccel_tf_saved_model_register(self.inner) } as u32 {
             ffi::VACCEL_OK => Ok(self),
@@ -149,7 +149,7 @@ impl SavedModel {
         let ptr = unsafe { ffi::vaccel_tf_saved_model_get_model(self.inner, &mut size) };
 
         if !ptr.is_null() {
-            Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
+            Some(unsafe { std::slice::from_raw_parts(ptr, size) })
         } else {
             None
         }
@@ -161,7 +161,7 @@ impl SavedModel {
         let ptr = unsafe { ffi::vaccel_tf_saved_model_get_checkpoint(self.inner, &mut size) };
 
         if !ptr.is_null() {
-            Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
+            Some(unsafe { std::slice::from_raw_parts(ptr, size) })
         } else {
             None
         }
@@ -173,7 +173,7 @@ impl SavedModel {
         let ptr = unsafe { ffi::vaccel_tf_saved_model_get_var_index(self.inner, &mut size) };
 
         if !ptr.is_null() {
-            Some(unsafe { std::slice::from_raw_parts(ptr, size as usize) })
+            Some(unsafe { std::slice::from_raw_parts(ptr, size) })
         } else {
             None
         }

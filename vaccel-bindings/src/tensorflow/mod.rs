@@ -85,10 +85,6 @@ impl Status {
         self.error_code() == Code::Ok.to_u8()
     }
 
-    pub fn to_string(&self) -> String {
-        format!("'{} (id:{})'", self.message(), self.error_code())
-    }
-
     pub(crate) fn inner(&self) -> &ffi::vaccel_tf_status {
         &self.inner
     }
@@ -100,7 +96,7 @@ impl Status {
 
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{} (id:{})", self.message(), self.error_code())
     }
 }
 

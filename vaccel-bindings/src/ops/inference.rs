@@ -16,6 +16,12 @@ pub struct InferenceArgs {
     out_nodes: Vec<ffi::vaccel_tf_node>,
 }
 
+impl Default for InferenceArgs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InferenceArgs {
     pub fn new() -> Self {
         InferenceArgs {
@@ -52,15 +58,15 @@ impl From<InferenceArgs> for TensorflowModelRunRequest {
         let run_options = unsafe {
             std::slice::from_raw_parts(
                 (*args.run_options).data as *const u8,
-                (*args.run_options).size as usize,
+                (*args.run_options).size,
             )
         }
         .to_owned();
 
         TensorflowModelRunRequest {
-            in_nodes: in_nodes,
-            out_nodes: out_nodes,
-            in_tensors: in_tensors,
+            in_nodes,
+            out_nodes,
+            in_tensors,
             run_options,
             ..Default::default()
         }
@@ -122,8 +128,7 @@ impl InferenceResult {
                 dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
                     .to_owned(),
                 type_: TFDataType::from_i32((*t).data_type as i32).unwrap().into(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size as usize)
-                    .to_owned(),
+                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_owned(),
                 ..Default::default()
             })
         }
