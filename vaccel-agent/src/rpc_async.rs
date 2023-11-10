@@ -1,11 +1,5 @@
 use chashmap::*;
 // use::std::time::Instant
-use nix::{
-    fcntl::{fcntl, FcntlArg, OFlag},
-    sys::socket::{
-        bind, listen, setsockopt, socket, sockopt, AddressFamily, SockFlag, SockType, SockaddrIn,
-    },
-};
 use protocols::{
     asynchronous::agent::VaccelEmpty,
     error::VaccelError,
@@ -34,22 +28,14 @@ use std::{
     collections::BTreeMap,
     default::Default,
     error::Error,
-    os::unix::io::RawFd,
-    str::FromStr,
     sync::{Arc, Mutex},
 };
 extern crate vaccel;
-use vaccel::torch;
-use vaccel::{ops::genop, profiling::ProfRegions, shared_obj as so, tensorflow as tf};
-
 use async_trait::async_trait;
 use ttrpc::asynchronous::Server;
+use vaccel::{ops::genop, profiling::ProfRegions, shared_obj as so, tensorflow as tf, torch};
 //use tracing::{info, instrument, Instrument};
 use log::{debug, error, info};
-
-//fn type_of<T>(_: &T) -> &'static str {
-//        std::any::type_name::<T>()
-//}
 
 fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
@@ -88,7 +74,6 @@ pub fn new(server_address: &str) -> Result<Server, Box<dyn Error>> {
         as Box<dyn protocols::asynchronous::agent_ttrpc::VaccelAgent + Send + Sync>;
 
     let agent_worker = Arc::new(vaccel_agent);
-
     let aservice = protocols::asynchronous::agent_ttrpc::create_vaccel_agent(agent_worker);
 
     if server_address.is_empty() {
@@ -96,42 +81,15 @@ pub fn new(server_address: &str) -> Result<Server, Box<dyn Error>> {
     }
 
     let fields: Vec<&str> = server_address.split("://").collect();
-
     if fields.len() != 2 {
         return Err("Invalid address".into());
     }
 
     let scheme = fields[0].to_lowercase();
-
-    let create_tcp_sock_fd = |address: &str| -> Result<RawFd, Box<dyn Error>> {
-        let fd = socket(
-            AddressFamily::Inet,
-            SockType::Stream,
-            SockFlag::SOCK_CLOEXEC,
-            None,
-        )?;
-
-        let sock_addr = SockaddrIn::from_str(address)?;
-
-        setsockopt(fd, sockopt::ReusePort, &true)?;
-        bind(fd, &sock_addr)?;
-
-        fcntl(fd, FcntlArg::F_SETFL(OFlag::O_NONBLOCK))?;
-        listen(fd, 10)?;
-
-        Ok(fd)
-    };
-
     let server: Server = match scheme.as_str() {
-        "vsock" | "unix" => Server::new()
+        "vsock" | "unix" | "tcp" => Server::new()
             .bind(server_address)?
             .register_service(aservice),
-        "tcp" => {
-            let fd = create_tcp_sock_fd(fields[1])?;
-
-            Server::new().add_listener(fd)?.register_service(aservice)
-        }
-
         _ => return Err("Unsupported protocol".into()),
     };
 
