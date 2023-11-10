@@ -1,4 +1,4 @@
-use crate::{util::create_ttrpc_client, Result};
+use crate::{util::create_ttrpc_client, Error, Result};
 use log::debug;
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use std::{
@@ -27,8 +27,7 @@ impl VsockClient {
         };
 
         let _guard = r.enter();
-        let ttrpc_client =
-            tokio::task::block_in_place(|| create_ttrpc_client(&server_address).unwrap());
+        let ttrpc_client = create_ttrpc_client(&server_address).map_err(Error::ClientError)?;
 
         Ok(VsockClient {
             ttrpc_client: VaccelAgentClient::new(ttrpc_client),
