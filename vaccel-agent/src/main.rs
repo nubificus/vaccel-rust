@@ -48,7 +48,7 @@ fn main() {
         info!("Server is running, press Ctrl + C to exit");
     });
 
-    let _ = rx.recv().unwrap();
+    rx.recv().unwrap();
 }
 
 #[cfg(feature = "async")]

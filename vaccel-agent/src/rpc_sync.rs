@@ -86,7 +86,7 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
 
     let aservice = protocols::sync::agent_ttrpc::create_vaccel_agent(agent_worker);
 
-    if server_address == "" {
+    if server_address.is_empty() {
         return Err("Server address cannot be empty".into());
     }
 
@@ -119,7 +119,7 @@ pub fn new(server_address: &str) -> Result<ttrpc::Server, Box<dyn Error>> {
 
     let server: ttrpc::Server = match scheme.as_str() {
         "vsock" | "unix" => ttrpc::Server::new()
-            .bind(&server_address)?
+            .bind(server_address)?
             .register_service(aservice),
         "tcp" => {
             let fd = create_tcp_sock_fd(fields[1])?;
@@ -187,10 +187,9 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut sess = self
             .sessions
             .remove(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         let mut timers_lock = self.timers.lock().unwrap();
         if let Entry::Occupied(t) = timers_lock.entry(req.session_id) {
@@ -213,10 +212,9 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown Session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown Session".to_string())
+            })?;
 
         info!("session:{} Image classification", sess.id());
         match sess.image_classification(&req.image) {
@@ -259,12 +257,10 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 "Frozen model not supported yet".to_string(),
             )),
             CreateResourceRequestModel::TorchSaved(req) => self.create_torch_model(req),
-            _ => {
-                return Err(ttrpc_error(
-                    ttrpc::Code::INVALID_ARGUMENT,
-                    "Invalid model".to_string(),
-                ))
-            }
+            _ => Err(ttrpc_error(
+                ttrpc::Code::INVALID_ARGUMENT,
+                "Invalid model".to_string(),
+            )),
         }
     }
 
@@ -296,18 +292,19 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.resource_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown resource".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown resource".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         info!(
             "Registering resource {} to session {}",
@@ -328,18 +325,19 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.resource_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown resource".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown resource".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         match sess.unregister(&mut **resource) {
             Ok(()) => Ok(VaccelEmpty::new()),
@@ -355,26 +353,29 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.model_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown TensorFlow model".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown TensorFlow model".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         let model = resource
             .as_mut_any()
             .downcast_mut::<tf::SavedModel>()
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                format!("Resource {} is not a TensorFlow model", req.model_id),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    format!("Resource {} is not a TensorFlow model", req.model_id),
+                )
+            })?;
 
         let mut resp = TensorflowModelLoadResponse::new();
         match model.session_load(&mut sess) {
@@ -393,26 +394,32 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.model_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown TensorFlow model".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown TensorFlow model".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown vAccel session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown vAccel session".to_string(),
+                )
+            })?;
 
         let model = resource
             .as_mut_any()
             .downcast_mut::<tf::SavedModel>()
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                format!("Resource {} is not a TensorFlow model", req.model_id),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    format!("Resource {} is not a TensorFlow model", req.model_id),
+                )
+            })?;
 
         let mut resp = TensorflowModelUnloadResponse::new();
         match model.session_delete(&mut sess) {
@@ -431,26 +438,29 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.model_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown TensorFlow model".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown TensorFlow model".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         let model = resource
             .as_mut_any()
             .downcast_mut::<tf::SavedModel>()
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                format!("Resource {} is not a TensorFlow model", req.model_id),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    format!("Resource {} is not a TensorFlow model", req.model_id),
+                )
+            })?;
 
         let mut sess_args = vaccel::ops::inference::InferenceArgs::new();
 
@@ -478,7 +488,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 for i in 0..num_outputs {
                     out_tensors.push(result.get_grpc_output(i).unwrap());
                 }
-                inference.out_tensors = out_tensors.into();
+                inference.out_tensors = out_tensors;
                 let mut resp = TensorflowModelRunResponse::new();
                 resp.set_result(inference);
                 resp
@@ -501,26 +511,29 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut resource = self
             .resources
             .get_mut(&req.model_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown PyTorch model".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    "Unknown PyTorch model".to_string(),
+                )
+            })?;
 
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         let model = resource
             .as_mut_any()
             .downcast_mut::<torch::SavedModel>()
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                format!("Resource {} is not a pytorch model", req.model_id),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(
+                    ttrpc::Code::INVALID_ARGUMENT,
+                    format!("Resource {} is not a pytorch model", req.model_id),
+                )
+            })?;
 
         // origin: vaccel::ops::inference...
         let mut sess_args = torch::TorchArgs::new();
@@ -569,7 +582,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
                 for i in 0..num_outputs {
                     out_tensors.push(result.get_grpc_output(i).unwrap());
                 }
-                jitload_forward.out_tensors = out_tensors.into();
+                jitload_forward.out_tensors = out_tensors;
                 let mut resp = TorchJitloadForwardResponse::new();
                 resp.set_result(jitload_forward);
                 resp
@@ -592,15 +605,14 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
-            .ok_or(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Unknown session".to_string(),
-            ))?;
+            .ok_or_else(|| {
+                ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
+            })?;
 
         let mut timers_lock = self.timers.lock().unwrap();
-        let mut timers = timers_lock
+        let timers = timers_lock
             .entry(req.session_id)
-            .or_insert(ProfRegions::new("vaccel-agent"));
+            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
         timers.start("genop > read_args");
         let mut read_args: Vec<genop::GenopArg> =
             req.read_args.iter_mut().map(|e| e.into()).collect();
@@ -613,11 +625,8 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
 
         info!("Genop session {}", sess.id());
         timers.start("genop > sess.genop");
-        let response = match sess.genop(
-            read_args.as_mut_slice(),
-            write_args.as_mut_slice(),
-            &mut timers,
-        ) {
+        let response = match sess.genop(read_args.as_mut_slice(), write_args.as_mut_slice(), timers)
+        {
             Ok(_) => {
                 let mut res = GenopResult::new();
                 res.write_args = write_args.iter().map(|e| e.into()).collect();
@@ -647,7 +656,7 @@ impl protocols::sync::agent_ttrpc::VaccelAgent for Agent {
         let mut timers_lock = self.timers.lock().unwrap();
         let timers = timers_lock
             .entry(req.session_id)
-            .or_insert(ProfRegions::new("vaccel-agent"));
+            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
 
         Ok(ProfilingResponse {
             result: Some(timers.clone().into()).into(),
