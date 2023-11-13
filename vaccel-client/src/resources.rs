@@ -1,12 +1,19 @@
-use super::{
-    client::VsockClient, shared_obj::create_shared_object, tf_model::create_tf_model,
-    torch_model::create_torch_model,
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
+use crate::{
+    shared_obj::create_shared_object, tf_model::create_tf_model, torch_model::create_torch_model,
+    Error, Result,
 };
-use crate::{Error, Result};
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::resources::{
     CreateResourceRequest, DestroyResourceRequest, RegisterResourceRequest,
     UnregisterResourceRequest,
 };
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::ffi::c_void;
 use vaccel::{ffi, VaccelId};
 
@@ -19,10 +26,7 @@ impl VsockClient {
         let ctx = ttrpc::context::Context::default();
         let req = resource.create_resource_request()?;
 
-        let tc = self.ttrpc_client.clone();
-        let resp = self
-            .runtime
-            .block_on(async { tc.create_resource(ctx, &req).await })?;
+        let resp = self.execute(VaccelAgentClient::create_resource, ctx, &req)?;
 
         Ok(resp.resource_id.into())
     }
@@ -32,10 +36,7 @@ impl VsockClient {
         let mut req = DestroyResourceRequest::new();
         req.resource_id = model_id;
 
-        let tc = self.ttrpc_client.clone();
-        let _resp = self
-            .runtime
-            .block_on(async { tc.destroy_resource(ctx, &req).await })?;
+        let _resp = self.execute(VaccelAgentClient::destroy_resource, ctx, &req)?;
 
         Ok(())
     }
@@ -46,10 +47,7 @@ impl VsockClient {
         req.resource_id = model_id;
         req.session_id = sess_id;
 
-        let tc = self.ttrpc_client.clone();
-        let _resp = self
-            .runtime
-            .block_on(async { tc.register_resource(ctx, &req).await })?;
+        let _resp = self.execute(VaccelAgentClient::register_resource, ctx, &req)?;
 
         Ok(())
     }
@@ -60,10 +58,7 @@ impl VsockClient {
         req.resource_id = model_id;
         req.session_id = sess_id;
 
-        let tc = self.ttrpc_client.clone();
-        let _resp = self
-            .runtime
-            .block_on(async { tc.unregister_resource(ctx, &req).await })?;
+        let _resp = self.execute(VaccelAgentClient::unregister_resource, ctx, &req)?;
 
         Ok(())
     }

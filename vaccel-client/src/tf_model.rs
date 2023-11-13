@@ -1,10 +1,17 @@
-use super::{client::VsockClient, resources::VaccelResource};
-use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, resources::VaccelResource, Error, Result};
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use protocols::{
     resources::{CreateResourceRequest, CreateTensorflowSavedModelRequest},
-    tensorflow::{TFNode, TFTensor},
     tensorflow::{
-        TensorflowModelLoadRequest, TensorflowModelRunRequest, TensorflowModelUnloadRequest,
+        TFNode, TFTensor, TensorflowModelLoadRequest, TensorflowModelRunRequest,
+        TensorflowModelUnloadRequest,
     },
 };
 use vaccel::{ffi, tensorflow::SavedModel};
@@ -43,7 +50,7 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let mut resp = self.ttrpc_client.tensorflow_model_load(ctx, &req)?;
+        let mut resp = self.execute(VaccelAgentClient::tensorflow_model_load, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }
@@ -59,7 +66,8 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let mut resp = self.ttrpc_client.tensorflow_model_unload(ctx, &req)?;
+        let mut resp = self.execute(VaccelAgentClient::tensorflow_model_unload, ctx, &req)?;
+
         match resp.error.take() {
             None => Ok(()),
             Some(e) => Err(e.into()),
@@ -87,7 +95,7 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let mut resp = self.ttrpc_client.tensorflow_model_run(ctx, &req)?;
+        let mut resp = self.execute(VaccelAgentClient::tensorflow_model_run, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }

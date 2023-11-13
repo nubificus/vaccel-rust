@@ -1,18 +1,16 @@
 use crate::{util::create_ttrpc_client, Error, Result};
+use dashmap::DashMap;
 use log::debug;
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
-use std::{
-    collections::BTreeMap,
-    env,
-    sync::{Arc, Mutex},
-};
+use std::{env, future::Future, sync::Arc};
 use tokio::runtime::Runtime;
+use ttrpc::context::Context;
 use vaccel::profiling::ProfRegions;
 
 #[repr(C)]
 pub struct VsockClient {
     pub ttrpc_client: VaccelAgentClient,
-    pub timers: Arc<Mutex<BTreeMap<u32, ProfRegions>>>,
+    pub timers: Arc<DashMap<u32, ProfRegions>>,
     pub runtime: Arc<Runtime>,
 }
 
@@ -31,8 +29,17 @@ impl VsockClient {
 
         Ok(VsockClient {
             ttrpc_client: VaccelAgentClient::new(ttrpc_client),
-            timers: Arc::new(Mutex::new(BTreeMap::new())),
+            timers: Arc::new(DashMap::new()),
             runtime: Arc::new(r),
         })
+    }
+
+    pub fn execute<'a, 'b, F, A, R>(&'a self, func: F, ctx: Context, req: &'b A) -> R::Output
+    where
+        F: Fn(&'a VaccelAgentClient, Context, &'b A) -> R,
+        R: Future,
+    {
+        self.runtime
+            .block_on(async { func(&self.ttrpc_client, ctx, req).await })
     }
 }

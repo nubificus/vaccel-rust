@@ -1,8 +1,16 @@
-use super::client::VsockClient;
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
 use crate::{Error, Result};
+use dashmap::mapref::entry::Entry;
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::session::{CreateSessionRequest, DestroySessionRequest, UpdateSessionRequest};
-use std::collections::btree_map::Entry;
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use vaccel::ffi;
+//use tracing::{info, instrument, Instrument};
 
 impl VsockClient {
     pub fn sess_init(&self, flags: u32) -> Result<u32> {
@@ -12,18 +20,21 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let resp = self.ttrpc_client.create_session(ctx, &req)?;
+        let resp = self.execute(VaccelAgentClient::create_session, ctx, &req)?;
 
         Ok(resp.session_id)
     }
 
     pub fn sess_update(&self, sess_id: u32, flags: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = UpdateSessionRequest::default();
-        req.session_id = sess_id;
-        req.flags = flags;
+        let req = UpdateSessionRequest {
+            session_id: sess_id,
+            flags,
+            ..Default::default()
+        };
 
-        self.ttrpc_client.update_session(ctx, &req)?;
+        let _resp = self.execute(VaccelAgentClient::update_session, ctx, &req)?;
+
         Ok(())
     }
 
@@ -34,7 +45,8 @@ impl VsockClient {
             ..Default::default()
         };
 
-        self.ttrpc_client.destroy_session(ctx, &req)?;
+        let _resp = self.execute(VaccelAgentClient::destroy_session, ctx, &req)?;
+
         Ok(())
     }
 }
@@ -75,7 +87,11 @@ pub unsafe extern "C" fn sess_free(client_ptr: *mut VsockClient, sess_id: u32) -
 
     match client.sess_free(sess_id) {
         Ok(()) => {
-            if let Entry::Occupied(t) = client.timers.entry(sess_id) {
+            //#[cfg(feature = "async")]
+            //let mut timers = client.timers.lock().unwrap();
+            //#[cfg(not(feature = "async"))]
+            let timers = &mut client.timers;
+            if let Entry::Occupied(t) = timers.entry(sess_id) {
                 t.remove_entry();
             }
             ffi::VACCEL_OK as i32

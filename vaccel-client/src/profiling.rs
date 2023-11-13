@@ -1,14 +1,55 @@
-use super::client::VsockClient;
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
 use crate::{c_pointer_to_mut_slice, Error, Result};
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::profiling::ProfilingRequest;
-use std::ptr;
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
+use std::{collections::BTreeMap, ptr};
 use vaccel::{ffi, profiling::ProfRegions};
 
 impl VsockClient {
-    pub fn get_timers_entry(&mut self, sess_id: u32) -> &mut ProfRegions {
+    pub const TIMERS_PREFIX: &str = "vaccel-client";
+
+    pub fn timer_start(&mut self, sess_id: u32, name: &str) {
         self.timers
             .entry(sess_id)
-            .or_insert_with(|| ProfRegions::new("vaccel-client"))
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
+            .start(name);
+    }
+
+    pub fn timer_stop(&mut self, sess_id: u32, name: &str) {
+        self.timers
+            .entry(sess_id)
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
+            .stop(name);
+    }
+
+    pub fn timers_extend(&mut self, sess_id: u32, extra: ProfRegions) {
+        self.timers
+            .entry(sess_id)
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
+            .extend(extra);
+    }
+
+    pub fn timers_get_len(&self, sess_id: u32) -> usize {
+        self.timers
+            .entry(sess_id)
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
+            .len()
+    }
+
+    pub fn timers_get_ffi(
+        &self,
+        sess_id: u32,
+    ) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
+        self.timers
+            .entry(sess_id)
+            .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
+            .get_ffi()
     }
 
     pub fn get_timers(&mut self, sess_id: u32) -> Result<ProfRegions> {
@@ -19,7 +60,8 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let mut resp = self.ttrpc_client.get_timers(ctx, &req)?;
+        let mut resp = self.execute(VaccelAgentClient::get_timers, ctx, &req)?;
+
         match resp.result.take() {
             Some(r) => Ok(r.into()),
             None => Err(Error::Undefined),
@@ -42,22 +84,19 @@ pub unsafe extern "C" fn get_timers(
 
     let _ret = match client.get_timers(sess_id) {
         Ok(agent_timers) => {
-            let timers = client.get_timers_entry(sess_id);
-            timers.extend(agent_timers);
+            client.timers_extend(sess_id, agent_timers);
             ffi::VACCEL_OK
         }
         Err(_) => ffi::VACCEL_EINVAL,
     };
-    let timers = client.get_timers_entry(sess_id);
 
     if nr_timers == 0 {
-        return timers.len();
+        return client.timers_get_len(sess_id);
     }
 
     let timers_ref = c_pointer_to_mut_slice(timers_ptr, nr_timers).unwrap_or(&mut []);
 
-    let timers = client.get_timers_entry(sess_id);
-    if let Some(client_timers) = timers.get_ffi() {
+    if let Some(client_timers) = client.timers_get_ffi(sess_id) {
         for (w, (rk, rv)) in timers_ref.iter_mut().zip(client_timers.iter()) {
             let n = rk.as_str();
             let n_len = if n.len() < max_timer_name {

@@ -1,6 +1,13 @@
-use super::client::VsockClient;
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
 use crate::{Error, Result};
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::image::ImageClassificationRequest;
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::{os::raw::c_uchar, slice};
 use vaccel::ffi;
 
@@ -13,10 +20,7 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let tc = self.ttrpc_client.clone();
-        let resp = self
-            .runtime
-            .block_on(async { tc.image_classification(ctx, &req).await })?;
+        let resp = self.execute(VaccelAgentClient::image_classification, ctx, &req)?;
 
         Ok(resp.tags)
     }

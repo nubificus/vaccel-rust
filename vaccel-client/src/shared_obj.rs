@@ -1,4 +1,8 @@
-use super::{client::VsockClient, resources::VaccelResource};
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+use crate::resources::VaccelResource;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
 use crate::{Error, Result};
 use protocols::resources::{CreateResourceRequest, CreateSharedObjRequest};
 use vaccel::{ffi, shared_obj::SharedObject};

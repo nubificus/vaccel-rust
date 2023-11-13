@@ -1,13 +1,15 @@
 use crate::{util::create_ttrpc_client, Error, Result};
+use dashmap::DashMap;
 use log::debug;
 use protocols::sync::agent_ttrpc::VaccelAgentClient;
-use std::{collections::BTreeMap, env};
+use std::{env, sync::Arc};
+use ttrpc::context::Context;
 use vaccel::profiling::ProfRegions;
 
 #[repr(C)]
 pub struct VsockClient {
     pub ttrpc_client: VaccelAgentClient,
-    pub timers: BTreeMap<u32, ProfRegions>,
+    pub timers: Arc<DashMap<u32, ProfRegions>>,
 }
 
 impl VsockClient {
@@ -23,7 +25,14 @@ impl VsockClient {
 
         Ok(VsockClient {
             ttrpc_client: VaccelAgentClient::new(ttrpc_client),
-            timers: BTreeMap::new(),
+            timers: Arc::new(DashMap::new()),
         })
+    }
+
+    pub fn execute<'a, 'b, F, A, R>(&'a self, func: F, ctx: Context, req: &'b A) -> R
+    where
+        F: Fn(&'a VaccelAgentClient, Context, &'b A) -> R,
+    {
+        func(&self.ttrpc_client, ctx, req)
     }
 }

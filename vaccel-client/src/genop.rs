@@ -1,6 +1,14 @@
-use super::client::VsockClient;
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
 use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+use log::error;
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::genop::{GenopArg, GenopRequest};
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::{convert::TryInto, ptr};
 use vaccel::ffi;
 
@@ -13,23 +21,21 @@ impl VsockClient {
     ) -> Result<Vec<GenopArg>> {
         let ctx = ttrpc::context::Context::default();
 
-        let timers = self.get_timers_entry(sess_id);
-        timers.start("genop > client > req create");
+        self.timer_start(sess_id, "genop > client > req create");
         let req = GenopRequest {
             session_id: sess_id,
             read_args,
             write_args,
             ..Default::default()
         };
-        timers.stop("genop > client > req create");
+        self.timer_stop(sess_id, "genop > client > req create");
 
-        timers.start("genop > client > ttrpc_client.genop");
-        let mut resp = self.ttrpc_client.genop(ctx, &req)?;
+        self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
+        let mut resp = self.execute(VaccelAgentClient::genop, ctx, &req)?;
+        self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
         if resp.has_error() {
             return Err(resp.take_error().into());
         }
-        let timers = self.get_timers_entry(sess_id);
-        timers.stop("genop > client > ttrpc_client.genop");
 
         Ok(resp.take_result().write_args)
     }
@@ -49,8 +55,7 @@ pub unsafe extern "C" fn genop(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    let timers = client.get_timers_entry(sess_id);
-    timers.start("genop > read_args");
+    client.timer_start(sess_id, "genop > read_args");
     let read_args: Vec<GenopArg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
         Some(slice) => slice
             .iter()
@@ -72,9 +77,9 @@ pub unsafe extern "C" fn genop(
             .collect(),
         None => return ffi::VACCEL_EINVAL,
     };
-    timers.stop("genop > read_args");
+    client.timer_stop(sess_id, "genop > read_args");
 
-    timers.start("genop > write_args");
+    client.timer_start(sess_id, "genop > write_args");
     let write_args_ref = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
 
     let write_args: Vec<GenopArg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
@@ -98,30 +103,32 @@ pub unsafe extern "C" fn genop(
             .collect(),
         None => vec![],
     };
-    timers.stop("genop > write_args");
+    client.timer_stop(sess_id, "genop > write_args");
 
-    timers.start("genop > client.genop");
-    let ret = match client.genop(sess_id, read_args, write_args) {
+    client.timer_start(sess_id, "genop > client.genop");
+    #[cfg(feature = "async-stream")]
+    let do_genop = client.genop_stream(sess_id, read_args, write_args);
+    #[cfg(not(feature = "async-stream"))]
+    let do_genop = client.genop(sess_id, read_args, write_args);
+    let ret = match do_genop {
         Ok(result) => {
-            let timers = client.get_timers_entry(sess_id);
-            timers.start("genop > write_args copy");
+            client.timer_start(sess_id, "genop > write_args copy");
             for (w, r) in write_args_ref.iter_mut().zip(result.iter()) {
                 unsafe {
                     ptr::copy_nonoverlapping(r.buf.as_ptr(), w.buf as *mut u8, r.size as usize)
                 }
             }
-            timers.stop("genop > write_args copy");
+            client.timer_stop(sess_id, "genop > write_args copy");
 
             ffi::VACCEL_OK
         }
         Err(Error::ClientError(err)) => err,
-        Err(_) => ffi::VACCEL_EINVAL,
+        Err(e) => {
+            error!("Genop: {:?}", e);
+            ffi::VACCEL_EINVAL
+        }
     };
-    let timers = client.get_timers_entry(sess_id);
-    timers.stop("genop > client.genop");
-
-    //timers.print_total();
-    //timers.print();
+    client.timer_stop(sess_id, "genop > client.genop");
 
     ret
 }

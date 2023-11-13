@@ -1,5 +1,12 @@
-use super::{client::VsockClient, resources::VaccelResource};
-use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+#[cfg(feature = "async")]
+use crate::asynchronous::client::VsockClient;
+#[cfg(not(feature = "async"))]
+use crate::sync::client::VsockClient;
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, resources::VaccelResource, Error, Result};
+#[cfg(feature = "async")]
+use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
+#[cfg(not(feature = "async"))]
+use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use protocols::{
     resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
     torch::{TorchJitloadForwardRequest, TorchTensor},
@@ -39,7 +46,7 @@ impl VsockClient {
             ..Default::default()
         };
 
-        let mut resp = self.ttrpc_client.torch_jitload_forward(ctx, &req)?;
+        let mut resp = self.execute(VaccelAgentClient::torch_jitload_forward, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }
