@@ -9,10 +9,6 @@ authors = ["Babis Chalios <mail@bchalios.io>",
 edition = "2021"
 license = "Apache-2.0"
 
-[lib]
-name = "vlib"
-path = "src/lib.rs"
-
 [dependencies]
 protocols = { path = "../vaccel-grpc", version = "0.3.7" }
 vaccel = { path = "../vaccel-bindings", version = "0.5.7" }
@@ -22,7 +18,7 @@ env_logger = "0.9.0"
 log = "0.4.16"
 ctrlc = { version = "3.2.2", features = ["termination"] }
 structopt = { version = "0.3.26", default-features = false }
-chashmap = { version = "2.2.2" }
+dashmap = { version = "5.5.3" }
 nix = "0.24.1"
 simple-logging = "2.0.2"
 tokio = { version = "1.33", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }

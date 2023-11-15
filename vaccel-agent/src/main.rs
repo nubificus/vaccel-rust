@@ -14,25 +14,25 @@ use tokio::time::sleep;
 //#[cfg(feature = "async")]
 //use tracing::instrument;
 
+/*
 mod cli;
+mod rpc;
 #[cfg(not(feature = "async"))]
 mod rpc_sync;
-#[cfg(not(feature = "async"))]
-use rpc_sync as rpc;
 #[cfg(feature = "async")]
 mod rpc_async;
+*/
 use env_logger::Env;
 #[allow(unused_imports)]
 use log::{debug, info};
-#[cfg(feature = "async")]
-use rpc_async as rpc;
+use vaccel_agent::cli;
 
 #[cfg(not(feature = "async"))]
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let cli = cli::VaccelAgentCli::from_args();
-    let mut server = rpc::new(&cli.uri).unwrap();
+    let mut server = vaccel_agent::server_init(&cli.uri).unwrap();
 
     server.start().unwrap();
 
@@ -63,8 +63,7 @@ async fn main() {
     */
 
     let cli = cli::VaccelAgentCli::from_args();
-
-    let mut server = rpc::new(&cli.uri).unwrap();
+    let mut server = vaccel_agent::server_init(&cli.uri).unwrap();
 
     let mut hangup = signal(SignalKind::hangup()).unwrap();
     let mut interrupt = signal(SignalKind::interrupt()).unwrap();
