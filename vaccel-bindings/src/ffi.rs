@@ -80,7 +80,7 @@ where
         }
     }
 }
-pub const VACCELRT_VERSION: &[u8; 19usize] = b"v0.5.0-19-gae2f46d\0";
+pub const VACCELRT_VERSION: &[u8; 19usize] = b"v0.5.0-27-g3ecabf2\0";
 pub const _ERRNO_H: u32 = 1;
 pub const _FEATURES_H: u32 = 1;
 pub const _DEFAULT_SOURCE: u32 = 1;
@@ -6558,10 +6558,11 @@ pub const VACCEL_F_VECTORADD: vaccel_op_type = 19;
 pub const VACCEL_EXEC_WITH_RESOURCE: vaccel_op_type = 20;
 pub const VACCEL_TORCH_JITLOAD_FORWARD: vaccel_op_type = 21;
 pub const VACCEL_TORCH_SGEMM: vaccel_op_type = 22;
-pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 23;
+pub const VACCEL_OPENCV: vaccel_op_type = 23;
+pub const VACCEL_FUNCTIONS_NR: vaccel_op_type = 24;
 pub type vaccel_op_type = ::std::os::raw::c_uint;
 extern "C" {
-    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 24usize];
+    pub static mut vaccel_op_name: [*const ::std::os::raw::c_char; 25usize];
 }
 extern "C" {
     pub fn vaccel_sgemm(
@@ -6616,6 +6617,7 @@ extern "C" {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct vaccel_arg {
+    pub argtype: u32,
     pub size: u32,
     pub buf: *mut ::std::os::raw::c_void,
 }
@@ -6632,8 +6634,18 @@ fn bindgen_test_layout_vaccel_arg() {
         concat!("Alignment of ", stringify!(vaccel_arg))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<vaccel_arg>())).size as *const _ as usize },
+        unsafe { &(*(::std::ptr::null::<vaccel_arg>())).argtype as *const _ as usize },
         0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_arg),
+            "::",
+            stringify!(argtype)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_arg>())).size as *const _ as usize },
+        4usize,
         concat!(
             "Offset of field: ",
             stringify!(vaccel_arg),
@@ -6660,6 +6672,155 @@ impl Default for vaccel_arg {
             s.assume_init()
         }
     }
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vaccel_arg_list {
+    pub size: u32,
+    pub list: *mut vaccel_arg,
+    pub curr_idx: ::std::os::raw::c_int,
+    pub idcs_allocated_space: *mut ::std::os::raw::c_int,
+}
+#[test]
+fn bindgen_test_layout_vaccel_arg_list() {
+    assert_eq!(
+        ::std::mem::size_of::<vaccel_arg_list>(),
+        32usize,
+        concat!("Size of: ", stringify!(vaccel_arg_list))
+    );
+    assert_eq!(
+        ::std::mem::align_of::<vaccel_arg_list>(),
+        8usize,
+        concat!("Alignment of ", stringify!(vaccel_arg_list))
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_arg_list>())).size as *const _ as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_arg_list),
+            "::",
+            stringify!(size)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_arg_list>())).list as *const _ as usize },
+        8usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_arg_list),
+            "::",
+            stringify!(list)
+        )
+    );
+    assert_eq!(
+        unsafe { &(*(::std::ptr::null::<vaccel_arg_list>())).curr_idx as *const _ as usize },
+        16usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_arg_list),
+            "::",
+            stringify!(curr_idx)
+        )
+    );
+    assert_eq!(
+        unsafe {
+            &(*(::std::ptr::null::<vaccel_arg_list>())).idcs_allocated_space as *const _ as usize
+        },
+        24usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(vaccel_arg_list),
+            "::",
+            stringify!(idcs_allocated_space)
+        )
+    );
+}
+impl Default for vaccel_arg_list {
+    fn default() -> Self {
+        let mut s = ::std::mem::MaybeUninit::<Self>::uninit();
+        unsafe {
+            ::std::ptr::write_bytes(s.as_mut_ptr(), 0, 1);
+            s.assume_init()
+        }
+    }
+}
+extern "C" {
+    pub fn vaccel_args_init(size: u32) -> *mut vaccel_arg_list;
+}
+extern "C" {
+    pub fn vaccel_add_serial_arg(
+        args: *mut vaccel_arg_list,
+        buf: *mut ::std::os::raw::c_void,
+        size: u32,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_add_nonserial_arg(
+        args: *mut vaccel_arg_list,
+        buf: *mut ::std::os::raw::c_void,
+        argtype: u32,
+        serializer: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: *mut u32,
+            ) -> *mut ::std::os::raw::c_void,
+        >,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_expect_serial_arg(
+        args: *mut vaccel_arg_list,
+        buf: *mut ::std::os::raw::c_void,
+        size: u32,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_expect_nonserial_arg(
+        args: *mut vaccel_arg_list,
+        expected_size: u32,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_extract_serial_arg(
+        args: *mut vaccel_arg,
+        idx: ::std::os::raw::c_int,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_extract_nonserial_arg(
+        args: *mut vaccel_arg,
+        idx: ::std::os::raw::c_int,
+        deserializer: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: u32,
+            ) -> *mut ::std::os::raw::c_void,
+        >,
+    ) -> *mut ::std::os::raw::c_void;
+}
+extern "C" {
+    pub fn vaccel_write_serial_arg(
+        args: *mut vaccel_arg,
+        idx: ::std::os::raw::c_int,
+        buf: *mut ::std::os::raw::c_void,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_write_nonserial_arg(
+        args: *mut vaccel_arg,
+        idx: ::std::os::raw::c_int,
+        buf: *mut ::std::os::raw::c_void,
+        serializer: ::std::option::Option<
+            unsafe extern "C" fn(
+                arg1: *mut ::std::os::raw::c_void,
+                arg2: *mut u32,
+            ) -> *mut ::std::os::raw::c_void,
+        >,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_delete_args(args: *mut vaccel_arg_list) -> ::std::os::raw::c_int;
 }
 extern "C" {
     pub fn vaccel_genop(
@@ -7108,6 +7269,15 @@ extern "C" {
         C: *mut f32,
         len_a: usize,
         len_b: usize,
+    ) -> ::std::os::raw::c_int;
+}
+extern "C" {
+    pub fn vaccel_opencv_unpack(
+        sess: *mut vaccel_session,
+        read: *mut vaccel_arg,
+        nr_read: ::std::os::raw::c_int,
+        write: *mut vaccel_arg,
+        nr_write: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
 #[repr(C)]

@@ -7,18 +7,21 @@ pub struct GenopArg {
     inner: ffi::vaccel_arg,
     buf: Vec<u8>,
     size: usize,
+    argtype: usize,
 }
 
 impl GenopArg {
-    pub fn new(buffer: &mut [u8], size: usize) -> Self {
+    pub fn new(buffer: &mut [u8], size: usize, argtype: usize) -> Self {
         let mut b = buffer.to_owned();
         GenopArg {
             inner: ffi::vaccel_arg {
                 buf: b.as_mut_ptr() as *mut libc::c_void,
                 size: size as u32,
+                argtype: argtype as u32,
             },
             buf: b,
             size: size,
+            argtype: argtype,
         }
     }
     pub fn get_size(&self) -> u32 {
@@ -34,6 +37,10 @@ impl GenopArg {
         self.inner.buf as *mut u8
     }
 
+    pub fn get_argtype(&self) -> u32 {
+        self.inner.argtype
+    }
+
     pub fn set_buf(&mut self, b: &mut [u8]) {
         self.buf = b.to_owned();
     }
@@ -41,9 +48,10 @@ impl GenopArg {
 
 impl From<&mut ProtGenopArg> for GenopArg {
     fn from(arg: &mut ProtGenopArg) -> Self {
+        let argtype = arg.get_argtype();
         let size = arg.get_size();
         let buf = arg.mut_buf();
-        GenopArg::new(buf, size as usize)
+        GenopArg::new(buf, size as usize, argtype as usize)
     }
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "vaccel"
-version = "0.5.6"
+version = "0.5.7"
 authors = ["Babis Chalios <mail@bchalios.io>", 
            "Kostis Papazafeiropoulos <papazof@gmail.com>", 
            "Anastassios Nanos <ananos@nubificus.co.uk>",
@@ -15,7 +15,7 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { git = "https://github.com/nubificus/vaccel-grpc", tag = "v0.3.6"  }
+protocols = { git = "https://github.com/nubificus/vaccel-grpc", tag = "v0.3.7" }
 protobuf = "2.28.0"
 libc = "0.2.125"
 rand = "0.8"
