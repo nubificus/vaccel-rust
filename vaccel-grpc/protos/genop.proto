@@ -19,8 +19,9 @@ package vaccel;
 import "error.proto";
 
 message GenopArg {
-	uint32 size = 1;
-	bytes buf = 2;
+	uint32 argtype = 1;
+	uint32 size = 2;
+	bytes buf = 3;
 };
 
 message GenopRequest {

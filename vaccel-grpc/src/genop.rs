@@ -26,6 +26,7 @@
 #[derive(PartialEq,Clone,Default)]
 pub struct GenopArg {
     // message fields
+    pub argtype: u32,
     pub size: u32,
     pub buf: ::std::vec::Vec<u8>,
     // special fields
@@ -44,7 +45,22 @@ impl GenopArg {
         ::std::default::Default::default()
     }
 
-    // uint32 size = 1;
+    // uint32 argtype = 1;
+
+
+    pub fn get_argtype(&self) -> u32 {
+        self.argtype
+    }
+    pub fn clear_argtype(&mut self) {
+        self.argtype = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_argtype(&mut self, v: u32) {
+        self.argtype = v;
+    }
+
+    // uint32 size = 2;
 
 
     pub fn get_size(&self) -> u32 {
@@ -59,7 +75,7 @@ impl GenopArg {
         self.size = v;
     }
 
-    // bytes buf = 2;
+    // bytes buf = 3;
 
 
     pub fn get_buf(&self) -> &[u8] {
@@ -100,9 +116,16 @@ impl ::protobuf::Message for GenopArg {
                         return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
                     }
                     let tmp = is.read_uint32()?;
-                    self.size = tmp;
+                    self.argtype = tmp;
                 },
                 2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_uint32()?;
+                    self.size = tmp;
+                },
+                3 => {
                     ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.buf)?;
                 },
                 _ => {
@@ -117,11 +140,14 @@ impl ::protobuf::Message for GenopArg {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
+        if self.argtype != 0 {
+            my_size += ::protobuf::rt::value_size(1, self.argtype, ::protobuf::wire_format::WireTypeVarint);
+        }
         if self.size != 0 {
-            my_size += ::protobuf::rt::value_size(1, self.size, ::protobuf::wire_format::WireTypeVarint);
+            my_size += ::protobuf::rt::value_size(2, self.size, ::protobuf::wire_format::WireTypeVarint);
         }
         if !self.buf.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(2, &self.buf);
+            my_size += ::protobuf::rt::bytes_size(3, &self.buf);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -129,11 +155,14 @@ impl ::protobuf::Message for GenopArg {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.argtype != 0 {
+            os.write_uint32(1, self.argtype)?;
+        }
         if self.size != 0 {
-            os.write_uint32(1, self.size)?;
+            os.write_uint32(2, self.size)?;
         }
         if !self.buf.is_empty() {
-            os.write_bytes(2, &self.buf)?;
+            os.write_bytes(3, &self.buf)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -174,6 +203,11 @@ impl ::protobuf::Message for GenopArg {
         descriptor.get(|| {
             let mut fields = ::std::vec::Vec::new();
             fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
+                "argtype",
+                |m: &GenopArg| { &m.argtype },
+                |m: &mut GenopArg| { &mut m.argtype },
+            ));
+            fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeUint32>(
                 "size",
                 |m: &GenopArg| { &m.size },
                 |m: &mut GenopArg| { &mut m.size },
@@ -199,6 +233,7 @@ impl ::protobuf::Message for GenopArg {
 
 impl ::protobuf::Clear for GenopArg {
     fn clear(&mut self) {
+        self.argtype = 0;
         self.size = 0;
         self.buf.clear();
         self.unknown_fields.clear();
@@ -916,17 +951,17 @@ impl ::protobuf::reflect::ProtobufValue for GenopResponse {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0bgenop.proto\x12\x06vaccel\x1a\x0berror.proto\"6\n\x08GenopArg\x12\
-    \x14\n\x04size\x18\x01\x20\x01(\rR\x04sizeB\0\x12\x12\n\x03buf\x18\x02\
-    \x20\x01(\x0cR\x03bufB\0:\0\"\x95\x01\n\x0cGenopRequest\x12\x1f\n\nsessi\
-    on_id\x18\x01\x20\x01(\rR\tsessionIdB\0\x12/\n\tread_args\x18\x02\x20\
-    \x03(\x0b2\x10.vaccel.GenopArgR\x08readArgsB\0\x121\n\nwrite_args\x18\
-    \x03\x20\x03(\x0b2\x10.vaccel.GenopArgR\twriteArgsB\0:\0\"B\n\x0bGenopRe\
-    sult\x121\n\nwrite_args\x18\x01\x20\x03(\x0b2\x10.vaccel.GenopArgR\twrit\
-    eArgsB\0:\0\"{\n\rGenopResponse\x12-\n\x05error\x18\x01\x20\x01(\x0b2\
-    \x13.vaccel.VaccelErrorH\0R\x05errorB\0\x12/\n\x06result\x18\x02\x20\x01\
-    (\x0b2\x13.vaccel.GenopResultH\0R\x06resultB\0B\x08\n\x06result:\0B\0b\
-    \x06proto3\
+    \n\x0bgenop.proto\x12\x06vaccel\x1a\x0berror.proto\"R\n\x08GenopArg\x12\
+    \x1a\n\x07argtype\x18\x01\x20\x01(\rR\x07argtypeB\0\x12\x14\n\x04size\
+    \x18\x02\x20\x01(\rR\x04sizeB\0\x12\x12\n\x03buf\x18\x03\x20\x01(\x0cR\
+    \x03bufB\0:\0\"\x95\x01\n\x0cGenopRequest\x12\x1f\n\nsession_id\x18\x01\
+    \x20\x01(\rR\tsessionIdB\0\x12/\n\tread_args\x18\x02\x20\x03(\x0b2\x10.v\
+    accel.GenopArgR\x08readArgsB\0\x121\n\nwrite_args\x18\x03\x20\x03(\x0b2\
+    \x10.vaccel.GenopArgR\twriteArgsB\0:\0\"B\n\x0bGenopResult\x121\n\nwrite\
+    _args\x18\x01\x20\x03(\x0b2\x10.vaccel.GenopArgR\twriteArgsB\0:\0\"{\n\r\
+    GenopResponse\x12-\n\x05error\x18\x01\x20\x01(\x0b2\x13.vaccel.VaccelErr\
+    orH\0R\x05errorB\0\x12/\n\x06result\x18\x02\x20\x01(\x0b2\x13.vaccel.Gen\
+    opResultH\0R\x06resultB\0B\x08\n\x06result:\0B\0b\x06proto3\
 ";
 
 static file_descriptor_proto_lazy: ::protobuf::rt::LazyV2<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::rt::LazyV2::INIT;
