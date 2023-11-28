@@ -61,7 +61,7 @@ impl From<InferenceArgs> for TensorflowModelRunRequest {
                 (*args.run_options).size,
             )
         }
-        .to_owned();
+        .to_vec();
 
         TensorflowModelRunRequest {
             in_nodes,
@@ -125,10 +125,9 @@ impl InferenceResult {
 
         unsafe {
             Ok(TFTensor {
-                dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
-                    .to_owned(),
+                dims: std::slice::from_raw_parts((*t).dims, (*t).nr_dims as usize).to_vec(),
                 type_: TFDataType::from_i32((*t).data_type as i32).unwrap().into(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_owned(),
+                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_vec(),
                 ..Default::default()
             })
         }

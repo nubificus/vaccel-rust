@@ -12,6 +12,7 @@ pub mod profiling;
 pub mod resource;
 pub mod session;
 pub mod shared_obj;
+#[cfg(target_pointer_width = "64")]
 pub mod tensorflow;
 pub mod torch;
 
@@ -30,20 +31,26 @@ pub enum Error {
     Uninitialized,
 
     // A TensorFlow Error
+    #[cfg(target_pointer_width = "64")]
     TensorFlow(tensorflow::Code),
 
     // A pytorch Error
     Torch(torch::Code),
+
+    // Other error types
+    Others(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Runtime(err) => write!(f, "vAccel runtime error {}", err),
+            Error::Runtime(e) => write!(f, "vAccel runtime error {}", e),
             Error::InvalidArgument => write!(f, "An invalid argument was given to us"),
             Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
-            Error::TensorFlow(code) => write!(f, "TensorFlow error: {:?}", code),
-            Error::Torch(code) => write!(f, "Torch error: {:?}", code),
+            #[cfg(target_pointer_width = "64")]
+            Error::TensorFlow(e) => write!(f, "TensorFlow error: {:?}", e),
+            Error::Torch(e) => write!(f, "Torch error: {:?}", e),
+            Error::Others(e) => write!(f, "Error: {}", e),
         }
     }
 }

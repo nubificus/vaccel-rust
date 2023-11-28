@@ -11,7 +11,7 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(name: &str, id: i64) -> Self {
+    pub fn new(name: &str, id: i32) -> Self {
         let name = CString::new(name)
             .expect("Invalid TensorFlow node name")
             .into_raw();
@@ -31,7 +31,7 @@ impl Node {
         Ok(Node { inner: node })
     }
 
-    pub fn id(&self) -> i64 {
+    pub fn id(&self) -> i32 {
         unsafe { ffi::vaccel_tf_node_get_id(self.inner) }
     }
 
