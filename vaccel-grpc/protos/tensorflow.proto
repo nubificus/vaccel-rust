@@ -74,7 +74,7 @@ message TFTensor {
 	bytes data = 1;
 
 	// Dimensions of the tensor
-	repeated uint32 dims = 2;
+	repeated int64 dims = 2;
 
 	// Data type
 	TFDataType type = 3;
@@ -85,7 +85,7 @@ message TFNode {
 	string name = 1;
 
 	// Id of the node
-	int64 id = 2;
+	int32 id = 2;
 };
 
 message TensorflowModelRunRequest {

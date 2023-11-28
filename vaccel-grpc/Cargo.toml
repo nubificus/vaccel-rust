@@ -10,7 +10,7 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-ttrpc = { version = "0.8.1", features = ["async"] }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
 protobuf = "3.1.0"
 async-trait = "0.1.73"
 

@@ -730,7 +730,7 @@ pub struct TFTensor {
     // @@protoc_insertion_point(field:vaccel.TFTensor.data)
     pub data: ::std::vec::Vec<u8>,
     // @@protoc_insertion_point(field:vaccel.TFTensor.dims)
-    pub dims: ::std::vec::Vec<u32>,
+    pub dims: ::std::vec::Vec<i64>,
     // @@protoc_insertion_point(field:vaccel.TFTensor.type)
     pub type_: ::protobuf::EnumOrUnknown<TFDataType>,
     // special fields
@@ -789,10 +789,10 @@ impl ::protobuf::Message for TFTensor {
                     self.data = is.read_bytes()?;
                 },
                 18 => {
-                    is.read_repeated_packed_uint32_into(&mut self.dims)?;
+                    is.read_repeated_packed_int64_into(&mut self.dims)?;
                 },
                 16 => {
-                    self.dims.push(is.read_uint32()?);
+                    self.dims.push(is.read_int64()?);
                 },
                 24 => {
                     self.type_ = is.read_enum_or_unknown()?;
@@ -813,7 +813,7 @@ impl ::protobuf::Message for TFTensor {
             my_size += ::protobuf::rt::bytes_size(1, &self.data);
         }
         for value in &self.dims {
-            my_size += ::protobuf::rt::uint32_size(2, *value);
+            my_size += ::protobuf::rt::int64_size(2, *value);
         };
         if self.type_ != ::protobuf::EnumOrUnknown::new(TFDataType::UNUSED) {
             my_size += ::protobuf::rt::int32_size(3, self.type_.value());
@@ -828,7 +828,7 @@ impl ::protobuf::Message for TFTensor {
             os.write_bytes(1, &self.data)?;
         }
         for v in &self.dims {
-            os.write_uint32(2, *v)?;
+            os.write_int64(2, *v)?;
         };
         if self.type_ != ::protobuf::EnumOrUnknown::new(TFDataType::UNUSED) {
             os.write_enum(3, ::protobuf::EnumOrUnknown::value(&self.type_))?;
@@ -891,7 +891,7 @@ pub struct TFNode {
     // @@protoc_insertion_point(field:vaccel.TFNode.name)
     pub name: ::std::string::String,
     // @@protoc_insertion_point(field:vaccel.TFNode.id)
-    pub id: i64,
+    pub id: i32,
     // special fields
     // @@protoc_insertion_point(special_field:vaccel.TFNode.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -943,7 +943,7 @@ impl ::protobuf::Message for TFNode {
                     self.name = is.read_string()?;
                 },
                 16 => {
-                    self.id = is.read_int64()?;
+                    self.id = is.read_int32()?;
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -961,7 +961,7 @@ impl ::protobuf::Message for TFNode {
             my_size += ::protobuf::rt::string_size(1, &self.name);
         }
         if self.id != 0 {
-            my_size += ::protobuf::rt::int64_size(2, self.id);
+            my_size += ::protobuf::rt::int32_size(2, self.id);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
@@ -973,7 +973,7 @@ impl ::protobuf::Message for TFNode {
             os.write_string(1, &self.name)?;
         }
         if self.id != 0 {
-            os.write_int64(2, self.id)?;
+            os.write_int32(2, self.id)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1825,9 +1825,9 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x18\n\x07success\x18\x01\x20\x01(\x08R\x07success\x12)\n\x05error\x18\
     \x02\x20\x01(\x0b2\x13.vaccel.VaccelErrorR\x05error\"Z\n\x08TFTensor\x12\
     \x12\n\x04data\x18\x01\x20\x01(\x0cR\x04data\x12\x12\n\x04dims\x18\x02\
-    \x20\x03(\rR\x04dims\x12&\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.TFD\
-    ataTypeR\x04type\",\n\x06TFNode\x12\x12\n\x04name\x18\x01\x20\x01(\tR\
-    \x04name\x12\x0e\n\x02id\x18\x02\x20\x01(\x03R\x02id\"\xff\x01\n\x19Tens\
+    \x20\x03(\x03R\x04dims\x12&\n\x04type\x18\x03\x20\x01(\x0e2\x12.vaccel.T\
+    FDataTypeR\x04type\",\n\x06TFNode\x12\x12\n\x04name\x18\x01\x20\x01(\tR\
+    \x04name\x12\x0e\n\x02id\x18\x02\x20\x01(\x05R\x02id\"\xff\x01\n\x19Tens\
     orflowModelRunRequest\x12\x1d\n\nsession_id\x18\x01\x20\x01(\rR\tsession\
     Id\x12\x19\n\x08model_id\x18\x02\x20\x01(\x03R\x07modelId\x12\x1f\n\x0br\
     un_options\x18\x03\x20\x01(\x0cR\nrunOptions\x12)\n\x08in_nodes\x18\x04\
