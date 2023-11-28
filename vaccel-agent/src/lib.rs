@@ -7,6 +7,7 @@ pub mod rpc_async;
 #[cfg(not(feature = "async"))]
 pub mod rpc_sync;
 pub mod session;
+#[cfg(target_pointer_width = "64")]
 pub mod tf_model;
 pub mod torch_model;
 
@@ -47,8 +48,10 @@ pub(crate) fn vaccel_error(err: vaccel::Error) -> VaccelError {
         vaccel::Error::Runtime(e) => grpc_error.set_vaccel_error(e as i64),
         vaccel::Error::InvalidArgument => grpc_error.set_agent_error(1i64),
         vaccel::Error::Uninitialized => grpc_error.set_agent_error(2i64),
+        #[cfg(target_pointer_width = "64")]
         vaccel::Error::TensorFlow(_) => grpc_error.set_agent_error(3i64),
         vaccel::Error::Torch(_) => grpc_error.set_agent_error(4i64),
+        vaccel::Error::Others(_) => grpc_error.set_agent_error(5i64),
     }
 
     grpc_error

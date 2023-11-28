@@ -1,4 +1,9 @@
 use crate::Agent;
+#[allow(unused_imports)]
+use protocols::tensorflow::{
+    TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
+    TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
+};
 use protocols::{
     genop::{GenopRequest, GenopResponse},
     image::{ImageClassificationRequest, ImageClassificationResponse},
@@ -11,10 +16,6 @@ use protocols::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
     sync::{agent::VaccelEmpty, agent_ttrpc::VaccelAgent},
-    tensorflow::{
-        TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
-        TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
-    },
     torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
 };
 
@@ -83,6 +84,7 @@ impl VaccelAgent for Agent {
         self.do_unregister_resource(req)
     }
 
+    #[cfg(target_pointer_width = "64")]
     fn tensorflow_model_load(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
@@ -91,6 +93,7 @@ impl VaccelAgent for Agent {
         self.do_tensorflow_model_load(req)
     }
 
+    #[cfg(target_pointer_width = "64")]
     fn tensorflow_model_unload(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
@@ -99,6 +102,7 @@ impl VaccelAgent for Agent {
         self.do_tensorflow_model_unload(req)
     }
 
+    #[cfg(target_pointer_width = "64")]
     fn tensorflow_model_run(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,

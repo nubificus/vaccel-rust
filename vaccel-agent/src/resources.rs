@@ -28,6 +28,7 @@ impl Agent {
 
         match model {
             CreateResourceRequestModel::SharedObj(req) => self.create_shared_object(req),
+            #[cfg(target_pointer_width = "64")]
             CreateResourceRequestModel::TfSaved(req) => self.create_tf_model(req),
             CreateResourceRequestModel::Caffe(_) => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
