@@ -2,10 +2,9 @@
 use crate::asynchronous::client::VsockClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VsockClient;
-use crate::{
-    shared_obj::create_shared_object, tf_model::create_tf_model, torch_model::create_torch_model,
-    Error, Result,
-};
+#[cfg(target_pointer_width = "64")]
+use crate::tf_model::create_tf_model;
+use crate::{shared_obj::create_shared_object, torch_model::create_torch_model, Error, Result};
 #[cfg(feature = "async")]
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::resources::{
@@ -83,9 +82,16 @@ pub unsafe extern "C" fn create_resource(
 
     match res_type {
         ffi::VACCEL_RES_TF_SAVED_MODEL | ffi::VACCEL_RES_TF_MODEL => {
-            let model_ptr = data as *mut ffi::vaccel_tf_saved_model;
-            let model = unsafe { model_ptr.as_mut().unwrap() };
-            create_tf_model(client, model)
+            #[cfg(target_pointer_width = "64")]
+            {
+                let model_ptr = data as *mut ffi::vaccel_tf_saved_model;
+                let model = unsafe { model_ptr.as_mut().unwrap() };
+                create_tf_model(client, model)
+            }
+            #[cfg(not(target_pointer_width = "64"))]
+            {
+                -(ffi::VACCEL_ENOTSUP as i64)
+            }
         }
         ffi::VACCEL_RES_SHARED_OBJ => {
             let shared_object = data as *mut ffi::vaccel_shared_object;

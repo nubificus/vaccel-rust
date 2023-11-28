@@ -16,6 +16,7 @@ pub mod profiling;
 pub mod resources;
 pub mod session;
 pub mod shared_obj;
+#[cfg(target_pointer_width = "64")]
 pub mod tf_model;
 pub mod torch_model;
 pub mod util;
