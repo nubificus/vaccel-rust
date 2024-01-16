@@ -25,183 +25,25 @@
 /// of protobuf runtime.
 const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_3_3_0;
 
-// @@protoc_insertion_point(message:vaccel.CreateCaffeModelRequest)
+// @@protoc_insertion_point(message:vaccel.CreateSharedObjRequest)
 #[derive(PartialEq,Clone,Default,Debug)]
-pub struct CreateCaffeModelRequest {
+pub struct CreateSharedObjRequest {
     // message fields
-    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.prototxt)
-    pub prototxt: ::std::vec::Vec<u8>,
-    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.binary_model)
-    pub binary_model: ::std::vec::Vec<u8>,
-    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.labels)
-    pub labels: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:vaccel.CreateSharedObjRequest.shared_obj)
+    pub shared_obj: ::std::vec::Vec<u8>,
     // special fields
-    // @@protoc_insertion_point(special_field:vaccel.CreateCaffeModelRequest.special_fields)
+    // @@protoc_insertion_point(special_field:vaccel.CreateSharedObjRequest.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
 }
 
-impl<'a> ::std::default::Default for &'a CreateCaffeModelRequest {
-    fn default() -> &'a CreateCaffeModelRequest {
-        <CreateCaffeModelRequest as ::protobuf::Message>::default_instance()
+impl<'a> ::std::default::Default for &'a CreateSharedObjRequest {
+    fn default() -> &'a CreateSharedObjRequest {
+        <CreateSharedObjRequest as ::protobuf::Message>::default_instance()
     }
 }
 
-impl CreateCaffeModelRequest {
-    pub fn new() -> CreateCaffeModelRequest {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(3);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "prototxt",
-            |m: &CreateCaffeModelRequest| { &m.prototxt },
-            |m: &mut CreateCaffeModelRequest| { &mut m.prototxt },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "binary_model",
-            |m: &CreateCaffeModelRequest| { &m.binary_model },
-            |m: &mut CreateCaffeModelRequest| { &mut m.binary_model },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "labels",
-            |m: &CreateCaffeModelRequest| { &m.labels },
-            |m: &mut CreateCaffeModelRequest| { &mut m.labels },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateCaffeModelRequest>(
-            "CreateCaffeModelRequest",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for CreateCaffeModelRequest {
-    const NAME: &'static str = "CreateCaffeModelRequest";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                18 => {
-                    self.prototxt = is.read_bytes()?;
-                },
-                26 => {
-                    self.binary_model = is.read_bytes()?;
-                },
-                34 => {
-                    self.labels = is.read_bytes()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.prototxt.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(2, &self.prototxt);
-        }
-        if !self.binary_model.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(3, &self.binary_model);
-        }
-        if !self.labels.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(4, &self.labels);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.prototxt.is_empty() {
-            os.write_bytes(2, &self.prototxt)?;
-        }
-        if !self.binary_model.is_empty() {
-            os.write_bytes(3, &self.binary_model)?;
-        }
-        if !self.labels.is_empty() {
-            os.write_bytes(4, &self.labels)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> CreateCaffeModelRequest {
-        CreateCaffeModelRequest::new()
-    }
-
-    fn clear(&mut self) {
-        self.prototxt.clear();
-        self.binary_model.clear();
-        self.labels.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static CreateCaffeModelRequest {
-        static instance: CreateCaffeModelRequest = CreateCaffeModelRequest {
-            prototxt: ::std::vec::Vec::new(),
-            binary_model: ::std::vec::Vec::new(),
-            labels: ::std::vec::Vec::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for CreateCaffeModelRequest {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateCaffeModelRequest").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for CreateCaffeModelRequest {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for CreateCaffeModelRequest {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-// @@protoc_insertion_point(message:vaccel.CreateTensorflowModelRequest)
-#[derive(PartialEq,Clone,Default,Debug)]
-pub struct CreateTensorflowModelRequest {
-    // message fields
-    // @@protoc_insertion_point(field:vaccel.CreateTensorflowModelRequest.model)
-    pub model: ::std::vec::Vec<u8>,
-    // special fields
-    // @@protoc_insertion_point(special_field:vaccel.CreateTensorflowModelRequest.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a CreateTensorflowModelRequest {
-    fn default() -> &'a CreateTensorflowModelRequest {
-        <CreateTensorflowModelRequest as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl CreateTensorflowModelRequest {
-    pub fn new() -> CreateTensorflowModelRequest {
+impl CreateSharedObjRequest {
+    pub fn new() -> CreateSharedObjRequest {
         ::std::default::Default::default()
     }
 
@@ -209,20 +51,20 @@ impl CreateTensorflowModelRequest {
         let mut fields = ::std::vec::Vec::with_capacity(1);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "model",
-            |m: &CreateTensorflowModelRequest| { &m.model },
-            |m: &mut CreateTensorflowModelRequest| { &mut m.model },
+            "shared_obj",
+            |m: &CreateSharedObjRequest| { &m.shared_obj },
+            |m: &mut CreateSharedObjRequest| { &mut m.shared_obj },
         ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateTensorflowModelRequest>(
-            "CreateTensorflowModelRequest",
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateSharedObjRequest>(
+            "CreateSharedObjRequest",
             fields,
             oneofs,
         )
     }
 }
 
-impl ::protobuf::Message for CreateTensorflowModelRequest {
-    const NAME: &'static str = "CreateTensorflowModelRequest";
+impl ::protobuf::Message for CreateSharedObjRequest {
+    const NAME: &'static str = "CreateSharedObjRequest";
 
     fn is_initialized(&self) -> bool {
         true
@@ -232,7 +74,7 @@ impl ::protobuf::Message for CreateTensorflowModelRequest {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
                 10 => {
-                    self.model = is.read_bytes()?;
+                    self.shared_obj = is.read_bytes()?;
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -246,8 +88,8 @@ impl ::protobuf::Message for CreateTensorflowModelRequest {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if !self.model.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.model);
+        if !self.shared_obj.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(1, &self.shared_obj);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
@@ -255,8 +97,8 @@ impl ::protobuf::Message for CreateTensorflowModelRequest {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.model.is_empty() {
-            os.write_bytes(1, &self.model)?;
+        if !self.shared_obj.is_empty() {
+            os.write_bytes(1, &self.shared_obj)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -270,38 +112,160 @@ impl ::protobuf::Message for CreateTensorflowModelRequest {
         &mut self.special_fields
     }
 
-    fn new() -> CreateTensorflowModelRequest {
-        CreateTensorflowModelRequest::new()
+    fn new() -> CreateSharedObjRequest {
+        CreateSharedObjRequest::new()
     }
 
     fn clear(&mut self) {
-        self.model.clear();
+        self.shared_obj.clear();
         self.special_fields.clear();
     }
 
-    fn default_instance() -> &'static CreateTensorflowModelRequest {
-        static instance: CreateTensorflowModelRequest = CreateTensorflowModelRequest {
-            model: ::std::vec::Vec::new(),
+    fn default_instance() -> &'static CreateSharedObjRequest {
+        static instance: CreateSharedObjRequest = CreateSharedObjRequest {
+            shared_obj: ::std::vec::Vec::new(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
     }
 }
 
-impl ::protobuf::MessageFull for CreateTensorflowModelRequest {
+impl ::protobuf::MessageFull for CreateSharedObjRequest {
     fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
         static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateTensorflowModelRequest").unwrap()).clone()
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateSharedObjRequest").unwrap()).clone()
     }
 }
 
-impl ::std::fmt::Display for CreateTensorflowModelRequest {
+impl ::std::fmt::Display for CreateSharedObjRequest {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for CreateTensorflowModelRequest {
+impl ::protobuf::reflect::ProtobufValue for CreateSharedObjRequest {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.CreateSingleModelRequest)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct CreateSingleModelRequest {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.CreateSingleModelRequest.file)
+    pub file: ::std::vec::Vec<u8>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.CreateSingleModelRequest.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a CreateSingleModelRequest {
+    fn default() -> &'a CreateSingleModelRequest {
+        <CreateSingleModelRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl CreateSingleModelRequest {
+    pub fn new() -> CreateSingleModelRequest {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "file",
+            |m: &CreateSingleModelRequest| { &m.file },
+            |m: &mut CreateSingleModelRequest| { &mut m.file },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateSingleModelRequest>(
+            "CreateSingleModelRequest",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for CreateSingleModelRequest {
+    const NAME: &'static str = "CreateSingleModelRequest";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.file = is.read_bytes()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.file.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(1, &self.file);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.file.is_empty() {
+            os.write_bytes(1, &self.file)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> CreateSingleModelRequest {
+        CreateSingleModelRequest::new()
+    }
+
+    fn clear(&mut self) {
+        self.file.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static CreateSingleModelRequest {
+        static instance: CreateSingleModelRequest = CreateSingleModelRequest {
+            file: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for CreateSingleModelRequest {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateSingleModelRequest").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for CreateSingleModelRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for CreateSingleModelRequest {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -463,46 +427,60 @@ impl ::protobuf::reflect::ProtobufValue for CreateTensorflowSavedModelRequest {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
-// @@protoc_insertion_point(message:vaccel.CreateSharedObjRequest)
+// @@protoc_insertion_point(message:vaccel.CreateCaffeModelRequest)
 #[derive(PartialEq,Clone,Default,Debug)]
-pub struct CreateSharedObjRequest {
+pub struct CreateCaffeModelRequest {
     // message fields
-    // @@protoc_insertion_point(field:vaccel.CreateSharedObjRequest.shared_obj)
-    pub shared_obj: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.prototxt)
+    pub prototxt: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.binary_model)
+    pub binary_model: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:vaccel.CreateCaffeModelRequest.labels)
+    pub labels: ::std::vec::Vec<u8>,
     // special fields
-    // @@protoc_insertion_point(special_field:vaccel.CreateSharedObjRequest.special_fields)
+    // @@protoc_insertion_point(special_field:vaccel.CreateCaffeModelRequest.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
 }
 
-impl<'a> ::std::default::Default for &'a CreateSharedObjRequest {
-    fn default() -> &'a CreateSharedObjRequest {
-        <CreateSharedObjRequest as ::protobuf::Message>::default_instance()
+impl<'a> ::std::default::Default for &'a CreateCaffeModelRequest {
+    fn default() -> &'a CreateCaffeModelRequest {
+        <CreateCaffeModelRequest as ::protobuf::Message>::default_instance()
     }
 }
 
-impl CreateSharedObjRequest {
-    pub fn new() -> CreateSharedObjRequest {
+impl CreateCaffeModelRequest {
+    pub fn new() -> CreateCaffeModelRequest {
         ::std::default::Default::default()
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut fields = ::std::vec::Vec::with_capacity(3);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "shared_obj",
-            |m: &CreateSharedObjRequest| { &m.shared_obj },
-            |m: &mut CreateSharedObjRequest| { &mut m.shared_obj },
+            "prototxt",
+            |m: &CreateCaffeModelRequest| { &m.prototxt },
+            |m: &mut CreateCaffeModelRequest| { &mut m.prototxt },
         ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateSharedObjRequest>(
-            "CreateSharedObjRequest",
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "binary_model",
+            |m: &CreateCaffeModelRequest| { &m.binary_model },
+            |m: &mut CreateCaffeModelRequest| { &mut m.binary_model },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "labels",
+            |m: &CreateCaffeModelRequest| { &m.labels },
+            |m: &mut CreateCaffeModelRequest| { &mut m.labels },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateCaffeModelRequest>(
+            "CreateCaffeModelRequest",
             fields,
             oneofs,
         )
     }
 }
 
-impl ::protobuf::Message for CreateSharedObjRequest {
-    const NAME: &'static str = "CreateSharedObjRequest";
+impl ::protobuf::Message for CreateCaffeModelRequest {
+    const NAME: &'static str = "CreateCaffeModelRequest";
 
     fn is_initialized(&self) -> bool {
         true
@@ -511,8 +489,14 @@ impl ::protobuf::Message for CreateSharedObjRequest {
     fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
-                10 => {
-                    self.shared_obj = is.read_bytes()?;
+                18 => {
+                    self.prototxt = is.read_bytes()?;
+                },
+                26 => {
+                    self.binary_model = is.read_bytes()?;
+                },
+                34 => {
+                    self.labels = is.read_bytes()?;
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -526,8 +510,14 @@ impl ::protobuf::Message for CreateSharedObjRequest {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if !self.shared_obj.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.shared_obj);
+        if !self.prototxt.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(2, &self.prototxt);
+        }
+        if !self.binary_model.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(3, &self.binary_model);
+        }
+        if !self.labels.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(4, &self.labels);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
@@ -535,8 +525,14 @@ impl ::protobuf::Message for CreateSharedObjRequest {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.shared_obj.is_empty() {
-            os.write_bytes(1, &self.shared_obj)?;
+        if !self.prototxt.is_empty() {
+            os.write_bytes(2, &self.prototxt)?;
+        }
+        if !self.binary_model.is_empty() {
+            os.write_bytes(3, &self.binary_model)?;
+        }
+        if !self.labels.is_empty() {
+            os.write_bytes(4, &self.labels)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -550,160 +546,42 @@ impl ::protobuf::Message for CreateSharedObjRequest {
         &mut self.special_fields
     }
 
-    fn new() -> CreateSharedObjRequest {
-        CreateSharedObjRequest::new()
+    fn new() -> CreateCaffeModelRequest {
+        CreateCaffeModelRequest::new()
     }
 
     fn clear(&mut self) {
-        self.shared_obj.clear();
+        self.prototxt.clear();
+        self.binary_model.clear();
+        self.labels.clear();
         self.special_fields.clear();
     }
 
-    fn default_instance() -> &'static CreateSharedObjRequest {
-        static instance: CreateSharedObjRequest = CreateSharedObjRequest {
-            shared_obj: ::std::vec::Vec::new(),
+    fn default_instance() -> &'static CreateCaffeModelRequest {
+        static instance: CreateCaffeModelRequest = CreateCaffeModelRequest {
+            prototxt: ::std::vec::Vec::new(),
+            binary_model: ::std::vec::Vec::new(),
+            labels: ::std::vec::Vec::new(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
     }
 }
 
-impl ::protobuf::MessageFull for CreateSharedObjRequest {
+impl ::protobuf::MessageFull for CreateCaffeModelRequest {
     fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
         static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateSharedObjRequest").unwrap()).clone()
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateCaffeModelRequest").unwrap()).clone()
     }
 }
 
-impl ::std::fmt::Display for CreateSharedObjRequest {
+impl ::std::fmt::Display for CreateCaffeModelRequest {
     fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         ::protobuf::text_format::fmt(self, f)
     }
 }
 
-impl ::protobuf::reflect::ProtobufValue for CreateSharedObjRequest {
-    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
-}
-
-// @@protoc_insertion_point(message:vaccel.CreateTorchSavedModelRequest)
-#[derive(PartialEq,Clone,Default,Debug)]
-pub struct CreateTorchSavedModelRequest {
-    // message fields
-    // @@protoc_insertion_point(field:vaccel.CreateTorchSavedModelRequest.model)
-    pub model: ::std::vec::Vec<u8>,
-    // special fields
-    // @@protoc_insertion_point(special_field:vaccel.CreateTorchSavedModelRequest.special_fields)
-    pub special_fields: ::protobuf::SpecialFields,
-}
-
-impl<'a> ::std::default::Default for &'a CreateTorchSavedModelRequest {
-    fn default() -> &'a CreateTorchSavedModelRequest {
-        <CreateTorchSavedModelRequest as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl CreateTorchSavedModelRequest {
-    pub fn new() -> CreateTorchSavedModelRequest {
-        ::std::default::Default::default()
-    }
-
-    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
-        let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
-            "model",
-            |m: &CreateTorchSavedModelRequest| { &m.model },
-            |m: &mut CreateTorchSavedModelRequest| { &mut m.model },
-        ));
-        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateTorchSavedModelRequest>(
-            "CreateTorchSavedModelRequest",
-            fields,
-            oneofs,
-        )
-    }
-}
-
-impl ::protobuf::Message for CreateTorchSavedModelRequest {
-    const NAME: &'static str = "CreateTorchSavedModelRequest";
-
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
-        while let Some(tag) = is.read_raw_tag_or_eof()? {
-            match tag {
-                10 => {
-                    self.model = is.read_bytes()?;
-                },
-                tag => {
-                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u64 {
-        let mut my_size = 0;
-        if !self.model.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(1, &self.model);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
-        self.special_fields.cached_size().set(my_size as u32);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if !self.model.is_empty() {
-            os.write_bytes(1, &self.model)?;
-        }
-        os.write_unknown_fields(self.special_fields.unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn special_fields(&self) -> &::protobuf::SpecialFields {
-        &self.special_fields
-    }
-
-    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
-        &mut self.special_fields
-    }
-
-    fn new() -> CreateTorchSavedModelRequest {
-        CreateTorchSavedModelRequest::new()
-    }
-
-    fn clear(&mut self) {
-        self.model.clear();
-        self.special_fields.clear();
-    }
-
-    fn default_instance() -> &'static CreateTorchSavedModelRequest {
-        static instance: CreateTorchSavedModelRequest = CreateTorchSavedModelRequest {
-            model: ::std::vec::Vec::new(),
-            special_fields: ::protobuf::SpecialFields::new(),
-        };
-        &instance
-    }
-}
-
-impl ::protobuf::MessageFull for CreateTorchSavedModelRequest {
-    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
-        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
-        descriptor.get(|| file_descriptor().message_by_package_relative_name("CreateTorchSavedModelRequest").unwrap()).clone()
-    }
-}
-
-impl ::std::fmt::Display for CreateTorchSavedModelRequest {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for CreateTorchSavedModelRequest {
+impl ::protobuf::reflect::ProtobufValue for CreateCaffeModelRequest {
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
@@ -711,7 +589,7 @@ impl ::protobuf::reflect::ProtobufValue for CreateTorchSavedModelRequest {
 #[derive(PartialEq,Clone,Default,Debug)]
 pub struct CreateResourceRequest {
     // message oneof groups
-    pub model: ::std::option::Option<create_resource_request::Model>,
+    pub resource: ::std::option::Option<create_resource_request::Resource>,
     // special fields
     // @@protoc_insertion_point(special_field:vaccel.CreateResourceRequest.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -728,186 +606,39 @@ impl CreateResourceRequest {
         ::std::default::Default::default()
     }
 
-    // .vaccel.CreateTensorflowModelRequest tf = 1;
-
-    pub fn tf(&self) -> &CreateTensorflowModelRequest {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Tf(ref v)) => v,
-            _ => <CreateTensorflowModelRequest as ::protobuf::Message>::default_instance(),
-        }
-    }
-
-    pub fn clear_tf(&mut self) {
-        self.model = ::std::option::Option::None;
-    }
-
-    pub fn has_tf(&self) -> bool {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Tf(..)) => true,
-            _ => false,
-        }
-    }
-
-    // Param is passed by value, moved
-    pub fn set_tf(&mut self, v: CreateTensorflowModelRequest) {
-        self.model = ::std::option::Option::Some(create_resource_request::Model::Tf(v))
-    }
-
-    // Mutable pointer to the field.
-    pub fn mut_tf(&mut self) -> &mut CreateTensorflowModelRequest {
-        if let ::std::option::Option::Some(create_resource_request::Model::Tf(_)) = self.model {
-        } else {
-            self.model = ::std::option::Option::Some(create_resource_request::Model::Tf(CreateTensorflowModelRequest::new()));
-        }
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Tf(ref mut v)) => v,
-            _ => panic!(),
-        }
-    }
-
-    // Take field
-    pub fn take_tf(&mut self) -> CreateTensorflowModelRequest {
-        if self.has_tf() {
-            match self.model.take() {
-                ::std::option::Option::Some(create_resource_request::Model::Tf(v)) => v,
-                _ => panic!(),
-            }
-        } else {
-            CreateTensorflowModelRequest::new()
-        }
-    }
-
-    // .vaccel.CreateCaffeModelRequest caffe = 2;
-
-    pub fn caffe(&self) -> &CreateCaffeModelRequest {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Caffe(ref v)) => v,
-            _ => <CreateCaffeModelRequest as ::protobuf::Message>::default_instance(),
-        }
-    }
-
-    pub fn clear_caffe(&mut self) {
-        self.model = ::std::option::Option::None;
-    }
-
-    pub fn has_caffe(&self) -> bool {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Caffe(..)) => true,
-            _ => false,
-        }
-    }
-
-    // Param is passed by value, moved
-    pub fn set_caffe(&mut self, v: CreateCaffeModelRequest) {
-        self.model = ::std::option::Option::Some(create_resource_request::Model::Caffe(v))
-    }
-
-    // Mutable pointer to the field.
-    pub fn mut_caffe(&mut self) -> &mut CreateCaffeModelRequest {
-        if let ::std::option::Option::Some(create_resource_request::Model::Caffe(_)) = self.model {
-        } else {
-            self.model = ::std::option::Option::Some(create_resource_request::Model::Caffe(CreateCaffeModelRequest::new()));
-        }
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::Caffe(ref mut v)) => v,
-            _ => panic!(),
-        }
-    }
-
-    // Take field
-    pub fn take_caffe(&mut self) -> CreateCaffeModelRequest {
-        if self.has_caffe() {
-            match self.model.take() {
-                ::std::option::Option::Some(create_resource_request::Model::Caffe(v)) => v,
-                _ => panic!(),
-            }
-        } else {
-            CreateCaffeModelRequest::new()
-        }
-    }
-
-    // .vaccel.CreateTensorflowSavedModelRequest tf_saved = 3;
-
-    pub fn tf_saved(&self) -> &CreateTensorflowSavedModelRequest {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TfSaved(ref v)) => v,
-            _ => <CreateTensorflowSavedModelRequest as ::protobuf::Message>::default_instance(),
-        }
-    }
-
-    pub fn clear_tf_saved(&mut self) {
-        self.model = ::std::option::Option::None;
-    }
-
-    pub fn has_tf_saved(&self) -> bool {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TfSaved(..)) => true,
-            _ => false,
-        }
-    }
-
-    // Param is passed by value, moved
-    pub fn set_tf_saved(&mut self, v: CreateTensorflowSavedModelRequest) {
-        self.model = ::std::option::Option::Some(create_resource_request::Model::TfSaved(v))
-    }
-
-    // Mutable pointer to the field.
-    pub fn mut_tf_saved(&mut self) -> &mut CreateTensorflowSavedModelRequest {
-        if let ::std::option::Option::Some(create_resource_request::Model::TfSaved(_)) = self.model {
-        } else {
-            self.model = ::std::option::Option::Some(create_resource_request::Model::TfSaved(CreateTensorflowSavedModelRequest::new()));
-        }
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TfSaved(ref mut v)) => v,
-            _ => panic!(),
-        }
-    }
-
-    // Take field
-    pub fn take_tf_saved(&mut self) -> CreateTensorflowSavedModelRequest {
-        if self.has_tf_saved() {
-            match self.model.take() {
-                ::std::option::Option::Some(create_resource_request::Model::TfSaved(v)) => v,
-                _ => panic!(),
-            }
-        } else {
-            CreateTensorflowSavedModelRequest::new()
-        }
-    }
-
-    // .vaccel.CreateSharedObjRequest shared_obj = 4;
+    // .vaccel.CreateSharedObjRequest shared_obj = 0;
 
     pub fn shared_obj(&self) -> &CreateSharedObjRequest {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::SharedObj(ref v)) => v,
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SharedObj(ref v)) => v,
             _ => <CreateSharedObjRequest as ::protobuf::Message>::default_instance(),
         }
     }
 
     pub fn clear_shared_obj(&mut self) {
-        self.model = ::std::option::Option::None;
+        self.resource = ::std::option::Option::None;
     }
 
     pub fn has_shared_obj(&self) -> bool {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::SharedObj(..)) => true,
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SharedObj(..)) => true,
             _ => false,
         }
     }
 
     // Param is passed by value, moved
     pub fn set_shared_obj(&mut self, v: CreateSharedObjRequest) {
-        self.model = ::std::option::Option::Some(create_resource_request::Model::SharedObj(v))
+        self.resource = ::std::option::Option::Some(create_resource_request::Resource::SharedObj(v))
     }
 
     // Mutable pointer to the field.
     pub fn mut_shared_obj(&mut self) -> &mut CreateSharedObjRequest {
-        if let ::std::option::Option::Some(create_resource_request::Model::SharedObj(_)) = self.model {
+        if let ::std::option::Option::Some(create_resource_request::Resource::SharedObj(_)) = self.resource {
         } else {
-            self.model = ::std::option::Option::Some(create_resource_request::Model::SharedObj(CreateSharedObjRequest::new()));
+            self.resource = ::std::option::Option::Some(create_resource_request::Resource::SharedObj(CreateSharedObjRequest::new()));
         }
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::SharedObj(ref mut v)) => v,
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SharedObj(ref mut v)) => v,
             _ => panic!(),
         }
     }
@@ -915,8 +646,8 @@ impl CreateResourceRequest {
     // Take field
     pub fn take_shared_obj(&mut self) -> CreateSharedObjRequest {
         if self.has_shared_obj() {
-            match self.model.take() {
-                ::std::option::Option::Some(create_resource_request::Model::SharedObj(v)) => v,
+            match self.resource.take() {
+                ::std::option::Option::Some(create_resource_request::Resource::SharedObj(v)) => v,
                 _ => panic!(),
             }
         } else {
@@ -924,79 +655,156 @@ impl CreateResourceRequest {
         }
     }
 
-    // .vaccel.CreateTorchSavedModelRequest torch_saved = 5;
+    // .vaccel.CreateSingleModelRequest single_model = 1;
 
-    pub fn torch_saved(&self) -> &CreateTorchSavedModelRequest {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TorchSaved(ref v)) => v,
-            _ => <CreateTorchSavedModelRequest as ::protobuf::Message>::default_instance(),
+    pub fn single_model(&self) -> &CreateSingleModelRequest {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SingleModel(ref v)) => v,
+            _ => <CreateSingleModelRequest as ::protobuf::Message>::default_instance(),
         }
     }
 
-    pub fn clear_torch_saved(&mut self) {
-        self.model = ::std::option::Option::None;
+    pub fn clear_single_model(&mut self) {
+        self.resource = ::std::option::Option::None;
     }
 
-    pub fn has_torch_saved(&self) -> bool {
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TorchSaved(..)) => true,
+    pub fn has_single_model(&self) -> bool {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SingleModel(..)) => true,
             _ => false,
         }
     }
 
     // Param is passed by value, moved
-    pub fn set_torch_saved(&mut self, v: CreateTorchSavedModelRequest) {
-        self.model = ::std::option::Option::Some(create_resource_request::Model::TorchSaved(v))
+    pub fn set_single_model(&mut self, v: CreateSingleModelRequest) {
+        self.resource = ::std::option::Option::Some(create_resource_request::Resource::SingleModel(v))
     }
 
     // Mutable pointer to the field.
-    pub fn mut_torch_saved(&mut self) -> &mut CreateTorchSavedModelRequest {
-        if let ::std::option::Option::Some(create_resource_request::Model::TorchSaved(_)) = self.model {
+    pub fn mut_single_model(&mut self) -> &mut CreateSingleModelRequest {
+        if let ::std::option::Option::Some(create_resource_request::Resource::SingleModel(_)) = self.resource {
         } else {
-            self.model = ::std::option::Option::Some(create_resource_request::Model::TorchSaved(CreateTorchSavedModelRequest::new()));
+            self.resource = ::std::option::Option::Some(create_resource_request::Resource::SingleModel(CreateSingleModelRequest::new()));
         }
-        match self.model {
-            ::std::option::Option::Some(create_resource_request::Model::TorchSaved(ref mut v)) => v,
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::SingleModel(ref mut v)) => v,
             _ => panic!(),
         }
     }
 
     // Take field
-    pub fn take_torch_saved(&mut self) -> CreateTorchSavedModelRequest {
-        if self.has_torch_saved() {
-            match self.model.take() {
-                ::std::option::Option::Some(create_resource_request::Model::TorchSaved(v)) => v,
+    pub fn take_single_model(&mut self) -> CreateSingleModelRequest {
+        if self.has_single_model() {
+            match self.resource.take() {
+                ::std::option::Option::Some(create_resource_request::Resource::SingleModel(v)) => v,
                 _ => panic!(),
             }
         } else {
-            CreateTorchSavedModelRequest::new()
+            CreateSingleModelRequest::new()
+        }
+    }
+
+    // .vaccel.CreateTensorflowSavedModelRequest tf_saved_model = 2;
+
+    pub fn tf_saved_model(&self) -> &CreateTensorflowSavedModelRequest {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(ref v)) => v,
+            _ => <CreateTensorflowSavedModelRequest as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_tf_saved_model(&mut self) {
+        self.resource = ::std::option::Option::None;
+    }
+
+    pub fn has_tf_saved_model(&self) -> bool {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_tf_saved_model(&mut self, v: CreateTensorflowSavedModelRequest) {
+        self.resource = ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_tf_saved_model(&mut self) -> &mut CreateTensorflowSavedModelRequest {
+        if let ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(_)) = self.resource {
+        } else {
+            self.resource = ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(CreateTensorflowSavedModelRequest::new()));
+        }
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_tf_saved_model(&mut self) -> CreateTensorflowSavedModelRequest {
+        if self.has_tf_saved_model() {
+            match self.resource.take() {
+                ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            CreateTensorflowSavedModelRequest::new()
+        }
+    }
+
+    // .vaccel.CreateCaffeModelRequest caffe_model = 3;
+
+    pub fn caffe_model(&self) -> &CreateCaffeModelRequest {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(ref v)) => v,
+            _ => <CreateCaffeModelRequest as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_caffe_model(&mut self) {
+        self.resource = ::std::option::Option::None;
+    }
+
+    pub fn has_caffe_model(&self) -> bool {
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_caffe_model(&mut self, v: CreateCaffeModelRequest) {
+        self.resource = ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_caffe_model(&mut self) -> &mut CreateCaffeModelRequest {
+        if let ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(_)) = self.resource {
+        } else {
+            self.resource = ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(CreateCaffeModelRequest::new()));
+        }
+        match self.resource {
+            ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_caffe_model(&mut self) -> CreateCaffeModelRequest {
+        if self.has_caffe_model() {
+            match self.resource.take() {
+                ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            CreateCaffeModelRequest::new()
         }
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(5);
+        let mut fields = ::std::vec::Vec::with_capacity(4);
         let mut oneofs = ::std::vec::Vec::with_capacity(1);
-        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateTensorflowModelRequest>(
-            "tf",
-            CreateResourceRequest::has_tf,
-            CreateResourceRequest::tf,
-            CreateResourceRequest::mut_tf,
-            CreateResourceRequest::set_tf,
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateCaffeModelRequest>(
-            "caffe",
-            CreateResourceRequest::has_caffe,
-            CreateResourceRequest::caffe,
-            CreateResourceRequest::mut_caffe,
-            CreateResourceRequest::set_caffe,
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateTensorflowSavedModelRequest>(
-            "tf_saved",
-            CreateResourceRequest::has_tf_saved,
-            CreateResourceRequest::tf_saved,
-            CreateResourceRequest::mut_tf_saved,
-            CreateResourceRequest::set_tf_saved,
-        ));
         fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateSharedObjRequest>(
             "shared_obj",
             CreateResourceRequest::has_shared_obj,
@@ -1004,14 +812,28 @@ impl CreateResourceRequest {
             CreateResourceRequest::mut_shared_obj,
             CreateResourceRequest::set_shared_obj,
         ));
-        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateTorchSavedModelRequest>(
-            "torch_saved",
-            CreateResourceRequest::has_torch_saved,
-            CreateResourceRequest::torch_saved,
-            CreateResourceRequest::mut_torch_saved,
-            CreateResourceRequest::set_torch_saved,
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateSingleModelRequest>(
+            "single_model",
+            CreateResourceRequest::has_single_model,
+            CreateResourceRequest::single_model,
+            CreateResourceRequest::mut_single_model,
+            CreateResourceRequest::set_single_model,
         ));
-        oneofs.push(create_resource_request::Model::generated_oneof_descriptor_data());
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateTensorflowSavedModelRequest>(
+            "tf_saved_model",
+            CreateResourceRequest::has_tf_saved_model,
+            CreateResourceRequest::tf_saved_model,
+            CreateResourceRequest::mut_tf_saved_model,
+            CreateResourceRequest::set_tf_saved_model,
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, CreateCaffeModelRequest>(
+            "caffe_model",
+            CreateResourceRequest::has_caffe_model,
+            CreateResourceRequest::caffe_model,
+            CreateResourceRequest::mut_caffe_model,
+            CreateResourceRequest::set_caffe_model,
+        ));
+        oneofs.push(create_resource_request::Resource::generated_oneof_descriptor_data());
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<CreateResourceRequest>(
             "CreateResourceRequest",
             fields,
@@ -1030,20 +852,17 @@ impl ::protobuf::Message for CreateResourceRequest {
     fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
+                2 => {
+                    self.resource = ::std::option::Option::Some(create_resource_request::Resource::SharedObj(is.read_message()?));
+                },
                 10 => {
-                    self.model = ::std::option::Option::Some(create_resource_request::Model::Tf(is.read_message()?));
+                    self.resource = ::std::option::Option::Some(create_resource_request::Resource::SingleModel(is.read_message()?));
                 },
                 18 => {
-                    self.model = ::std::option::Option::Some(create_resource_request::Model::Caffe(is.read_message()?));
+                    self.resource = ::std::option::Option::Some(create_resource_request::Resource::TfSavedModel(is.read_message()?));
                 },
                 26 => {
-                    self.model = ::std::option::Option::Some(create_resource_request::Model::TfSaved(is.read_message()?));
-                },
-                34 => {
-                    self.model = ::std::option::Option::Some(create_resource_request::Model::SharedObj(is.read_message()?));
-                },
-                42 => {
-                    self.model = ::std::option::Option::Some(create_resource_request::Model::TorchSaved(is.read_message()?));
+                    self.resource = ::std::option::Option::Some(create_resource_request::Resource::CaffeModel(is.read_message()?));
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -1057,25 +876,21 @@ impl ::protobuf::Message for CreateResourceRequest {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if let ::std::option::Option::Some(ref v) = self.model {
+        if let ::std::option::Option::Some(ref v) = self.resource {
             match v {
-                &create_resource_request::Model::Tf(ref v) => {
+                &create_resource_request::Resource::SharedObj(ref v) => {
                     let len = v.compute_size();
                     my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
                 },
-                &create_resource_request::Model::Caffe(ref v) => {
+                &create_resource_request::Resource::SingleModel(ref v) => {
                     let len = v.compute_size();
                     my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
                 },
-                &create_resource_request::Model::TfSaved(ref v) => {
+                &create_resource_request::Resource::TfSavedModel(ref v) => {
                     let len = v.compute_size();
                     my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
                 },
-                &create_resource_request::Model::SharedObj(ref v) => {
-                    let len = v.compute_size();
-                    my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
-                },
-                &create_resource_request::Model::TorchSaved(ref v) => {
+                &create_resource_request::Resource::CaffeModel(ref v) => {
                     let len = v.compute_size();
                     my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
                 },
@@ -1087,22 +902,19 @@ impl ::protobuf::Message for CreateResourceRequest {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if let ::std::option::Option::Some(ref v) = self.model {
+        if let ::std::option::Option::Some(ref v) = self.resource {
             match v {
-                &create_resource_request::Model::Tf(ref v) => {
+                &create_resource_request::Resource::SharedObj(ref v) => {
+                    ::protobuf::rt::write_message_field_with_cached_size(0, v, os)?;
+                },
+                &create_resource_request::Resource::SingleModel(ref v) => {
                     ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
                 },
-                &create_resource_request::Model::Caffe(ref v) => {
+                &create_resource_request::Resource::TfSavedModel(ref v) => {
                     ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
                 },
-                &create_resource_request::Model::TfSaved(ref v) => {
+                &create_resource_request::Resource::CaffeModel(ref v) => {
                     ::protobuf::rt::write_message_field_with_cached_size(3, v, os)?;
-                },
-                &create_resource_request::Model::SharedObj(ref v) => {
-                    ::protobuf::rt::write_message_field_with_cached_size(4, v, os)?;
-                },
-                &create_resource_request::Model::TorchSaved(ref v) => {
-                    ::protobuf::rt::write_message_field_with_cached_size(5, v, os)?;
                 },
             };
         }
@@ -1123,17 +935,16 @@ impl ::protobuf::Message for CreateResourceRequest {
     }
 
     fn clear(&mut self) {
-        self.model = ::std::option::Option::None;
-        self.model = ::std::option::Option::None;
-        self.model = ::std::option::Option::None;
-        self.model = ::std::option::Option::None;
-        self.model = ::std::option::Option::None;
+        self.resource = ::std::option::Option::None;
+        self.resource = ::std::option::Option::None;
+        self.resource = ::std::option::Option::None;
+        self.resource = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static CreateResourceRequest {
         static instance: CreateResourceRequest = CreateResourceRequest {
-            model: ::std::option::Option::None,
+            resource: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -1162,33 +973,31 @@ pub mod create_resource_request {
 
     #[derive(Clone,PartialEq,Debug)]
     #[non_exhaustive]
-    // @@protoc_insertion_point(oneof:vaccel.CreateResourceRequest.model)
-    pub enum Model {
-        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.tf)
-        Tf(super::CreateTensorflowModelRequest),
-        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.caffe)
-        Caffe(super::CreateCaffeModelRequest),
-        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.tf_saved)
-        TfSaved(super::CreateTensorflowSavedModelRequest),
+    // @@protoc_insertion_point(oneof:vaccel.CreateResourceRequest.resource)
+    pub enum Resource {
         // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.shared_obj)
         SharedObj(super::CreateSharedObjRequest),
-        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.torch_saved)
-        TorchSaved(super::CreateTorchSavedModelRequest),
+        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.single_model)
+        SingleModel(super::CreateSingleModelRequest),
+        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.tf_saved_model)
+        TfSavedModel(super::CreateTensorflowSavedModelRequest),
+        // @@protoc_insertion_point(oneof_field:vaccel.CreateResourceRequest.caffe_model)
+        CaffeModel(super::CreateCaffeModelRequest),
     }
 
-    impl ::protobuf::Oneof for Model {
+    impl ::protobuf::Oneof for Resource {
     }
 
-    impl ::protobuf::OneofFull for Model {
+    impl ::protobuf::OneofFull for Resource {
         fn descriptor() -> ::protobuf::reflect::OneofDescriptor {
             static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::OneofDescriptor> = ::protobuf::rt::Lazy::new();
-            descriptor.get(|| <super::CreateResourceRequest as ::protobuf::MessageFull>::descriptor().oneof_by_name("model").unwrap()).clone()
+            descriptor.get(|| <super::CreateResourceRequest as ::protobuf::MessageFull>::descriptor().oneof_by_name("resource").unwrap()).clone()
         }
     }
 
-    impl Model {
+    impl Resource {
         pub(in super) fn generated_oneof_descriptor_data() -> ::protobuf::reflect::GeneratedOneofDescriptorData {
-            ::protobuf::reflect::GeneratedOneofDescriptorData::new::<Model>("model")
+            ::protobuf::reflect::GeneratedOneofDescriptorData::new::<Resource>("resource")
         }
     }
 }
@@ -1718,30 +1527,28 @@ impl ::protobuf::reflect::ProtobufValue for DestroyResourceRequest {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\x0fresources.proto\x12\x06vaccel\"p\n\x17CreateCaffeModelRequest\x12\
-    \x1a\n\x08prototxt\x18\x02\x20\x01(\x0cR\x08prototxt\x12!\n\x0cbinary_mo\
-    del\x18\x03\x20\x01(\x0cR\x0bbinaryModel\x12\x16\n\x06labels\x18\x04\x20\
-    \x01(\x0cR\x06labels\"4\n\x1cCreateTensorflowModelRequest\x12\x14\n\x05m\
-    odel\x18\x01\x20\x01(\x0cR\x05model\"{\n!CreateTensorflowSavedModelReque\
-    st\x12\x19\n\x08model_pb\x18\x01\x20\x01(\x0cR\x07modelPb\x12\x1e\n\nche\
-    ckpoint\x18\x02\x20\x01(\x0cR\ncheckpoint\x12\x1b\n\tvar_index\x18\x03\
-    \x20\x01(\x0cR\x08varIndex\"7\n\x16CreateSharedObjRequest\x12\x1d\n\nsha\
-    red_obj\x18\x01\x20\x01(\x0cR\tsharedObj\"4\n\x1cCreateTorchSavedModelRe\
-    quest\x12\x14\n\x05model\x18\x01\x20\x01(\x0cR\x05model\"\xe3\x02\n\x15C\
-    reateResourceRequest\x126\n\x02tf\x18\x01\x20\x01(\x0b2$.vaccel.CreateTe\
-    nsorflowModelRequestH\0R\x02tf\x127\n\x05caffe\x18\x02\x20\x01(\x0b2\x1f\
-    .vaccel.CreateCaffeModelRequestH\0R\x05caffe\x12F\n\x08tf_saved\x18\x03\
-    \x20\x01(\x0b2).vaccel.CreateTensorflowSavedModelRequestH\0R\x07tfSaved\
-    \x12?\n\nshared_obj\x18\x04\x20\x01(\x0b2\x1e.vaccel.CreateSharedObjRequ\
-    estH\0R\tsharedObj\x12G\n\x0btorch_saved\x18\x05\x20\x01(\x0b2$.vaccel.C\
-    reateTorchSavedModelRequestH\0R\ntorchSavedB\x07\n\x05model\"9\n\x16Crea\
-    teResourceResponse\x12\x1f\n\x0bresource_id\x18\x01\x20\x01(\x03R\nresou\
-    rceId\"Y\n\x17RegisterResourceRequest\x12\x1f\n\x0bresource_id\x18\x01\
-    \x20\x01(\x03R\nresourceId\x12\x1d\n\nsession_id\x18\x02\x20\x01(\rR\tse\
-    ssionId\"[\n\x19UnregisterResourceRequest\x12\x1d\n\nsession_id\x18\x01\
-    \x20\x01(\rR\tsessionId\x12\x1f\n\x0bresource_id\x18\x02\x20\x01(\x03R\n\
-    resourceId\"9\n\x16DestroyResourceRequest\x12\x1f\n\x0bresource_id\x18\
-    \x01\x20\x01(\x03R\nresourceIdb\x06proto3\
+    \n\x0fresources.proto\x12\x06vaccel\"7\n\x16CreateSharedObjRequest\x12\
+    \x1d\n\nshared_obj\x18\x01\x20\x01(\x0cR\tsharedObj\".\n\x18CreateSingle\
+    ModelRequest\x12\x12\n\x04file\x18\x01\x20\x01(\x0cR\x04file\"{\n!Create\
+    TensorflowSavedModelRequest\x12\x19\n\x08model_pb\x18\x01\x20\x01(\x0cR\
+    \x07modelPb\x12\x1e\n\ncheckpoint\x18\x02\x20\x01(\x0cR\ncheckpoint\x12\
+    \x1b\n\tvar_index\x18\x03\x20\x01(\x0cR\x08varIndex\"p\n\x17CreateCaffeM\
+    odelRequest\x12\x1a\n\x08prototxt\x18\x02\x20\x01(\x0cR\x08prototxt\x12!\
+    \n\x0cbinary_model\x18\x03\x20\x01(\x0cR\x0bbinaryModel\x12\x16\n\x06lab\
+    els\x18\x04\x20\x01(\x0cR\x06labels\"\xc2\x02\n\x15CreateResourceRequest\
+    \x12?\n\nshared_obj\x18\0\x20\x01(\x0b2\x1e.vaccel.CreateSharedObjReques\
+    tH\0R\tsharedObj\x12E\n\x0csingle_model\x18\x01\x20\x01(\x0b2\x20.vaccel\
+    .CreateSingleModelRequestH\0R\x0bsingleModel\x12Q\n\x0etf_saved_model\
+    \x18\x02\x20\x01(\x0b2).vaccel.CreateTensorflowSavedModelRequestH\0R\x0c\
+    tfSavedModel\x12B\n\x0bcaffe_model\x18\x03\x20\x01(\x0b2\x1f.vaccel.Crea\
+    teCaffeModelRequestH\0R\ncaffeModelB\n\n\x08resource\"9\n\x16CreateResou\
+    rceResponse\x12\x1f\n\x0bresource_id\x18\x01\x20\x01(\x03R\nresourceId\"\
+    Y\n\x17RegisterResourceRequest\x12\x1f\n\x0bresource_id\x18\x01\x20\x01(\
+    \x03R\nresourceId\x12\x1d\n\nsession_id\x18\x02\x20\x01(\rR\tsessionId\"\
+    [\n\x19UnregisterResourceRequest\x12\x1d\n\nsession_id\x18\x01\x20\x01(\
+    \rR\tsessionId\x12\x1f\n\x0bresource_id\x18\x02\x20\x01(\x03R\nresourceI\
+    d\"9\n\x16DestroyResourceRequest\x12\x1f\n\x0bresource_id\x18\x01\x20\
+    \x01(\x03R\nresourceIdb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -1759,12 +1566,11 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
     file_descriptor.get(|| {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(0);
-            let mut messages = ::std::vec::Vec::with_capacity(10);
-            messages.push(CreateCaffeModelRequest::generated_message_descriptor_data());
-            messages.push(CreateTensorflowModelRequest::generated_message_descriptor_data());
-            messages.push(CreateTensorflowSavedModelRequest::generated_message_descriptor_data());
+            let mut messages = ::std::vec::Vec::with_capacity(9);
             messages.push(CreateSharedObjRequest::generated_message_descriptor_data());
-            messages.push(CreateTorchSavedModelRequest::generated_message_descriptor_data());
+            messages.push(CreateSingleModelRequest::generated_message_descriptor_data());
+            messages.push(CreateTensorflowSavedModelRequest::generated_message_descriptor_data());
+            messages.push(CreateCaffeModelRequest::generated_message_descriptor_data());
             messages.push(CreateResourceRequest::generated_message_descriptor_data());
             messages.push(CreateResourceResponse::generated_message_descriptor_data());
             messages.push(RegisterResourceRequest::generated_message_descriptor_data());

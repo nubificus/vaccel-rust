@@ -1641,6 +1641,1446 @@ pub mod tensorflow_model_run_response {
     }
 }
 
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelLoadRequest)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelLoadRequest {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelLoadRequest.session_id)
+    pub session_id: u32,
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelLoadRequest.model_id)
+    pub model_id: i64,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelLoadRequest.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelLoadRequest {
+    fn default() -> &'a TensorflowLiteModelLoadRequest {
+        <TensorflowLiteModelLoadRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelLoadRequest {
+    pub fn new() -> TensorflowLiteModelLoadRequest {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(2);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "session_id",
+            |m: &TensorflowLiteModelLoadRequest| { &m.session_id },
+            |m: &mut TensorflowLiteModelLoadRequest| { &mut m.session_id },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "model_id",
+            |m: &TensorflowLiteModelLoadRequest| { &m.model_id },
+            |m: &mut TensorflowLiteModelLoadRequest| { &mut m.model_id },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelLoadRequest>(
+            "TensorflowLiteModelLoadRequest",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelLoadRequest {
+    const NAME: &'static str = "TensorflowLiteModelLoadRequest";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.session_id = is.read_uint32()?;
+                },
+                16 => {
+                    self.model_id = is.read_int64()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.session_id != 0 {
+            my_size += ::protobuf::rt::uint32_size(1, self.session_id);
+        }
+        if self.model_id != 0 {
+            my_size += ::protobuf::rt::int64_size(2, self.model_id);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.session_id != 0 {
+            os.write_uint32(1, self.session_id)?;
+        }
+        if self.model_id != 0 {
+            os.write_int64(2, self.model_id)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelLoadRequest {
+        TensorflowLiteModelLoadRequest::new()
+    }
+
+    fn clear(&mut self) {
+        self.session_id = 0;
+        self.model_id = 0;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelLoadRequest {
+        static instance: TensorflowLiteModelLoadRequest = TensorflowLiteModelLoadRequest {
+            session_id: 0,
+            model_id: 0,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelLoadRequest {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelLoadRequest").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelLoadRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelLoadRequest {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelLoadResponse)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelLoadResponse {
+    // message oneof groups
+    pub result: ::std::option::Option<tensorflow_lite_model_load_response::Result>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelLoadResponse.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelLoadResponse {
+    fn default() -> &'a TensorflowLiteModelLoadResponse {
+        <TensorflowLiteModelLoadResponse as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelLoadResponse {
+    pub fn new() -> TensorflowLiteModelLoadResponse {
+        ::std::default::Default::default()
+    }
+
+    // .vaccel.VaccelError error = 1;
+
+    pub fn error(&self) -> &super::error::VaccelError {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(ref v)) => v,
+            _ => <super::error::VaccelError as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_error(&mut self) {
+        self.result = ::std::option::Option::None;
+    }
+
+    pub fn has_error(&self) -> bool {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_error(&mut self, v: super::error::VaccelError) {
+        self.result = ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_error(&mut self) -> &mut super::error::VaccelError {
+        if let ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(super::error::VaccelError::new()));
+        }
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_error(&mut self) -> super::error::VaccelError {
+        if self.has_error() {
+            match self.result.take() {
+                ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            super::error::VaccelError::new()
+        }
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(1);
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, super::error::VaccelError>(
+            "error",
+            TensorflowLiteModelLoadResponse::has_error,
+            TensorflowLiteModelLoadResponse::error,
+            TensorflowLiteModelLoadResponse::mut_error,
+            TensorflowLiteModelLoadResponse::set_error,
+        ));
+        oneofs.push(tensorflow_lite_model_load_response::Result::generated_oneof_descriptor_data());
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelLoadResponse>(
+            "TensorflowLiteModelLoadResponse",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelLoadResponse {
+    const NAME: &'static str = "TensorflowLiteModelLoadResponse";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.result = ::std::option::Option::Some(tensorflow_lite_model_load_response::Result::Error(is.read_message()?));
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_load_response::Result::Error(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+                },
+            };
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_load_response::Result::Error(ref v) => {
+                    ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
+                },
+            };
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelLoadResponse {
+        TensorflowLiteModelLoadResponse::new()
+    }
+
+    fn clear(&mut self) {
+        self.result = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelLoadResponse {
+        static instance: TensorflowLiteModelLoadResponse = TensorflowLiteModelLoadResponse {
+            result: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelLoadResponse {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelLoadResponse").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelLoadResponse {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelLoadResponse {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+/// Nested message and enums of message `TensorflowLiteModelLoadResponse`
+pub mod tensorflow_lite_model_load_response {
+
+    #[derive(Clone,PartialEq,Debug)]
+    #[non_exhaustive]
+    // @@protoc_insertion_point(oneof:vaccel.TensorflowLiteModelLoadResponse.result)
+    pub enum Result {
+        // @@protoc_insertion_point(oneof_field:vaccel.TensorflowLiteModelLoadResponse.error)
+        Error(super::super::error::VaccelError),
+    }
+
+    impl ::protobuf::Oneof for Result {
+    }
+
+    impl ::protobuf::OneofFull for Result {
+        fn descriptor() -> ::protobuf::reflect::OneofDescriptor {
+            static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::OneofDescriptor> = ::protobuf::rt::Lazy::new();
+            descriptor.get(|| <super::TensorflowLiteModelLoadResponse as ::protobuf::MessageFull>::descriptor().oneof_by_name("result").unwrap()).clone()
+        }
+    }
+
+    impl Result {
+        pub(in super) fn generated_oneof_descriptor_data() -> ::protobuf::reflect::GeneratedOneofDescriptorData {
+            ::protobuf::reflect::GeneratedOneofDescriptorData::new::<Result>("result")
+        }
+    }
+}
+
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelUnloadRequest)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelUnloadRequest {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelUnloadRequest.session_id)
+    pub session_id: u32,
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelUnloadRequest.model_id)
+    pub model_id: i64,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelUnloadRequest.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelUnloadRequest {
+    fn default() -> &'a TensorflowLiteModelUnloadRequest {
+        <TensorflowLiteModelUnloadRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelUnloadRequest {
+    pub fn new() -> TensorflowLiteModelUnloadRequest {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(2);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "session_id",
+            |m: &TensorflowLiteModelUnloadRequest| { &m.session_id },
+            |m: &mut TensorflowLiteModelUnloadRequest| { &mut m.session_id },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "model_id",
+            |m: &TensorflowLiteModelUnloadRequest| { &m.model_id },
+            |m: &mut TensorflowLiteModelUnloadRequest| { &mut m.model_id },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelUnloadRequest>(
+            "TensorflowLiteModelUnloadRequest",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelUnloadRequest {
+    const NAME: &'static str = "TensorflowLiteModelUnloadRequest";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.session_id = is.read_uint32()?;
+                },
+                16 => {
+                    self.model_id = is.read_int64()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.session_id != 0 {
+            my_size += ::protobuf::rt::uint32_size(1, self.session_id);
+        }
+        if self.model_id != 0 {
+            my_size += ::protobuf::rt::int64_size(2, self.model_id);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.session_id != 0 {
+            os.write_uint32(1, self.session_id)?;
+        }
+        if self.model_id != 0 {
+            os.write_int64(2, self.model_id)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelUnloadRequest {
+        TensorflowLiteModelUnloadRequest::new()
+    }
+
+    fn clear(&mut self) {
+        self.session_id = 0;
+        self.model_id = 0;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelUnloadRequest {
+        static instance: TensorflowLiteModelUnloadRequest = TensorflowLiteModelUnloadRequest {
+            session_id: 0,
+            model_id: 0,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelUnloadRequest {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelUnloadRequest").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelUnloadRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelUnloadRequest {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelUnloadResponse)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelUnloadResponse {
+    // message oneof groups
+    pub result: ::std::option::Option<tensorflow_lite_model_unload_response::Result>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelUnloadResponse.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelUnloadResponse {
+    fn default() -> &'a TensorflowLiteModelUnloadResponse {
+        <TensorflowLiteModelUnloadResponse as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelUnloadResponse {
+    pub fn new() -> TensorflowLiteModelUnloadResponse {
+        ::std::default::Default::default()
+    }
+
+    // .vaccel.VaccelError error = 1;
+
+    pub fn error(&self) -> &super::error::VaccelError {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(ref v)) => v,
+            _ => <super::error::VaccelError as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_error(&mut self) {
+        self.result = ::std::option::Option::None;
+    }
+
+    pub fn has_error(&self) -> bool {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_error(&mut self, v: super::error::VaccelError) {
+        self.result = ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_error(&mut self) -> &mut super::error::VaccelError {
+        if let ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(super::error::VaccelError::new()));
+        }
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_error(&mut self) -> super::error::VaccelError {
+        if self.has_error() {
+            match self.result.take() {
+                ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            super::error::VaccelError::new()
+        }
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(1);
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, super::error::VaccelError>(
+            "error",
+            TensorflowLiteModelUnloadResponse::has_error,
+            TensorflowLiteModelUnloadResponse::error,
+            TensorflowLiteModelUnloadResponse::mut_error,
+            TensorflowLiteModelUnloadResponse::set_error,
+        ));
+        oneofs.push(tensorflow_lite_model_unload_response::Result::generated_oneof_descriptor_data());
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelUnloadResponse>(
+            "TensorflowLiteModelUnloadResponse",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelUnloadResponse {
+    const NAME: &'static str = "TensorflowLiteModelUnloadResponse";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.result = ::std::option::Option::Some(tensorflow_lite_model_unload_response::Result::Error(is.read_message()?));
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_unload_response::Result::Error(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+                },
+            };
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_unload_response::Result::Error(ref v) => {
+                    ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
+                },
+            };
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelUnloadResponse {
+        TensorflowLiteModelUnloadResponse::new()
+    }
+
+    fn clear(&mut self) {
+        self.result = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelUnloadResponse {
+        static instance: TensorflowLiteModelUnloadResponse = TensorflowLiteModelUnloadResponse {
+            result: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelUnloadResponse {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelUnloadResponse").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelUnloadResponse {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelUnloadResponse {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+/// Nested message and enums of message `TensorflowLiteModelUnloadResponse`
+pub mod tensorflow_lite_model_unload_response {
+
+    #[derive(Clone,PartialEq,Debug)]
+    #[non_exhaustive]
+    // @@protoc_insertion_point(oneof:vaccel.TensorflowLiteModelUnloadResponse.result)
+    pub enum Result {
+        // @@protoc_insertion_point(oneof_field:vaccel.TensorflowLiteModelUnloadResponse.error)
+        Error(super::super::error::VaccelError),
+    }
+
+    impl ::protobuf::Oneof for Result {
+    }
+
+    impl ::protobuf::OneofFull for Result {
+        fn descriptor() -> ::protobuf::reflect::OneofDescriptor {
+            static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::OneofDescriptor> = ::protobuf::rt::Lazy::new();
+            descriptor.get(|| <super::TensorflowLiteModelUnloadResponse as ::protobuf::MessageFull>::descriptor().oneof_by_name("result").unwrap()).clone()
+        }
+    }
+
+    impl Result {
+        pub(in super) fn generated_oneof_descriptor_data() -> ::protobuf::reflect::GeneratedOneofDescriptorData {
+            ::protobuf::reflect::GeneratedOneofDescriptorData::new::<Result>("result")
+        }
+    }
+}
+
+// @@protoc_insertion_point(message:vaccel.TFLiteTensor)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TFLiteTensor {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.TFLiteTensor.data)
+    pub data: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:vaccel.TFLiteTensor.dims)
+    pub dims: ::std::vec::Vec<i32>,
+    // @@protoc_insertion_point(field:vaccel.TFLiteTensor.type)
+    pub type_: ::protobuf::EnumOrUnknown<TFLiteType>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TFLiteTensor.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TFLiteTensor {
+    fn default() -> &'a TFLiteTensor {
+        <TFLiteTensor as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TFLiteTensor {
+    pub fn new() -> TFLiteTensor {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "data",
+            |m: &TFLiteTensor| { &m.data },
+            |m: &mut TFLiteTensor| { &mut m.data },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "dims",
+            |m: &TFLiteTensor| { &m.dims },
+            |m: &mut TFLiteTensor| { &mut m.dims },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "type",
+            |m: &TFLiteTensor| { &m.type_ },
+            |m: &mut TFLiteTensor| { &mut m.type_ },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TFLiteTensor>(
+            "TFLiteTensor",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TFLiteTensor {
+    const NAME: &'static str = "TFLiteTensor";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.data = is.read_bytes()?;
+                },
+                18 => {
+                    is.read_repeated_packed_int32_into(&mut self.dims)?;
+                },
+                16 => {
+                    self.dims.push(is.read_int32()?);
+                },
+                24 => {
+                    self.type_ = is.read_enum_or_unknown()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if !self.data.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(1, &self.data);
+        }
+        for value in &self.dims {
+            my_size += ::protobuf::rt::int32_size(2, *value);
+        };
+        if self.type_ != ::protobuf::EnumOrUnknown::new(TFLiteType::UNUSED) {
+            my_size += ::protobuf::rt::int32_size(3, self.type_.value());
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if !self.data.is_empty() {
+            os.write_bytes(1, &self.data)?;
+        }
+        for v in &self.dims {
+            os.write_int32(2, *v)?;
+        };
+        if self.type_ != ::protobuf::EnumOrUnknown::new(TFLiteType::UNUSED) {
+            os.write_enum(3, ::protobuf::EnumOrUnknown::value(&self.type_))?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TFLiteTensor {
+        TFLiteTensor::new()
+    }
+
+    fn clear(&mut self) {
+        self.data.clear();
+        self.dims.clear();
+        self.type_ = ::protobuf::EnumOrUnknown::new(TFLiteType::UNUSED);
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TFLiteTensor {
+        static instance: TFLiteTensor = TFLiteTensor {
+            data: ::std::vec::Vec::new(),
+            dims: ::std::vec::Vec::new(),
+            type_: ::protobuf::EnumOrUnknown::from_i32(0),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TFLiteTensor {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TFLiteTensor").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TFLiteTensor {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TFLiteTensor {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelRunRequest)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelRunRequest {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelRunRequest.session_id)
+    pub session_id: u32,
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelRunRequest.model_id)
+    pub model_id: i64,
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelRunRequest.in_tensors)
+    pub in_tensors: ::std::vec::Vec<TFLiteTensor>,
+    // @@protoc_insertion_point(field:vaccel.TensorflowLiteModelRunRequest.nr_outputs)
+    pub nr_outputs: i32,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelRunRequest.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelRunRequest {
+    fn default() -> &'a TensorflowLiteModelRunRequest {
+        <TensorflowLiteModelRunRequest as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelRunRequest {
+    pub fn new() -> TensorflowLiteModelRunRequest {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "session_id",
+            |m: &TensorflowLiteModelRunRequest| { &m.session_id },
+            |m: &mut TensorflowLiteModelRunRequest| { &mut m.session_id },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "model_id",
+            |m: &TensorflowLiteModelRunRequest| { &m.model_id },
+            |m: &mut TensorflowLiteModelRunRequest| { &mut m.model_id },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "in_tensors",
+            |m: &TensorflowLiteModelRunRequest| { &m.in_tensors },
+            |m: &mut TensorflowLiteModelRunRequest| { &mut m.in_tensors },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "nr_outputs",
+            |m: &TensorflowLiteModelRunRequest| { &m.nr_outputs },
+            |m: &mut TensorflowLiteModelRunRequest| { &mut m.nr_outputs },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelRunRequest>(
+            "TensorflowLiteModelRunRequest",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelRunRequest {
+    const NAME: &'static str = "TensorflowLiteModelRunRequest";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.session_id = is.read_uint32()?;
+                },
+                16 => {
+                    self.model_id = is.read_int64()?;
+                },
+                26 => {
+                    self.in_tensors.push(is.read_message()?);
+                },
+                32 => {
+                    self.nr_outputs = is.read_int32()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.session_id != 0 {
+            my_size += ::protobuf::rt::uint32_size(1, self.session_id);
+        }
+        if self.model_id != 0 {
+            my_size += ::protobuf::rt::int64_size(2, self.model_id);
+        }
+        for value in &self.in_tensors {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
+        if self.nr_outputs != 0 {
+            my_size += ::protobuf::rt::int32_size(4, self.nr_outputs);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.session_id != 0 {
+            os.write_uint32(1, self.session_id)?;
+        }
+        if self.model_id != 0 {
+            os.write_int64(2, self.model_id)?;
+        }
+        for v in &self.in_tensors {
+            ::protobuf::rt::write_message_field_with_cached_size(3, v, os)?;
+        };
+        if self.nr_outputs != 0 {
+            os.write_int32(4, self.nr_outputs)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelRunRequest {
+        TensorflowLiteModelRunRequest::new()
+    }
+
+    fn clear(&mut self) {
+        self.session_id = 0;
+        self.model_id = 0;
+        self.in_tensors.clear();
+        self.nr_outputs = 0;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelRunRequest {
+        static instance: TensorflowLiteModelRunRequest = TensorflowLiteModelRunRequest {
+            session_id: 0,
+            model_id: 0,
+            in_tensors: ::std::vec::Vec::new(),
+            nr_outputs: 0,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelRunRequest {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelRunRequest").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelRunRequest {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelRunRequest {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.InferenceLiteResult)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct InferenceLiteResult {
+    // message fields
+    // @@protoc_insertion_point(field:vaccel.InferenceLiteResult.out_tensors)
+    pub out_tensors: ::std::vec::Vec<TFLiteTensor>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.InferenceLiteResult.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a InferenceLiteResult {
+    fn default() -> &'a InferenceLiteResult {
+        <InferenceLiteResult as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl InferenceLiteResult {
+    pub fn new() -> InferenceLiteResult {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "out_tensors",
+            |m: &InferenceLiteResult| { &m.out_tensors },
+            |m: &mut InferenceLiteResult| { &mut m.out_tensors },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<InferenceLiteResult>(
+            "InferenceLiteResult",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for InferenceLiteResult {
+    const NAME: &'static str = "InferenceLiteResult";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.out_tensors.push(is.read_message()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        for value in &self.out_tensors {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        for v in &self.out_tensors {
+            ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
+        };
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> InferenceLiteResult {
+        InferenceLiteResult::new()
+    }
+
+    fn clear(&mut self) {
+        self.out_tensors.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static InferenceLiteResult {
+        static instance: InferenceLiteResult = InferenceLiteResult {
+            out_tensors: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for InferenceLiteResult {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("InferenceLiteResult").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for InferenceLiteResult {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for InferenceLiteResult {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+// @@protoc_insertion_point(message:vaccel.TensorflowLiteModelRunResponse)
+#[derive(PartialEq,Clone,Default,Debug)]
+pub struct TensorflowLiteModelRunResponse {
+    // message oneof groups
+    pub result: ::std::option::Option<tensorflow_lite_model_run_response::Result>,
+    // special fields
+    // @@protoc_insertion_point(special_field:vaccel.TensorflowLiteModelRunResponse.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a TensorflowLiteModelRunResponse {
+    fn default() -> &'a TensorflowLiteModelRunResponse {
+        <TensorflowLiteModelRunResponse as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl TensorflowLiteModelRunResponse {
+    pub fn new() -> TensorflowLiteModelRunResponse {
+        ::std::default::Default::default()
+    }
+
+    // .vaccel.VaccelError error = 1;
+
+    pub fn error(&self) -> &super::error::VaccelError {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(ref v)) => v,
+            _ => <super::error::VaccelError as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_error(&mut self) {
+        self.result = ::std::option::Option::None;
+    }
+
+    pub fn has_error(&self) -> bool {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_error(&mut self, v: super::error::VaccelError) {
+        self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_error(&mut self) -> &mut super::error::VaccelError {
+        if let ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(super::error::VaccelError::new()));
+        }
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_error(&mut self) -> super::error::VaccelError {
+        if self.has_error() {
+            match self.result.take() {
+                ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            super::error::VaccelError::new()
+        }
+    }
+
+    // .vaccel.InferenceLiteResult result = 2;
+
+    pub fn result(&self) -> &InferenceLiteResult {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(ref v)) => v,
+            _ => <InferenceLiteResult as ::protobuf::Message>::default_instance(),
+        }
+    }
+
+    pub fn clear_result(&mut self) {
+        self.result = ::std::option::Option::None;
+    }
+
+    pub fn has_result(&self) -> bool {
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(..)) => true,
+            _ => false,
+        }
+    }
+
+    // Param is passed by value, moved
+    pub fn set_result(&mut self, v: InferenceLiteResult) {
+        self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(v))
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_result(&mut self) -> &mut InferenceLiteResult {
+        if let ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(_)) = self.result {
+        } else {
+            self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(InferenceLiteResult::new()));
+        }
+        match self.result {
+            ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(ref mut v)) => v,
+            _ => panic!(),
+        }
+    }
+
+    // Take field
+    pub fn take_result(&mut self) -> InferenceLiteResult {
+        if self.has_result() {
+            match self.result.take() {
+                ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(v)) => v,
+                _ => panic!(),
+            }
+        } else {
+            InferenceLiteResult::new()
+        }
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(2);
+        let mut oneofs = ::std::vec::Vec::with_capacity(1);
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, super::error::VaccelError>(
+            "error",
+            TensorflowLiteModelRunResponse::has_error,
+            TensorflowLiteModelRunResponse::error,
+            TensorflowLiteModelRunResponse::mut_error,
+            TensorflowLiteModelRunResponse::set_error,
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_oneof_message_has_get_mut_set_accessor::<_, InferenceLiteResult>(
+            "result",
+            TensorflowLiteModelRunResponse::has_result,
+            TensorflowLiteModelRunResponse::result,
+            TensorflowLiteModelRunResponse::mut_result,
+            TensorflowLiteModelRunResponse::set_result,
+        ));
+        oneofs.push(tensorflow_lite_model_run_response::Result::generated_oneof_descriptor_data());
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TensorflowLiteModelRunResponse>(
+            "TensorflowLiteModelRunResponse",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for TensorflowLiteModelRunResponse {
+    const NAME: &'static str = "TensorflowLiteModelRunResponse";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Error(is.read_message()?));
+                },
+                18 => {
+                    self.result = ::std::option::Option::Some(tensorflow_lite_model_run_response::Result::Result(is.read_message()?));
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_run_response::Result::Error(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+                },
+                &tensorflow_lite_model_run_response::Result::Result(ref v) => {
+                    let len = v.compute_size();
+                    my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+                },
+            };
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let ::std::option::Option::Some(ref v) = self.result {
+            match v {
+                &tensorflow_lite_model_run_response::Result::Error(ref v) => {
+                    ::protobuf::rt::write_message_field_with_cached_size(1, v, os)?;
+                },
+                &tensorflow_lite_model_run_response::Result::Result(ref v) => {
+                    ::protobuf::rt::write_message_field_with_cached_size(2, v, os)?;
+                },
+            };
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> TensorflowLiteModelRunResponse {
+        TensorflowLiteModelRunResponse::new()
+    }
+
+    fn clear(&mut self) {
+        self.result = ::std::option::Option::None;
+        self.result = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static TensorflowLiteModelRunResponse {
+        static instance: TensorflowLiteModelRunResponse = TensorflowLiteModelRunResponse {
+            result: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for TensorflowLiteModelRunResponse {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("TensorflowLiteModelRunResponse").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for TensorflowLiteModelRunResponse {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for TensorflowLiteModelRunResponse {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+/// Nested message and enums of message `TensorflowLiteModelRunResponse`
+pub mod tensorflow_lite_model_run_response {
+
+    #[derive(Clone,PartialEq,Debug)]
+    #[non_exhaustive]
+    // @@protoc_insertion_point(oneof:vaccel.TensorflowLiteModelRunResponse.result)
+    pub enum Result {
+        // @@protoc_insertion_point(oneof_field:vaccel.TensorflowLiteModelRunResponse.error)
+        Error(super::super::error::VaccelError),
+        // @@protoc_insertion_point(oneof_field:vaccel.TensorflowLiteModelRunResponse.result)
+        Result(super::InferenceLiteResult),
+    }
+
+    impl ::protobuf::Oneof for Result {
+    }
+
+    impl ::protobuf::OneofFull for Result {
+        fn descriptor() -> ::protobuf::reflect::OneofDescriptor {
+            static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::OneofDescriptor> = ::protobuf::rt::Lazy::new();
+            descriptor.get(|| <super::TensorflowLiteModelRunResponse as ::protobuf::MessageFull>::descriptor().oneof_by_name("result").unwrap()).clone()
+        }
+    }
+
+    impl Result {
+        pub(in super) fn generated_oneof_descriptor_data() -> ::protobuf::reflect::GeneratedOneofDescriptorData {
+            ::protobuf::reflect::GeneratedOneofDescriptorData::new::<Result>("result")
+        }
+    }
+}
+
 #[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
 // @@protoc_insertion_point(enum:vaccel.TFDataType)
 pub enum TFDataType {
@@ -1813,6 +3253,158 @@ impl TFDataType {
     }
 }
 
+#[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
+// @@protoc_insertion_point(enum:vaccel.TFLiteType)
+pub enum TFLiteType {
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.UNUSED)
+    UNUSED = 0,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.NOTYPE)
+    NOTYPE = 1,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.FLOAT32)
+    FLOAT32 = 2,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.INT32)
+    INT32 = 3,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.UINT8)
+    UINT8 = 4,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.INT64)
+    INT64 = 5,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.STRING)
+    STRING = 6,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.BOOL)
+    BOOL = 7,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.INT16)
+    INT16 = 8,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.COMPLEX64)
+    COMPLEX64 = 9,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.INT8)
+    INT8 = 10,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.FLOAT16)
+    FLOAT16 = 11,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.FLOAT64)
+    FLOAT64 = 12,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.COMPLEX128)
+    COMPLEX128 = 13,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.UINT64)
+    UINT64 = 14,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.RESOURCE)
+    RESOURCE = 15,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.VARIANT)
+    VARIANT = 16,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.UINT32)
+    UINT32 = 17,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.UINT16)
+    UINT16 = 18,
+    // @@protoc_insertion_point(enum_value:vaccel.TFLiteType.INT4)
+    INT4 = 19,
+}
+
+impl ::protobuf::Enum for TFLiteType {
+    const NAME: &'static str = "TFLiteType";
+
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<TFLiteType> {
+        match value {
+            0 => ::std::option::Option::Some(TFLiteType::UNUSED),
+            1 => ::std::option::Option::Some(TFLiteType::NOTYPE),
+            2 => ::std::option::Option::Some(TFLiteType::FLOAT32),
+            3 => ::std::option::Option::Some(TFLiteType::INT32),
+            4 => ::std::option::Option::Some(TFLiteType::UINT8),
+            5 => ::std::option::Option::Some(TFLiteType::INT64),
+            6 => ::std::option::Option::Some(TFLiteType::STRING),
+            7 => ::std::option::Option::Some(TFLiteType::BOOL),
+            8 => ::std::option::Option::Some(TFLiteType::INT16),
+            9 => ::std::option::Option::Some(TFLiteType::COMPLEX64),
+            10 => ::std::option::Option::Some(TFLiteType::INT8),
+            11 => ::std::option::Option::Some(TFLiteType::FLOAT16),
+            12 => ::std::option::Option::Some(TFLiteType::FLOAT64),
+            13 => ::std::option::Option::Some(TFLiteType::COMPLEX128),
+            14 => ::std::option::Option::Some(TFLiteType::UINT64),
+            15 => ::std::option::Option::Some(TFLiteType::RESOURCE),
+            16 => ::std::option::Option::Some(TFLiteType::VARIANT),
+            17 => ::std::option::Option::Some(TFLiteType::UINT32),
+            18 => ::std::option::Option::Some(TFLiteType::UINT16),
+            19 => ::std::option::Option::Some(TFLiteType::INT4),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    fn from_str(str: &str) -> ::std::option::Option<TFLiteType> {
+        match str {
+            "UNUSED" => ::std::option::Option::Some(TFLiteType::UNUSED),
+            "NOTYPE" => ::std::option::Option::Some(TFLiteType::NOTYPE),
+            "FLOAT32" => ::std::option::Option::Some(TFLiteType::FLOAT32),
+            "INT32" => ::std::option::Option::Some(TFLiteType::INT32),
+            "UINT8" => ::std::option::Option::Some(TFLiteType::UINT8),
+            "INT64" => ::std::option::Option::Some(TFLiteType::INT64),
+            "STRING" => ::std::option::Option::Some(TFLiteType::STRING),
+            "BOOL" => ::std::option::Option::Some(TFLiteType::BOOL),
+            "INT16" => ::std::option::Option::Some(TFLiteType::INT16),
+            "COMPLEX64" => ::std::option::Option::Some(TFLiteType::COMPLEX64),
+            "INT8" => ::std::option::Option::Some(TFLiteType::INT8),
+            "FLOAT16" => ::std::option::Option::Some(TFLiteType::FLOAT16),
+            "FLOAT64" => ::std::option::Option::Some(TFLiteType::FLOAT64),
+            "COMPLEX128" => ::std::option::Option::Some(TFLiteType::COMPLEX128),
+            "UINT64" => ::std::option::Option::Some(TFLiteType::UINT64),
+            "RESOURCE" => ::std::option::Option::Some(TFLiteType::RESOURCE),
+            "VARIANT" => ::std::option::Option::Some(TFLiteType::VARIANT),
+            "UINT32" => ::std::option::Option::Some(TFLiteType::UINT32),
+            "UINT16" => ::std::option::Option::Some(TFLiteType::UINT16),
+            "INT4" => ::std::option::Option::Some(TFLiteType::INT4),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    const VALUES: &'static [TFLiteType] = &[
+        TFLiteType::UNUSED,
+        TFLiteType::NOTYPE,
+        TFLiteType::FLOAT32,
+        TFLiteType::INT32,
+        TFLiteType::UINT8,
+        TFLiteType::INT64,
+        TFLiteType::STRING,
+        TFLiteType::BOOL,
+        TFLiteType::INT16,
+        TFLiteType::COMPLEX64,
+        TFLiteType::INT8,
+        TFLiteType::FLOAT16,
+        TFLiteType::FLOAT64,
+        TFLiteType::COMPLEX128,
+        TFLiteType::UINT64,
+        TFLiteType::RESOURCE,
+        TFLiteType::VARIANT,
+        TFLiteType::UINT32,
+        TFLiteType::UINT16,
+        TFLiteType::INT4,
+    ];
+}
+
+impl ::protobuf::EnumFull for TFLiteType {
+    fn enum_descriptor() -> ::protobuf::reflect::EnumDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().enum_by_package_relative_name("TFLiteType").unwrap()).clone()
+    }
+
+    fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
+        let index = *self as usize;
+        Self::enum_descriptor().value_by_index(index)
+    }
+}
+
+impl ::std::default::Default for TFLiteType {
+    fn default() -> Self {
+        TFLiteType::UNUSED
+    }
+}
+
+impl TFLiteType {
+    fn generated_enum_descriptor_data() -> ::protobuf::reflect::GeneratedEnumDescriptorData {
+        ::protobuf::reflect::GeneratedEnumDescriptorData::new::<TFLiteType>("TFLiteType")
+    }
+}
+
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x10tensorflow.proto\x12\x06vaccel\x1a\x0berror.proto\"V\n\x1aTensorfl\
     owModelLoadRequest\x12\x1d\n\nsession_id\x18\x01\x20\x01(\rR\tsessionId\
@@ -1838,6 +3430,25 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     nsors\"\x86\x01\n\x1aTensorflowModelRunResponse\x12+\n\x05error\x18\x01\
     \x20\x01(\x0b2\x13.vaccel.VaccelErrorH\0R\x05error\x121\n\x06result\x18\
     \x02\x20\x01(\x0b2\x17.vaccel.InferenceResultH\0R\x06resultB\x08\n\x06re\
+    sult\"Z\n\x1eTensorflowLiteModelLoadRequest\x12\x1d\n\nsession_id\x18\
+    \x01\x20\x01(\rR\tsessionId\x12\x19\n\x08model_id\x18\x02\x20\x01(\x03R\
+    \x07modelId\"X\n\x1fTensorflowLiteModelLoadResponse\x12+\n\x05error\x18\
+    \x01\x20\x01(\x0b2\x13.vaccel.VaccelErrorH\0R\x05errorB\x08\n\x06result\
+    \"\\\n\x20TensorflowLiteModelUnloadRequest\x12\x1d\n\nsession_id\x18\x01\
+    \x20\x01(\rR\tsessionId\x12\x19\n\x08model_id\x18\x02\x20\x01(\x03R\x07m\
+    odelId\"Z\n!TensorflowLiteModelUnloadResponse\x12+\n\x05error\x18\x01\
+    \x20\x01(\x0b2\x13.vaccel.VaccelErrorH\0R\x05errorB\x08\n\x06result\"^\n\
+    \x0cTFLiteTensor\x12\x12\n\x04data\x18\x01\x20\x01(\x0cR\x04data\x12\x12\
+    \n\x04dims\x18\x02\x20\x03(\x05R\x04dims\x12&\n\x04type\x18\x03\x20\x01(\
+    \x0e2\x12.vaccel.TFLiteTypeR\x04type\"\xad\x01\n\x1dTensorflowLiteModelR\
+    unRequest\x12\x1d\n\nsession_id\x18\x01\x20\x01(\rR\tsessionId\x12\x19\n\
+    \x08model_id\x18\x02\x20\x01(\x03R\x07modelId\x123\n\nin_tensors\x18\x03\
+    \x20\x03(\x0b2\x14.vaccel.TFLiteTensorR\tinTensors\x12\x1d\n\nnr_outputs\
+    \x18\x04\x20\x01(\x05R\tnrOutputs\"L\n\x13InferenceLiteResult\x125\n\x0b\
+    out_tensors\x18\x01\x20\x03(\x0b2\x14.vaccel.TFLiteTensorR\noutTensors\"\
+    \x8e\x01\n\x1eTensorflowLiteModelRunResponse\x12+\n\x05error\x18\x01\x20\
+    \x01(\x0b2\x13.vaccel.VaccelErrorH\0R\x05error\x125\n\x06result\x18\x02\
+    \x20\x01(\x0b2\x1b.vaccel.InferenceLiteResultH\0R\x06resultB\x08\n\x06re\
     sult*\xab\x02\n\nTFDataType\x12\n\n\x06UNUSED\x10\0\x12\t\n\x05FLOAT\x10\
     \x01\x12\n\n\x06DOUBLE\x10\x02\x12\t\n\x05INT32\x10\x03\x12\t\n\x05UINT8\
     \x10\x04\x12\t\n\x05INT16\x10\x05\x12\x08\n\x04INT8\x10\x06\x12\n\n\x06S\
@@ -1847,7 +3458,15 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x10\x0f\x12\x0b\n\x07QUINT16\x10\x10\x12\n\n\x06UINT16\x10\x11\x12\x0e\
     \n\nCOMPLEX128\x10\x12\x12\x08\n\x04HALF\x10\x13\x12\x0c\n\x08RESOURCE\
     \x10\x14\x12\x0b\n\x07VARIANT\x10\x15\x12\n\n\x06UINT32\x10\x16\x12\n\n\
-    \x06UINT64\x10\x17b\x06proto3\
+    \x06UINT64\x10\x17*\xff\x01\n\nTFLiteType\x12\n\n\x06UNUSED\x10\0\x12\n\
+    \n\x06NOTYPE\x10\x01\x12\x0b\n\x07FLOAT32\x10\x02\x12\t\n\x05INT32\x10\
+    \x03\x12\t\n\x05UINT8\x10\x04\x12\t\n\x05INT64\x10\x05\x12\n\n\x06STRING\
+    \x10\x06\x12\x08\n\x04BOOL\x10\x07\x12\t\n\x05INT16\x10\x08\x12\r\n\tCOM\
+    PLEX64\x10\t\x12\x08\n\x04INT8\x10\n\x12\x0b\n\x07FLOAT16\x10\x0b\x12\
+    \x0b\n\x07FLOAT64\x10\x0c\x12\x0e\n\nCOMPLEX128\x10\r\x12\n\n\x06UINT64\
+    \x10\x0e\x12\x0c\n\x08RESOURCE\x10\x0f\x12\x0b\n\x07VARIANT\x10\x10\x12\
+    \n\n\x06UINT32\x10\x11\x12\n\n\x06UINT16\x10\x12\x12\x08\n\x04INT4\x10\
+    \x13b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -1866,7 +3485,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(1);
             deps.push(super::error::file_descriptor().clone());
-            let mut messages = ::std::vec::Vec::with_capacity(9);
+            let mut messages = ::std::vec::Vec::with_capacity(17);
             messages.push(TensorflowModelLoadRequest::generated_message_descriptor_data());
             messages.push(TensorflowModelLoadResponse::generated_message_descriptor_data());
             messages.push(TensorflowModelUnloadRequest::generated_message_descriptor_data());
@@ -1876,8 +3495,17 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(TensorflowModelRunRequest::generated_message_descriptor_data());
             messages.push(InferenceResult::generated_message_descriptor_data());
             messages.push(TensorflowModelRunResponse::generated_message_descriptor_data());
-            let mut enums = ::std::vec::Vec::with_capacity(1);
+            messages.push(TensorflowLiteModelLoadRequest::generated_message_descriptor_data());
+            messages.push(TensorflowLiteModelLoadResponse::generated_message_descriptor_data());
+            messages.push(TensorflowLiteModelUnloadRequest::generated_message_descriptor_data());
+            messages.push(TensorflowLiteModelUnloadResponse::generated_message_descriptor_data());
+            messages.push(TFLiteTensor::generated_message_descriptor_data());
+            messages.push(TensorflowLiteModelRunRequest::generated_message_descriptor_data());
+            messages.push(InferenceLiteResult::generated_message_descriptor_data());
+            messages.push(TensorflowLiteModelRunResponse::generated_message_descriptor_data());
+            let mut enums = ::std::vec::Vec::with_capacity(2);
             enums.push(TFDataType::generated_enum_descriptor_data());
+            enums.push(TFLiteType::generated_enum_descriptor_data());
             ::protobuf::reflect::GeneratedFileDescriptor::new_generated(
                 file_descriptor_proto(),
                 deps,

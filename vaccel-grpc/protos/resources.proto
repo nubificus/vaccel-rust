@@ -16,14 +16,12 @@ syntax = "proto3";
 
 package vaccel;
 
-message CreateCaffeModelRequest {
-	bytes prototxt = 2;
-	bytes binary_model = 3;
-	bytes labels = 4;
+message CreateSharedObjRequest {
+	bytes shared_obj = 1;
 }
 
-message CreateTensorflowModelRequest {
-	bytes model = 1;
+message CreateSingleModelRequest {
+	bytes file = 1;
 }
 
 message CreateTensorflowSavedModelRequest {
@@ -32,21 +30,18 @@ message CreateTensorflowSavedModelRequest {
 	bytes var_index = 3;
 }
 
-message CreateSharedObjRequest {
-	bytes shared_obj = 1;
-}
-
-message CreateTorchSavedModelRequest {
-	bytes model = 1;
+message CreateCaffeModelRequest {
+	bytes prototxt = 2;
+	bytes binary_model = 3;
+	bytes labels = 4;
 }
 
 message CreateResourceRequest {
-	oneof model {
-		CreateTensorflowModelRequest tf = 1;
-		CreateCaffeModelRequest caffe = 2;
-		CreateTensorflowSavedModelRequest tf_saved = 3;
-		CreateSharedObjRequest shared_obj = 4;
-		CreateTorchSavedModelRequest torch_saved = 5;
+	oneof resource {
+		CreateSharedObjRequest shared_obj = 0;
+		CreateSingleModelRequest single_model = 1;
+		CreateTensorflowSavedModelRequest tf_saved_model = 2;
+		CreateCaffeModelRequest caffe_model = 3;
 	}
 }
 

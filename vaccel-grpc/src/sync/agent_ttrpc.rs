@@ -97,6 +97,24 @@ impl VaccelAgentClient {
         Ok(cres)
     }
 
+    pub fn tensorflow_lite_model_load(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelLoadResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelLoadResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelLoad", cres);
+        Ok(cres)
+    }
+
+    pub fn tensorflow_lite_model_unload(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelUnloadResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelUnloadResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelUnload", cres);
+        Ok(cres)
+    }
+
+    pub fn tensorflow_lite_model_run(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelRunResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelRunResponse::new();
+        ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelRun", cres);
+        Ok(cres)
+    }
+
     pub fn torch_jitload_forward(&self, ctx: ttrpc::context::Context, req: &super::torch::TorchJitloadForwardRequest) -> ::ttrpc::Result<super::torch::TorchJitloadForwardResponse> {
         let mut cres = super::torch::TorchJitloadForwardResponse::new();
         ::ttrpc::client_request!(self, ctx, req, "vaccel.VaccelAgent", "TorchJitloadForward", cres);
@@ -237,6 +255,39 @@ impl ::ttrpc::MethodHandler for TensorflowModelRunMethod {
     }
 }
 
+struct TensorflowLiteModelLoadMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowLiteModelLoadMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelLoadRequest, tensorflow_lite_model_load);
+        Ok(())
+    }
+}
+
+struct TensorflowLiteModelUnloadMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowLiteModelUnloadMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelUnloadRequest, tensorflow_lite_model_unload);
+        Ok(())
+    }
+}
+
+struct TensorflowLiteModelRunMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+impl ::ttrpc::MethodHandler for TensorflowLiteModelRunMethod {
+    fn handler(&self, ctx: ::ttrpc::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<()> {
+        ::ttrpc::request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelRunRequest, tensorflow_lite_model_run);
+        Ok(())
+    }
+}
+
 struct TorchJitloadForwardMethod {
     service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
 }
@@ -304,6 +355,15 @@ pub trait VaccelAgent {
     fn tensorflow_model_run(&self, _ctx: &::ttrpc::TtrpcContext, _: super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelRun is not supported".to_string())))
     }
+    fn tensorflow_lite_model_load(&self, _ctx: &::ttrpc::TtrpcContext, _: super::tensorflow::TensorflowLiteModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelLoadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelLoad is not supported".to_string())))
+    }
+    fn tensorflow_lite_model_unload(&self, _ctx: &::ttrpc::TtrpcContext, _: super::tensorflow::TensorflowLiteModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelUnloadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelUnload is not supported".to_string())))
+    }
+    fn tensorflow_lite_model_run(&self, _ctx: &::ttrpc::TtrpcContext, _: super::tensorflow::TensorflowLiteModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelRunResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelRun is not supported".to_string())))
+    }
     fn torch_jitload_forward(&self, _ctx: &::ttrpc::TtrpcContext, _: super::torch::TorchJitloadForwardRequest) -> ::ttrpc::Result<super::torch::TorchJitloadForwardResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TorchJitloadForward is not supported".to_string())))
     }
@@ -350,6 +410,15 @@ pub fn create_vaccel_agent(service: Arc<Box<dyn VaccelAgent + Send + Sync>>) -> 
 
     methods.insert("/vaccel.VaccelAgent/TensorflowModelRun".to_string(),
                     Box::new(TensorflowModelRunMethod{service: service.clone()}) as Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowLiteModelLoad".to_string(),
+                    Box::new(TensorflowLiteModelLoadMethod{service: service.clone()}) as Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowLiteModelUnload".to_string(),
+                    Box::new(TensorflowLiteModelUnloadMethod{service: service.clone()}) as Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
+
+    methods.insert("/vaccel.VaccelAgent/TensorflowLiteModelRun".to_string(),
+                    Box::new(TensorflowLiteModelRunMethod{service: service.clone()}) as Box<dyn ::ttrpc::MethodHandler + Send + Sync>);
 
     methods.insert("/vaccel.VaccelAgent/TorchJitloadForward".to_string(),
                     Box::new(TorchJitloadForwardMethod{service: service.clone()}) as Box<dyn ::ttrpc::MethodHandler + Send + Sync>);

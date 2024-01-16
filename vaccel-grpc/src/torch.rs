@@ -198,6 +198,8 @@ pub struct TorchJitloadForwardRequest {
     pub run_options: ::std::vec::Vec<u8>,
     // @@protoc_insertion_point(field:vaccel.TorchJitloadForwardRequest.in_tensors)
     pub in_tensors: ::std::vec::Vec<TorchTensor>,
+    // @@protoc_insertion_point(field:vaccel.TorchJitloadForwardRequest.nr_outputs)
+    pub nr_outputs: i32,
     // special fields
     // @@protoc_insertion_point(special_field:vaccel.TorchJitloadForwardRequest.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -215,7 +217,7 @@ impl TorchJitloadForwardRequest {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut fields = ::std::vec::Vec::with_capacity(5);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "session_id",
@@ -236,6 +238,11 @@ impl TorchJitloadForwardRequest {
             "in_tensors",
             |m: &TorchJitloadForwardRequest| { &m.in_tensors },
             |m: &mut TorchJitloadForwardRequest| { &mut m.in_tensors },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "nr_outputs",
+            |m: &TorchJitloadForwardRequest| { &m.nr_outputs },
+            |m: &mut TorchJitloadForwardRequest| { &mut m.nr_outputs },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<TorchJitloadForwardRequest>(
             "TorchJitloadForwardRequest",
@@ -267,6 +274,9 @@ impl ::protobuf::Message for TorchJitloadForwardRequest {
                 34 => {
                     self.in_tensors.push(is.read_message()?);
                 },
+                40 => {
+                    self.nr_outputs = is.read_int32()?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -292,6 +302,9 @@ impl ::protobuf::Message for TorchJitloadForwardRequest {
             let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         };
+        if self.nr_outputs != 0 {
+            my_size += ::protobuf::rt::int32_size(5, self.nr_outputs);
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -310,6 +323,9 @@ impl ::protobuf::Message for TorchJitloadForwardRequest {
         for v in &self.in_tensors {
             ::protobuf::rt::write_message_field_with_cached_size(4, v, os)?;
         };
+        if self.nr_outputs != 0 {
+            os.write_int32(5, self.nr_outputs)?;
+        }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -331,6 +347,7 @@ impl ::protobuf::Message for TorchJitloadForwardRequest {
         self.model_id = 0;
         self.run_options.clear();
         self.in_tensors.clear();
+        self.nr_outputs = 0;
         self.special_fields.clear();
     }
 
@@ -340,6 +357,7 @@ impl ::protobuf::Message for TorchJitloadForwardRequest {
             model_id: 0,
             run_options: ::std::vec::Vec::new(),
             in_tensors: ::std::vec::Vec::new(),
+            nr_outputs: 0,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -861,19 +879,20 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0btorch.proto\x12\x06vaccel\x1a\x0berror.proto\"`\n\x0bTorchTensor\
     \x12\x12\n\x04data\x18\x01\x20\x01(\x0cR\x04data\x12\x12\n\x04dims\x18\
     \x02\x20\x03(\rR\x04dims\x12)\n\x04type\x18\x03\x20\x01(\x0e2\x15.vaccel\
-    .TorchDataTypeR\x04type\"\xab\x01\n\x1aTorchJitloadForwardRequest\x12\
+    .TorchDataTypeR\x04type\"\xca\x01\n\x1aTorchJitloadForwardRequest\x12\
     \x1d\n\nsession_id\x18\x01\x20\x01(\rR\tsessionId\x12\x19\n\x08model_id\
     \x18\x02\x20\x01(\x03R\x07modelId\x12\x1f\n\x0brun_options\x18\x03\x20\
     \x01(\x0cR\nrunOptions\x122\n\nin_tensors\x18\x04\x20\x03(\x0b2\x13.vacc\
-    el.TorchTensorR\tinTensors\"Q\n\x19TorchJitloadForwardResult\x124\n\x0bo\
-    ut_tensors\x18\x01\x20\x03(\x0b2\x13.vaccel.TorchTensorR\noutTensors\"\
-    \x91\x01\n\x1bTorchJitloadForwardResponse\x12+\n\x05error\x18\x01\x20\
-    \x01(\x0b2\x13.vaccel.VaccelErrorH\0R\x05error\x12;\n\x06result\x18\x02\
-    \x20\x01(\x0b2!.vaccel.TorchJitloadForwardResultH\0R\x06resultB\x08\n\
-    \x06result*f\n\rTorchDataType\x12\n\n\x06UNUSED\x10\0\x12\t\n\x05UInt8\
-    \x10\x01\x12\x08\n\x04Int8\x10\x02\x12\t\n\x05Int16\x10\x03\x12\t\n\x05I\
-    nt32\x10\x04\x12\t\n\x05Int64\x10\x05\x12\x08\n\x04Half\x10\x06\x12\t\n\
-    \x05FLOAT\x10\x07b\x06proto3\
+    el.TorchTensorR\tinTensors\x12\x1d\n\nnr_outputs\x18\x05\x20\x01(\x05R\t\
+    nrOutputs\"Q\n\x19TorchJitloadForwardResult\x124\n\x0bout_tensors\x18\
+    \x01\x20\x03(\x0b2\x13.vaccel.TorchTensorR\noutTensors\"\x91\x01\n\x1bTo\
+    rchJitloadForwardResponse\x12+\n\x05error\x18\x01\x20\x01(\x0b2\x13.vacc\
+    el.VaccelErrorH\0R\x05error\x12;\n\x06result\x18\x02\x20\x01(\x0b2!.vacc\
+    el.TorchJitloadForwardResultH\0R\x06resultB\x08\n\x06result*f\n\rTorchDa\
+    taType\x12\n\n\x06UNUSED\x10\0\x12\t\n\x05UInt8\x10\x01\x12\x08\n\x04Int\
+    8\x10\x02\x12\t\n\x05Int16\x10\x03\x12\t\n\x05Int32\x10\x04\x12\t\n\x05I\
+    nt64\x10\x05\x12\x08\n\x04Half\x10\x06\x12\t\n\x05FLOAT\x10\x07b\x06prot\
+    o3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

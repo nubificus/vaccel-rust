@@ -87,6 +87,21 @@ impl VaccelAgentClient {
         ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowModelRun", cres);
     }
 
+    pub async fn tensorflow_lite_model_load(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelLoadResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelLoadResponse::new();
+        ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelLoad", cres);
+    }
+
+    pub async fn tensorflow_lite_model_unload(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelUnloadResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelUnloadResponse::new();
+        ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelUnload", cres);
+    }
+
+    pub async fn tensorflow_lite_model_run(&self, ctx: ttrpc::context::Context, req: &super::tensorflow::TensorflowLiteModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelRunResponse> {
+        let mut cres = super::tensorflow::TensorflowLiteModelRunResponse::new();
+        ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "TensorflowLiteModelRun", cres);
+    }
+
     pub async fn torch_jitload_forward(&self, ctx: ttrpc::context::Context, req: &super::torch::TorchJitloadForwardRequest) -> ::ttrpc::Result<super::torch::TorchJitloadForwardResponse> {
         let mut cres = super::torch::TorchJitloadForwardResponse::new();
         ::ttrpc::async_client_request!(self, ctx, req, "vaccel.VaccelAgent", "TorchJitloadForward", cres);
@@ -228,6 +243,39 @@ impl ::ttrpc::r#async::MethodHandler for TensorflowModelRunMethod {
     }
 }
 
+struct TensorflowLiteModelLoadMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+#[async_trait]
+impl ::ttrpc::r#async::MethodHandler for TensorflowLiteModelLoadMethod {
+    async fn handler(&self, ctx: ::ttrpc::r#async::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<::ttrpc::Response> {
+        ::ttrpc::async_request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelLoadRequest, tensorflow_lite_model_load);
+    }
+}
+
+struct TensorflowLiteModelUnloadMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+#[async_trait]
+impl ::ttrpc::r#async::MethodHandler for TensorflowLiteModelUnloadMethod {
+    async fn handler(&self, ctx: ::ttrpc::r#async::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<::ttrpc::Response> {
+        ::ttrpc::async_request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelUnloadRequest, tensorflow_lite_model_unload);
+    }
+}
+
+struct TensorflowLiteModelRunMethod {
+    service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
+}
+
+#[async_trait]
+impl ::ttrpc::r#async::MethodHandler for TensorflowLiteModelRunMethod {
+    async fn handler(&self, ctx: ::ttrpc::r#async::TtrpcContext, req: ::ttrpc::Request) -> ::ttrpc::Result<::ttrpc::Response> {
+        ::ttrpc::async_request_handler!(self, ctx, req, tensorflow, TensorflowLiteModelRunRequest, tensorflow_lite_model_run);
+    }
+}
+
 struct TorchJitloadForwardMethod {
     service: Arc<Box<dyn VaccelAgent + Send + Sync>>,
 }
@@ -307,6 +355,15 @@ pub trait VaccelAgent: Sync {
     async fn tensorflow_model_run(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::tensorflow::TensorflowModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowModelRunResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowModelRun is not supported".to_string())))
     }
+    async fn tensorflow_lite_model_load(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::tensorflow::TensorflowLiteModelLoadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelLoadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelLoad is not supported".to_string())))
+    }
+    async fn tensorflow_lite_model_unload(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::tensorflow::TensorflowLiteModelUnloadRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelUnloadResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelUnload is not supported".to_string())))
+    }
+    async fn tensorflow_lite_model_run(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::tensorflow::TensorflowLiteModelRunRequest) -> ::ttrpc::Result<super::tensorflow::TensorflowLiteModelRunResponse> {
+        Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TensorflowLiteModelRun is not supported".to_string())))
+    }
     async fn torch_jitload_forward(&self, _ctx: &::ttrpc::r#async::TtrpcContext, _: super::torch::TorchJitloadForwardRequest) -> ::ttrpc::Result<super::torch::TorchJitloadForwardResponse> {
         Err(::ttrpc::Error::RpcStatus(::ttrpc::get_status(::ttrpc::Code::NOT_FOUND, "/vaccel.VaccelAgent/TorchJitloadForward is not supported".to_string())))
     }
@@ -358,6 +415,15 @@ pub fn create_vaccel_agent(service: Arc<Box<dyn VaccelAgent + Send + Sync>>) -> 
 
     methods.insert("TensorflowModelRun".to_string(),
                     Box::new(TensorflowModelRunMethod{service: service.clone()}) as Box<dyn ::ttrpc::r#async::MethodHandler + Send + Sync>);
+
+    methods.insert("TensorflowLiteModelLoad".to_string(),
+                    Box::new(TensorflowLiteModelLoadMethod{service: service.clone()}) as Box<dyn ::ttrpc::r#async::MethodHandler + Send + Sync>);
+
+    methods.insert("TensorflowLiteModelUnload".to_string(),
+                    Box::new(TensorflowLiteModelUnloadMethod{service: service.clone()}) as Box<dyn ::ttrpc::r#async::MethodHandler + Send + Sync>);
+
+    methods.insert("TensorflowLiteModelRun".to_string(),
+                    Box::new(TensorflowLiteModelRunMethod{service: service.clone()}) as Box<dyn ::ttrpc::r#async::MethodHandler + Send + Sync>);
 
     methods.insert("TorchJitloadForward".to_string(),
                     Box::new(TorchJitloadForwardMethod{service: service.clone()}) as Box<dyn ::ttrpc::r#async::MethodHandler + Send + Sync>);

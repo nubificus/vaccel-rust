@@ -114,3 +114,85 @@ message TensorflowModelRunResponse {
 		InferenceResult result = 2;
 	}
 };
+
+/* TFLite */
+
+message TensorflowLiteModelLoadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowLiteModelLoadResponse {
+	oneof result {
+		VaccelError error = 1;
+	}
+};
+
+message TensorflowLiteModelUnloadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowLiteModelUnloadResponse {
+	oneof result {
+		VaccelError error = 1;
+	}
+};
+
+enum TFLiteType {
+	// Add unused value here so that we are compatible
+	// with what vAccelRT returns us
+	UNUSED = 0;
+	NOTYPE = 1;
+	FLOAT32 = 2;
+	INT32 = 3;
+	UINT8 = 4;
+	INT64 = 5;
+	STRING = 6;
+	BOOL = 7;
+	INT16 = 8;
+	COMPLEX64 = 9;
+	INT8 = 10;
+	FLOAT16 = 11;
+	FLOAT64 = 12;
+	COMPLEX128 = 13;
+	UINT64 = 14;
+	RESOURCE = 15;
+	VARIANT = 16;
+	UINT32 = 17;
+	UINT16 = 18;
+	INT4 = 19;
+};
+
+message TFLiteTensor {
+	// Data of the tensor
+	bytes data = 1;
+
+	// Dimensions of the tensor
+	repeated int32 dims = 2;
+
+	// Data type
+	TFLiteType type = 3;
+};
+
+message TensorflowLiteModelRunRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+
+	// Input tensors
+	repeated TFLiteTensor in_tensors = 3;
+	// Number of output tensors
+	int32 nr_outputs = 4;
+};
+
+message InferenceLiteResult {
+	// An inference result is a number of output tensors
+	repeated TFLiteTensor out_tensors = 1;
+};
+
+message TensorflowLiteModelRunResponse {
+	oneof result {
+		VaccelError error = 1;
+		InferenceLiteResult result = 2;
+	}
+};

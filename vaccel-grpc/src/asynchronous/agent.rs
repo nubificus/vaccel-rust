@@ -131,28 +131,33 @@ impl ::protobuf::reflect::ProtobufValue for VaccelEmpty {
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x11async/agent.proto\x12\x06vaccel\x1a\rsession.proto\x1a\x0fresource\
     s.proto\x1a\x0bimage.proto\x1a\x10tensorflow.proto\x1a\x0btorch.proto\
-    \x1a\x0bgenop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xad\t\n\
-    \x0bVaccelAgent\x12L\n\rCreateSession\x12\x1c.vaccel.CreateSessionReques\
-    t\x1a\x1d.vaccel.CreateSessionResponse\x12B\n\rUpdateSession\x12\x1c.vac\
-    cel.UpdateSessionRequest\x1a\x13.vaccel.VaccelEmpty\x12D\n\x0eDestroySes\
-    sion\x12\x1d.vaccel.DestroySessionRequest\x1a\x13.vaccel.VaccelEmpty\x12\
-    O\n\x0eCreateResource\x12\x1d.vaccel.CreateResourceRequest\x1a\x1e.vacce\
-    l.CreateResourceResponse\x12H\n\x10RegisterResource\x12\x1f.vaccel.Regis\
-    terResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12L\n\x12UnregisterResour\
-    ce\x12!.vaccel.UnregisterResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12F\
-    \n\x0fDestroyResource\x12\x1e.vaccel.DestroyResourceRequest\x1a\x13.vacc\
-    el.VaccelEmpty\x12^\n\x13ImageClassification\x12\".vaccel.ImageClassific\
-    ationRequest\x1a#.vaccel.ImageClassificationResponse\x12^\n\x13Tensorflo\
-    wModelLoad\x12\".vaccel.TensorflowModelLoadRequest\x1a#.vaccel.Tensorflo\
-    wModelLoadResponse\x12d\n\x15TensorflowModelUnload\x12$.vaccel.Tensorflo\
-    wModelUnloadRequest\x1a%.vaccel.TensorflowModelUnloadResponse\x12[\n\x12\
-    TensorflowModelRun\x12!.vaccel.TensorflowModelRunRequest\x1a\".vaccel.Te\
-    nsorflowModelRunResponse\x12^\n\x13TorchJitloadForward\x12\".vaccel.Torc\
-    hJitloadForwardRequest\x1a#.vaccel.TorchJitloadForwardResponse\x124\n\
-    \x05Genop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopResponse\x12:\
-    \n\x0bGenopStream\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.GenopRespon\
-    se\x12@\n\tGetTimers\x12\x18.vaccel.ProfilingRequest\x1a\x19.vaccel.Prof\
-    ilingResponseb\x06proto3\
+    \x1a\x0bgenop.proto\x1a\x0fprofiling.proto\"\r\n\x0bVaccelEmpty2\xf4\x0b\
+    \n\x0bVaccelAgent\x12L\n\rCreateSession\x12\x1c.vaccel.CreateSessionRequ\
+    est\x1a\x1d.vaccel.CreateSessionResponse\x12B\n\rUpdateSession\x12\x1c.v\
+    accel.UpdateSessionRequest\x1a\x13.vaccel.VaccelEmpty\x12D\n\x0eDestroyS\
+    ession\x12\x1d.vaccel.DestroySessionRequest\x1a\x13.vaccel.VaccelEmpty\
+    \x12O\n\x0eCreateResource\x12\x1d.vaccel.CreateResourceRequest\x1a\x1e.v\
+    accel.CreateResourceResponse\x12H\n\x10RegisterResource\x12\x1f.vaccel.R\
+    egisterResourceRequest\x1a\x13.vaccel.VaccelEmpty\x12L\n\x12UnregisterRe\
+    source\x12!.vaccel.UnregisterResourceRequest\x1a\x13.vaccel.VaccelEmpty\
+    \x12F\n\x0fDestroyResource\x12\x1e.vaccel.DestroyResourceRequest\x1a\x13\
+    .vaccel.VaccelEmpty\x12^\n\x13ImageClassification\x12\".vaccel.ImageClas\
+    sificationRequest\x1a#.vaccel.ImageClassificationResponse\x12^\n\x13Tens\
+    orflowModelLoad\x12\".vaccel.TensorflowModelLoadRequest\x1a#.vaccel.Tens\
+    orflowModelLoadResponse\x12d\n\x15TensorflowModelUnload\x12$.vaccel.Tens\
+    orflowModelUnloadRequest\x1a%.vaccel.TensorflowModelUnloadResponse\x12[\
+    \n\x12TensorflowModelRun\x12!.vaccel.TensorflowModelRunRequest\x1a\".vac\
+    cel.TensorflowModelRunResponse\x12j\n\x17TensorflowLiteModelLoad\x12&.va\
+    ccel.TensorflowLiteModelLoadRequest\x1a'.vaccel.TensorflowLiteModelLoadR\
+    esponse\x12p\n\x19TensorflowLiteModelUnload\x12(.vaccel.TensorflowLiteMo\
+    delUnloadRequest\x1a).vaccel.TensorflowLiteModelUnloadResponse\x12g\n\
+    \x16TensorflowLiteModelRun\x12%.vaccel.TensorflowLiteModelRunRequest\x1a\
+    &.vaccel.TensorflowLiteModelRunResponse\x12^\n\x13TorchJitloadForward\
+    \x12\".vaccel.TorchJitloadForwardRequest\x1a#.vaccel.TorchJitloadForward\
+    Response\x124\n\x05Genop\x12\x14.vaccel.GenopRequest\x1a\x15.vaccel.Geno\
+    pResponse\x12:\n\x0bGenopStream\x12\x14.vaccel.GenopRequest\x1a\x15.vacc\
+    el.GenopResponse\x12@\n\tGetTimers\x12\x18.vaccel.ProfilingRequest\x1a\
+    \x19.vaccel.ProfilingResponseb\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
