@@ -1,16 +1,21 @@
 use crate::ffi;
-
-use std::ffi::CStr;
-use std::fmt;
+use std::{ffi::CStr, fmt};
 
 pub mod buffer;
+#[cfg(target_pointer_width = "64")]
+pub mod inference;
+pub mod lite;
+#[cfg(target_pointer_width = "64")]
 pub mod node;
-pub mod saved_model;
+#[cfg(target_pointer_width = "64")]
 pub mod tensor;
 
 pub use buffer::Buffer;
+#[cfg(target_pointer_width = "64")]
+pub use inference::{InferenceArgs, InferenceResult};
+#[cfg(target_pointer_width = "64")]
 pub use node::Node;
-pub use saved_model::SavedModel;
+#[cfg(target_pointer_width = "64")]
 pub use tensor::{Tensor, TensorAny, TensorType};
 
 #[derive(Debug)]
@@ -100,9 +105,10 @@ impl fmt::Display for Status {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub enum DataType {
     UnknownValue(u32),
+    #[default]
     Float,
     Double,
     Int32,
@@ -184,11 +190,5 @@ impl DataType {
             ffi::VACCEL_TF_UINT64 => DataType::UInt64,
             unknown => DataType::UnknownValue(unknown),
         }
-    }
-}
-
-impl Default for DataType {
-    fn default() -> Self {
-        DataType::Float
     }
 }

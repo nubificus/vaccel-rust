@@ -9,14 +9,10 @@ use std::fmt;
 pub mod ffi;
 pub mod ops;
 pub mod profiling;
-pub mod resource;
+pub mod resources;
 pub mod session;
-pub mod shared_obj;
-#[cfg(target_pointer_width = "64")]
-pub mod tensorflow;
-pub mod torch;
 
-pub use resource::Resource;
+pub use resources::Resource;
 pub use session::Session;
 
 #[derive(Debug)]
@@ -32,10 +28,13 @@ pub enum Error {
 
     // A TensorFlow Error
     #[cfg(target_pointer_width = "64")]
-    TensorFlow(tensorflow::Code),
+    TensorFlow(ops::tensorflow::Code),
+
+    // A TensorFlow Lite Error
+    TensorFlowLite(ops::tensorflow::lite::Code),
 
     // A pytorch Error
-    Torch(torch::Code),
+    Torch(ops::torch::Code),
 
     // Other error types
     Others(String),
@@ -49,6 +48,7 @@ impl fmt::Display for Error {
             Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
             #[cfg(target_pointer_width = "64")]
             Error::TensorFlow(e) => write!(f, "TensorFlow error: {:?}", e),
+            Error::TensorFlowLite(e) => write!(f, "TensorFlow Lite error: {:?}", e),
             Error::Torch(e) => write!(f, "Torch error: {:?}", e),
             Error::Others(e) => write!(f, "Error: {}", e),
         }

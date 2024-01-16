@@ -1,10 +1,7 @@
-use crate::ffi;
-use crate::tensorflow::{Code, DataType};
-use crate::{Error, Result};
-
+use super::{Code, DataType};
+use crate::{ffi, Error, Result};
 use protobuf::Enum;
 use protocols::tensorflow::{TFDataType, TFTensor};
-
 use std::ops::{Deref, DerefMut};
 
 pub struct Tensor<T: TensorType> {

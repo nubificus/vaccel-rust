@@ -3,17 +3,19 @@ mod utilities;
 use env_logger::Env;
 use log::info;
 use std::path::PathBuf;
-
-use vaccel::torch;
-use vaccel::Session;
+use vaccel::{
+    ops::{torch, torch::InferenceArgs, InferenceModel},
+    resources::SingleModel,
+    Session,
+};
 
 fn main() -> utilities::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
     let mut sess = Session::new(0)?;
     info!("New session {}", sess.id());
 
-    let path = PathBuf::from("./examples/files/torch/");
-    let mut model = torch::SavedModel::new().from_export_dir(&path)?;
+    let path = PathBuf::from("./examples/files/torch/cnn_trace.pt");
+    let mut model = SingleModel::new().from_export_dir(&path)?;
     info!("New saved model from export dir: {}", model.id());
 
     // Register for the model
@@ -26,13 +28,13 @@ fn main() -> utilities::Result<()> {
     let in_tensor = torch::Tensor::<f32>::new(&[3 * 224 * 224]).with_data(&[1.0; 3 * 224 * 224])?;
     info!("in_tensor dim: {}", in_tensor.nr_dims());
 
-    let mut sess_args = torch::TorchArgs::new();
-    let mut jitload = torch::TorchJitLoadForward::new();
+    let mut sess_args = InferenceArgs::new();
 
     sess_args.set_run_options(&run_options);
     sess_args.add_input(&in_tensor);
+    sess_args.set_nr_outputs(1);
 
-    let result = jitload.jitload_forward(&mut sess, &mut sess_args, &mut model)?;
+    let result = model.run(&mut sess, &mut sess_args)?;
 
     match result.get_output::<f32>(0) {
         Ok(out) => {

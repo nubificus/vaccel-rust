@@ -2,11 +2,8 @@ mod utilities;
 
 use env_logger::Env;
 use log::info;
-
-use vaccel::tensorflow::SavedModel;
-use vaccel::Session;
-
 use std::path::PathBuf;
+use vaccel::{resources::TFSavedModel, Session};
 
 fn main() -> utilities::Result<()> {
     env_logger::Builder::from_env(Env::default().default_filter_or("debug")).init();
@@ -15,7 +12,7 @@ fn main() -> utilities::Result<()> {
     info!("New session {}", sess.id());
 
     let path = PathBuf::from("./examples/files/tf/lstm2");
-    let mut model = SavedModel::new().from_export_dir(&path)?;
+    let mut model = TFSavedModel::new().from_export_dir(&path)?;
     info!("New saved model from export dir: {}", model.id());
 
     // Register model with session
@@ -26,7 +23,7 @@ fn main() -> utilities::Result<()> {
     let (model_pb, ckpt, var_index) = utilities::load_in_mem(&path)?;
 
     // Create a TensorFlow model resource from data
-    let mut model2 = SavedModel::new().from_in_memory(&model_pb, &ckpt, &var_index)?;
+    let mut model2 = TFSavedModel::new().from_in_memory(&model_pb, &ckpt, &var_index)?;
     info!("New saved model from in-memory data: {}", model.id());
     sess.register(&mut model2)?;
     info!(

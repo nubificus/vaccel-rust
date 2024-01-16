@@ -1,5 +1,4 @@
 use crate::{ffi, profiling::ProfRegions, Error, Result, Session};
-
 use protocols::genop::GenopArg as ProtGenopArg;
 
 #[derive(Debug)]

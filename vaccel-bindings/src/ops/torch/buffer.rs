@@ -1,16 +1,15 @@
-use crate::ffi;
-use crate::{Error, Result};
-
+use crate::{ffi, Error, Result};
 use std::ops::{Deref, DerefMut};
 
+// vaccel_torch_buffer, bufferLength was required
 pub struct Buffer {
-    inner: *mut ffi::vaccel_tf_buffer,
+    inner: *mut ffi::vaccel_torch_buffer,
     vaccel_owned: bool,
 }
 
 impl Buffer {
     pub fn new(data: &[u8]) -> Self {
-        let inner = unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len()) };
+        let inner = unsafe { ffi::vaccel_torch_buffer_new(data.as_ptr() as *mut _, data.len()) };
         assert!(!inner.is_null(), "Memory allocation failure");
 
         Buffer {
@@ -19,9 +18,9 @@ impl Buffer {
         }
     }
 
-    pub unsafe fn from_vaccel_buffer(buffer: *mut ffi::vaccel_tf_buffer) -> Result<Self> {
+    pub unsafe fn from_vaccel_buffer(buffer: *mut ffi::vaccel_torch_buffer) -> Result<Self> {
         let mut size = Default::default();
-        let data = ffi::vaccel_tf_buffer_get_data(buffer, &mut size);
+        let data = ffi::vaccel_torch_buffer_get_data(buffer, &mut size);
         if data.is_null() || size == 0 {
             return Err(Error::InvalidArgument);
         }
@@ -35,7 +34,7 @@ impl Buffer {
     pub fn as_slice(&self) -> &[u8] {
         unsafe {
             let mut size = Default::default();
-            let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *const u8;
+            let ptr = ffi::vaccel_torch_buffer_get_data(self.inner, &mut size) as *const u8;
             std::slice::from_raw_parts(ptr, size)
         }
     }
@@ -43,16 +42,16 @@ impl Buffer {
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
         unsafe {
             let mut size = Default::default();
-            let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *mut u8;
+            let ptr = ffi::vaccel_torch_buffer_get_data(self.inner, &mut size) as *mut u8;
             std::slice::from_raw_parts_mut(ptr, size)
         }
     }
 
-    pub(crate) fn inner(&self) -> *const ffi::vaccel_tf_buffer {
+    pub(crate) fn inner(&self) -> *const ffi::vaccel_torch_buffer {
         self.inner
     }
 
-    pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_tf_buffer {
+    pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_buffer {
         self.inner
     }
 }
@@ -63,10 +62,10 @@ impl Drop for Buffer {
             // Data is not owned from vaccel runtime. Unset it from
             // the buffer so we avoid double free.
             let mut size = Default::default();
-            unsafe { ffi::vaccel_tf_buffer_take_data(self.inner, &mut size) };
+            unsafe { ffi::vaccel_torch_buffer_take_data(self.inner, &mut size) };
         }
 
-        unsafe { ffi::vaccel_tf_buffer_destroy(self.inner) }
+        unsafe { ffi::vaccel_torch_buffer_destroy(self.inner) }
     }
 }
 

@@ -1,7 +1,4 @@
-use crate::ffi;
-use crate::resource::Resource;
-use crate::VaccelId;
-use crate::{Error, Result};
+use crate::{ffi, Error, Resource, Result, VaccelId};
 
 /// The vAccel session  type
 ///
@@ -36,7 +33,7 @@ impl Session {
     }
 
     /// update hint for session
-    pub fn update(&mut self, flags: u32) -> () {
+    pub fn update(&mut self, flags: u32) {
         self.inner.hint = flags;
     }
 

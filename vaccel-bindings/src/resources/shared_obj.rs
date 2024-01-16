@@ -1,9 +1,5 @@
-use crate::ffi;
-use crate::VaccelId;
-use crate::{Error, Result};
-use std::any::Any;
-use std::ffi::CString;
-use std::path::Path;
+use crate::{ffi, Error, Resource, Result, VaccelId};
+use std::{any::Any, ffi::CString, path::Path};
 
 #[derive(Debug, PartialEq)]
 pub struct SharedObject {
@@ -91,7 +87,7 @@ impl SharedObject {
     }
 }
 
-impl crate::resource::Resource for SharedObject {
+impl Resource for SharedObject {
     fn id(&self) -> VaccelId {
         self.id()
     }

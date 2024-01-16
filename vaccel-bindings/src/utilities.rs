@@ -1,8 +1,4 @@
-use std::fmt;
-
-use std::fs::File;
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::{fmt, fs::File, io::Read, path::{Path, PathBuf}};
 use crate::Error as VaccelError;
 
 pub enum Error {

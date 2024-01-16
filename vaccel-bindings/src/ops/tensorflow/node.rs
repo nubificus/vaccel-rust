@@ -1,10 +1,9 @@
-use crate::ffi;
-use crate::{Error, Result};
-
+use crate::{ffi, Error, Result};
 use protocols::tensorflow::TFNode;
-
-use std::ffi::{CStr, CString};
-use std::fmt;
+use std::{
+    ffi::{CStr, CString},
+    fmt,
+};
 
 pub struct Node {
     inner: *mut ffi::vaccel_tf_node,

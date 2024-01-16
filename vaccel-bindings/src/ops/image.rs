@@ -1,7 +1,4 @@
-use crate::ffi;
-use crate::session::Session;
-use crate::{Error, Result};
-
+use crate::{ffi, Error, Result, Session};
 use std::os::raw::c_void;
 
 impl Session {

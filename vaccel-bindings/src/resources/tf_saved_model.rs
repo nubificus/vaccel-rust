@@ -1,32 +1,32 @@
-use crate::ffi;
-use crate::VaccelId;
-use crate::{Error, Result};
-use std::any::Any;
-use std::ffi::{CStr, CString};
-use std::path::{Path, PathBuf};
+use crate::{ffi, Error, Resource, Result, VaccelId};
+use std::{
+    any::Any,
+    ffi::{CStr, CString},
+    path::{Path, PathBuf},
+};
 
 #[derive(Debug, PartialEq)]
-pub struct SavedModel {
+pub struct TFSavedModel {
     inner: *mut ffi::vaccel_tf_saved_model,
 }
 
-impl Default for SavedModel {
+impl Default for TFSavedModel {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SavedModel {
+impl TFSavedModel {
     /// Create a new Saved Model object
     pub fn new() -> Self {
-        SavedModel {
+        TFSavedModel {
             inner: unsafe { ffi::vaccel_tf_saved_model_new() },
         }
     }
 
-    /// Create a new SavedModel from a vaccel saved model type
+    /// Create a new TFSavedModel from a vaccel_tf_saved_model type
     pub fn from_vaccel(inner: *mut ffi::vaccel_tf_saved_model) -> Self {
-        SavedModel { inner }
+        TFSavedModel { inner }
     }
 
     /// Get the id of the model
@@ -180,7 +180,7 @@ impl SavedModel {
     }
 }
 
-impl crate::resource::Resource for SavedModel {
+impl Resource for TFSavedModel {
     fn id(&self) -> VaccelId {
         self.id()
     }

@@ -4,8 +4,11 @@ use env_logger::Env;
 use log::{error, info};
 use std::path::PathBuf;
 use vaccel::{
-    ops::{tensorflow as tf, tensorflow::InferenceArgs, InferenceModel},
-    resources::TFSavedModel,
+    ops::{
+        tensorflow::lite::{InferenceArgs, InferenceResult, Tensor},
+        InferenceModel,
+    },
+    resources::SingleModel,
     Session,
 };
 
@@ -15,35 +18,33 @@ fn main() -> utilities::Result<()> {
     let mut sess = Session::new(0)?;
     info!("New session {}", sess.id());
 
-    let path = PathBuf::from("./examples/files/tf/lstm2");
-    let mut model = TFSavedModel::new().from_export_dir(&path)?;
-    info!("New saved model from export dir: {}", model.id());
+    let path = PathBuf::from("./examples/files/tf/lstm2.tflite");
+    let mut model = SingleModel::new().from_export_dir(&path)?;
+    info!("New single model from export dir: {}", model.id());
 
     // Register model with session
     sess.register(&mut model)?;
     info!("Registered model {} with session {}", model.id(), sess.id());
 
-    // Load model graph
-    if let Err(err) = model.load(&mut sess) {
-        error!("Could not load graph for model {}: {}", model.id(), err);
+    // Load model file
+    if let Err(e) =
+        <SingleModel as InferenceModel<InferenceArgs, InferenceResult>>::load(&mut model, &mut sess)
+    {
+        error!("Could not load file for model {}: {}", model.id(), e);
 
         info!("Destroying session {}", sess.id());
         sess.close()
             .expect("Could not destroy session during cleanup");
 
-        return Err(utilities::Error::Vaccel(err));
+        return Err(utilities::Error::Vaccel(e));
     }
 
     // Prepare data for inference
-    let run_options = tf::Buffer::new(&[]);
-    let in_tensor = tf::Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
-    let in_node = tf::Node::new("serving_default_input_1", 0);
-    let out_node = tf::Node::new("StatefulPartitionedCall", 0);
+    let in_tensor = Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
 
     let mut sess_args = InferenceArgs::new();
-    sess_args.set_run_options(&run_options);
-    sess_args.add_input(&in_node, &in_tensor);
-    sess_args.request_output(&out_node);
+    sess_args.add_input(&in_tensor);
+    sess_args.set_nr_outputs(1);
 
     let result = model.run(&mut sess, &mut sess_args)?;
 
@@ -66,7 +67,7 @@ fn main() -> utilities::Result<()> {
         Err(err) => println!("Inference failed: '{}'", err),
     }
 
-    model.unload(&mut sess)?;
+    <SingleModel as InferenceModel<InferenceArgs, InferenceResult>>::unload(&mut model, &mut sess)?;
 
     sess.close()?;
 

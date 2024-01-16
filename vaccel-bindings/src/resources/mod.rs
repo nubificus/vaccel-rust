@@ -1,7 +1,15 @@
-use crate::ffi;
-use crate::Result;
-use crate::VaccelId;
+use crate::{ffi, Result, VaccelId};
 use std::any::Any;
+
+pub mod shared_obj;
+pub mod single_model;
+#[cfg(target_pointer_width = "64")]
+pub mod tf_saved_model;
+
+pub use shared_obj::SharedObject;
+pub use single_model::SingleModel;
+#[cfg(target_pointer_width = "64")]
+pub use tf_saved_model::TFSavedModel;
 
 pub trait Resource {
     /// Get the id of a vAccel resource
