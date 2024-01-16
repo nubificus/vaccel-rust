@@ -12,7 +12,7 @@ use std::{collections::BTreeMap, ptr};
 use vaccel::{ffi, profiling::ProfRegions};
 
 impl VsockClient {
-    pub const TIMERS_PREFIX: &str = "vaccel-client";
+    pub const TIMERS_PREFIX: &'static str = "vaccel-client";
 
     pub fn timer_start(&mut self, sess_id: u32, name: &str) {
         self.timers

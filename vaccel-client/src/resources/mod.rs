@@ -2,9 +2,7 @@
 use crate::asynchronous::client::VsockClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VsockClient;
-#[cfg(target_pointer_width = "64")]
-use crate::tf_model::create_tf_model;
-use crate::{shared_obj::create_shared_object, torch_model::create_torch_model, Error, Result};
+use crate::{Error, Result};
 #[cfg(feature = "async")]
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 use protocols::resources::{
@@ -15,6 +13,16 @@ use protocols::resources::{
 use protocols::sync::agent_ttrpc::VaccelAgentClient;
 use std::ffi::c_void;
 use vaccel::{ffi, VaccelId};
+
+pub mod shared_obj;
+pub mod single_model;
+#[cfg(target_pointer_width = "64")]
+pub mod tf_saved_model;
+
+use shared_obj::create_shared_object;
+use single_model::create_single_model;
+#[cfg(target_pointer_width = "64")]
+use tf_saved_model::create_tf_saved_model;
 
 pub trait VaccelResource {
     fn create_resource_request(self) -> Result<CreateResourceRequest>;
@@ -81,29 +89,29 @@ pub unsafe extern "C" fn create_resource(
     };
 
     match res_type {
-        ffi::VACCEL_RES_TF_SAVED_MODEL | ffi::VACCEL_RES_TF_MODEL => {
+        ffi::VACCEL_RES_SHARED_OBJ => {
+            let shared_object = data as *mut ffi::vaccel_shared_object;
+            let shared_obj = unsafe { shared_object.as_mut().unwrap() };
+            create_shared_object(client, shared_obj)
+        }
+        ffi::VACCEL_RES_SINGLE_MODEL => {
+            let model_ptr = data as *mut ffi::vaccel_single_model;
+            let model = unsafe { model_ptr.as_mut().unwrap() };
+            create_single_model(client, model)
+        }
+        ffi::VACCEL_RES_TF_SAVED_MODEL => {
             #[cfg(target_pointer_width = "64")]
             {
                 let model_ptr = data as *mut ffi::vaccel_tf_saved_model;
                 let model = unsafe { model_ptr.as_mut().unwrap() };
-                create_tf_model(client, model)
+                create_tf_saved_model(client, model)
             }
             #[cfg(not(target_pointer_width = "64"))]
             {
                 -(ffi::VACCEL_ENOTSUP as i64)
             }
         }
-        ffi::VACCEL_RES_SHARED_OBJ => {
-            let shared_object = data as *mut ffi::vaccel_shared_object;
-            let shared_obj = unsafe { shared_object.as_mut().unwrap() };
-            create_shared_object(client, shared_obj)
-        }
-        ffi::VACCEL_RES_TORCH_SAVED_MODEL | ffi::VACCEL_RES_TORCH_MODEL => {
-            let model_ptr = data as *mut ffi::vaccel_torch_saved_model;
-            let model = unsafe { model_ptr.as_mut().unwrap() };
-            create_torch_model(client, model)
-        }
-        2_u32 | 5_u32..=u32::MAX => {
+        3_u32..=u32::MAX => {
             todo!()
         }
     }

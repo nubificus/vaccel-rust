@@ -65,7 +65,11 @@ pub unsafe extern "C" fn sess_init(client_ptr: *mut VsockClient, flags: u32) -> 
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn sess_update(client_ptr: *const VsockClient, sess_id: u32, flags: u32) -> i32 {
+pub unsafe extern "C" fn sess_update(
+    client_ptr: *const VsockClient,
+    sess_id: u32,
+    flags: u32,
+) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,

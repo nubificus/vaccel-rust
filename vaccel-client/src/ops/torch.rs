@@ -2,31 +2,14 @@
 use crate::asynchronous::client::VsockClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VsockClient;
-use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, resources::VaccelResource, Error, Result};
+use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
 #[cfg(feature = "async")]
 use protocols::asynchronous::agent_ttrpc::VaccelAgentClient;
 #[cfg(not(feature = "async"))]
 use protocols::sync::agent_ttrpc::VaccelAgentClient;
-use protocols::{
-    resources::{CreateResourceRequest, CreateTorchSavedModelRequest},
-    torch::{TorchJitloadForwardRequest, TorchTensor},
-};
-use vaccel::{ffi, torch::SavedModel};
-
-impl VaccelResource for SavedModel {
-    fn create_resource_request(self) -> Result<CreateResourceRequest> {
-        let mut model = CreateTorchSavedModelRequest::new();
-        model.model = self
-            .get_protobuf()
-            .ok_or(Error::InvalidArgument)?
-            .to_owned();
-
-        let mut req = CreateResourceRequest::new();
-        req.set_torch_saved(model);
-
-        Ok(req)
-    }
-}
+use protocols::torch::{TorchJitloadForwardRequest, TorchTensor};
+use std::os::raw::c_int;
+use vaccel::ffi;
 
 impl VsockClient {
     pub fn torch_jitload_forward(
@@ -35,6 +18,7 @@ impl VsockClient {
         model_id: i64,
         run_options: Vec<u8>,
         in_tensors: Vec<TorchTensor>,
+        nr_outputs: i32,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
         let ctx = ttrpc::context::Context::default();
 
@@ -43,6 +27,7 @@ impl VsockClient {
             model_id,
             run_options,
             in_tensors,
+            nr_outputs,
             ..Default::default()
         };
 
@@ -78,18 +63,6 @@ impl VsockClient {
     }
 }
 
-pub(crate) fn create_torch_model(
-    client: &VsockClient,
-    model_ptr: *mut ffi::vaccel_torch_saved_model,
-) -> ffi::vaccel_id_t {
-    let model = SavedModel::from_vaccel(model_ptr);
-    match client.create_resource(model) {
-        Ok(id) => id.into(),
-        Err(Error::ClientError(err)) => -(err as ffi::vaccel_id_t),
-        Err(_) => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
-    }
-}
-
 #[no_mangle]
 pub unsafe extern "C" fn torch_jitload_forward(
     client_ptr: *const VsockClient,
@@ -97,9 +70,9 @@ pub unsafe extern "C" fn torch_jitload_forward(
     model_id: ffi::vaccel_id_t,
     run_options_ptr: *mut ffi::vaccel_torch_buffer,
     in_tensors_ptr: *const *mut ffi::vaccel_torch_tensor,
-    nr_inputs: usize,
+    nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_torch_tensor,
-    nr_outputs: usize,
+    nr_outputs: c_int,
 ) -> u32 {
     let run_options = unsafe {
         c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
@@ -107,15 +80,17 @@ pub unsafe extern "C" fn torch_jitload_forward(
             .to_owned()
     };
 
-    let in_tensors: Vec<TorchTensor> = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
-        Some(slice) => slice
-            .iter()
-            .map(|e| unsafe { e.as_ref().unwrap().into() })
-            .collect(),
-        None => return ffi::VACCEL_EINVAL,
-    };
+    let in_tensors: Vec<TorchTensor> =
+        match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
+            Some(slice) => slice
+                .iter()
+                .map(|e| unsafe { e.as_ref().unwrap().into() })
+                .collect(),
+            None => return ffi::VACCEL_EINVAL,
+        };
 
-    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs) {
+    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs.try_into().unwrap())
+    {
         Some(vec) => vec,
         None => return ffi::VACCEL_EINVAL,
     };
@@ -125,7 +100,7 @@ pub unsafe extern "C" fn torch_jitload_forward(
         None => return ffi::VACCEL_EINVAL,
     };
 
-    match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors) {
+    match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors, nr_outputs) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
             ffi::VACCEL_OK

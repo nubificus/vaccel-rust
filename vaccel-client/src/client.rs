@@ -17,6 +17,6 @@ pub extern "C" fn create_client() -> *mut VsockClient {
 #[no_mangle]
 pub unsafe extern "C" fn destroy_client(client: *mut VsockClient) {
     if !client.is_null() {
-        unsafe { Box::from_raw(client) };
+        unsafe { drop(Box::from_raw(client)) };
     }
 }
