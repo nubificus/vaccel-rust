@@ -2,43 +2,42 @@ use crate::{ttrpc_error, Agent};
 use log::{error, info};
 #[cfg(feature = "async")]
 use protocols::asynchronous::agent::VaccelEmpty;
+#[allow(unused_imports)]
 use protocols::resources::{
-    create_resource_request::Model as CreateResourceRequestModel, CreateResourceRequest,
-    CreateResourceResponse, CreateSharedObjRequest, DestroyResourceRequest,
-    RegisterResourceRequest, UnregisterResourceRequest,
+    create_resource_request::Resource, CreateResourceRequest, CreateResourceResponse,
+    CreateSharedObjRequest, CreateSingleModelRequest, CreateTensorflowSavedModelRequest,
+    DestroyResourceRequest, RegisterResourceRequest, UnregisterResourceRequest,
 };
 #[cfg(not(feature = "async"))]
 use protocols::sync::agent::VaccelEmpty;
-use vaccel::shared_obj as so;
+#[cfg(target_pointer_width = "64")]
+use vaccel::resources::TFSavedModel;
+use vaccel::resources::{SharedObject, SingleModel};
 
 impl Agent {
     pub(crate) fn do_create_resource(
         &self,
         req: CreateResourceRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
-        let model = match req.model {
+        let resource = match req.resource {
             None => {
                 return Err(ttrpc_error(
                     ttrpc::Code::INVALID_ARGUMENT,
                     "Invalid model".to_string(),
                 ))
             }
-            Some(model) => model,
+            Some(resource) => resource,
         };
 
-        match model {
-            CreateResourceRequestModel::SharedObj(req) => self.create_shared_object(req),
+        match resource {
+            Resource::SharedObj(req) => self.create_shared_object(req),
+            Resource::SingleModel(req) => self.create_single_model(req),
             #[cfg(target_pointer_width = "64")]
-            CreateResourceRequestModel::TfSaved(req) => self.create_tf_model(req),
-            CreateResourceRequestModel::Caffe(_) => Err(ttrpc_error(
+            Resource::TfSavedModel(req) => self.create_tf_saved_model(req),
+            Resource::CaffeModel(_) => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 "Caffee models not supported yet".to_string(),
             )),
-            CreateResourceRequestModel::Tf(_) => Err(ttrpc_error(
-                ttrpc::Code::INVALID_ARGUMENT,
-                "Frozen model not supported yet".to_string(),
-            )),
-            CreateResourceRequestModel::TorchSaved(req) => self.create_torch_model(req),
             _ => Err(ttrpc_error(
                 ttrpc::Code::INVALID_ARGUMENT,
                 "Invalid model".to_string(),
@@ -125,12 +124,12 @@ impl Agent {
         }
     }
 
-    pub(crate) fn create_shared_object(
+    fn create_shared_object(
         &self,
         req: CreateSharedObjRequest,
     ) -> ttrpc::Result<CreateResourceResponse> {
         info!("Request to create SharedObject resource");
-        match so::SharedObject::from_in_memory(&req.shared_obj) {
+        match SharedObject::from_in_memory(&req.shared_obj) {
             Ok(shared_obj) => {
                 info!("Created new Shared Object with id: {}", shared_obj.id());
 
@@ -138,6 +137,53 @@ impl Agent {
                 resp.resource_id = shared_obj.id().into();
                 let e = self.resources.insert(shared_obj.id(), Box::new(shared_obj));
                 assert!(e.is_none());
+                Ok(resp)
+            }
+            Err(e) => {
+                error!("Could not register shared object");
+                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
+            }
+        }
+    }
+
+    fn create_single_model(
+        &self,
+        req: CreateSingleModelRequest,
+    ) -> ttrpc::Result<CreateResourceResponse> {
+        info!("Request to create SingleModel resource");
+        match SingleModel::new().from_in_memory(&req.file) {
+            Ok(model) => {
+                info!("Created new SingleModel with id: {}", model.id());
+
+                let mut resp = CreateResourceResponse::new();
+                resp.resource_id = model.id().into();
+                let e = self.resources.insert(model.id(), Box::new(model));
+                assert!(e.is_none());
+
+                Ok(resp)
+            }
+            Err(e) => {
+                error!("Could not register model");
+                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
+            }
+        }
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    fn create_tf_saved_model(
+        &self,
+        req: CreateTensorflowSavedModelRequest,
+    ) -> ttrpc::Result<CreateResourceResponse> {
+        info!("Request to create TensorFlow model resource");
+        match TFSavedModel::new().from_in_memory(&req.model_pb, &req.checkpoint, &req.var_index) {
+            Ok(model) => {
+                info!("Created new TensorFlow model with id: {}", model.id());
+
+                let mut resp = CreateResourceResponse::new();
+                resp.resource_id = model.id().into();
+                let e = self.resources.insert(model.id(), Box::new(model));
+                assert!(e.is_none());
+
                 Ok(resp)
             }
             Err(e) => {

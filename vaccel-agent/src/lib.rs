@@ -1,15 +1,11 @@
 pub mod cli;
-pub mod genop;
-pub mod image;
+pub mod ops;
 pub mod resources;
 #[cfg(feature = "async")]
 pub mod rpc_async;
 #[cfg(not(feature = "async"))]
 pub mod rpc_sync;
 pub mod session;
-#[cfg(target_pointer_width = "64")]
-pub mod tf_model;
-pub mod torch_model;
 
 use dashmap::DashMap;
 #[cfg(feature = "async")]
@@ -50,8 +46,9 @@ pub(crate) fn vaccel_error(err: vaccel::Error) -> VaccelError {
         vaccel::Error::Uninitialized => grpc_error.set_agent_error(2i64),
         #[cfg(target_pointer_width = "64")]
         vaccel::Error::TensorFlow(_) => grpc_error.set_agent_error(3i64),
-        vaccel::Error::Torch(_) => grpc_error.set_agent_error(4i64),
-        vaccel::Error::Others(_) => grpc_error.set_agent_error(5i64),
+        vaccel::Error::TensorFlowLite(_) => grpc_error.set_agent_error(4i64),
+        vaccel::Error::Torch(_) => grpc_error.set_agent_error(5i64),
+        vaccel::Error::Others(_) => grpc_error.set_agent_error(6i64),
     }
 
     grpc_error

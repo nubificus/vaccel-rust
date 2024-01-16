@@ -1,14 +1,14 @@
 use crate::{ttrpc_error, vaccel_error, Agent};
-use log::{debug, error, info};
-use protocols::{
-    resources::{CreateResourceResponse, CreateTensorflowSavedModelRequest},
-    tensorflow::{
-        InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
-        TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
-        TensorflowModelUnloadResponse,
-    },
+use log::debug;
+use protocols::tensorflow::{
+    InferenceResult, TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
+    TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
+    TensorflowModelUnloadResponse,
 };
-use vaccel::tensorflow as tf;
+use vaccel::{
+    ops::{tensorflow as tf, tensorflow::InferenceArgs, InferenceModel},
+    resources::TFSavedModel,
+};
 
 impl Agent {
     pub(crate) fn do_tensorflow_model_load(
@@ -34,7 +34,7 @@ impl Agent {
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<tf::SavedModel>()
+            .downcast_mut::<TFSavedModel>()
             .ok_or_else(|| {
                 ttrpc_error(
                     ttrpc::Code::INVALID_ARGUMENT,
@@ -43,7 +43,7 @@ impl Agent {
             })?;
 
         let mut resp = TensorflowModelLoadResponse::new();
-        match model.session_load(&mut sess) {
+        match model.load(&mut sess) {
             Ok(_) => resp.set_graph_def(Vec::new()),
             Err(e) => resp.set_error(vaccel_error(e)),
         };
@@ -77,7 +77,7 @@ impl Agent {
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<tf::SavedModel>()
+            .downcast_mut::<TFSavedModel>()
             .ok_or_else(|| {
                 ttrpc_error(
                     ttrpc::Code::INVALID_ARGUMENT,
@@ -86,7 +86,7 @@ impl Agent {
             })?;
 
         let mut resp = TensorflowModelUnloadResponse::new();
-        match model.session_delete(&mut sess) {
+        match model.unload(&mut sess) {
             Ok(_) => resp.success = true,
             Err(e) => resp.error = Some(vaccel_error(e)).into(),
         };
@@ -117,7 +117,7 @@ impl Agent {
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<tf::SavedModel>()
+            .downcast_mut::<TFSavedModel>()
             .ok_or_else(|| {
                 ttrpc_error(
                     ttrpc::Code::INVALID_ARGUMENT,
@@ -125,7 +125,7 @@ impl Agent {
                 )
             })?;
 
-        let mut sess_args = vaccel::ops::inference::InferenceArgs::new();
+        let mut sess_args = InferenceArgs::new();
 
         let run_options = tf::Buffer::new(req.run_options.as_slice());
         sess_args.set_run_options(&run_options);
@@ -144,7 +144,7 @@ impl Agent {
             sess_args.request_output(output);
         }
 
-        let response = match model.session_run(&mut sess, &mut sess_args) {
+        let response = match model.run(&mut sess, &mut sess_args) {
             Ok(result) => {
                 let mut inference = InferenceResult::new();
                 let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
@@ -164,28 +164,5 @@ impl Agent {
         };
 
         Ok(response)
-    }
-
-    pub(crate) fn create_tf_model(
-        &self,
-        req: CreateTensorflowSavedModelRequest,
-    ) -> ttrpc::Result<CreateResourceResponse> {
-        info!("Request to create TensorFlow model resource");
-        match tf::SavedModel::new().from_in_memory(&req.model_pb, &req.checkpoint, &req.var_index) {
-            Ok(model) => {
-                info!("Created new TensorFlow model with id: {}", model.id());
-
-                let mut resp = CreateResourceResponse::new();
-                resp.resource_id = model.id().into();
-                let e = self.resources.insert(model.id(), Box::new(model));
-                assert!(e.is_none());
-
-                Ok(resp)
-            }
-            Err(e) => {
-                error!("Could not register model");
-                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
-            }
-        }
     }
 }

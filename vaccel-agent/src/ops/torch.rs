@@ -1,13 +1,11 @@
 use crate::{ttrpc_error, vaccel_error, Agent};
-use log::{error, info};
-use protocols::{
-    resources::{CreateResourceResponse, CreateTorchSavedModelRequest},
-    torch::{
-        TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchJitloadForwardResult,
-        TorchTensor,
-    },
+use protocols::torch::{
+    TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchJitloadForwardResult, TorchTensor,
 };
-use vaccel::torch;
+use vaccel::{
+    ops::{torch, torch::InferenceArgs, InferenceModel},
+    resources::SingleModel,
+};
 
 impl Agent {
     pub(crate) fn do_torch_jitload_forward(
@@ -33,7 +31,7 @@ impl Agent {
 
         let model = resource
             .as_mut_any()
-            .downcast_mut::<torch::SavedModel>()
+            .downcast_mut::<SingleModel>()
             .ok_or_else(|| {
                 ttrpc_error(
                     ttrpc::Code::INVALID_ARGUMENT,
@@ -42,8 +40,8 @@ impl Agent {
             })?;
 
         // origin: vaccel::ops::inference...
-        let mut sess_args = torch::TorchArgs::new();
-        let mut jitload = torch::TorchJitLoadForward::new();
+        let mut sess_args = InferenceArgs::new();
+        //let mut jitload = torch::TorchJitLoadForward::new();
 
         let run_options = torch::Buffer::new(req.run_options.as_slice());
         sess_args.set_run_options(&run_options);
@@ -76,12 +74,12 @@ impl Agent {
         })
         */
 
-        // TODO
-        // let num_outputs = in_tensors.len();
-        let num_outputs: usize = 1;
+        sess_args.set_nr_outputs(req.nr_outputs);
+        let num_outputs: usize = req.nr_outputs.try_into().unwrap();
 
         //println!("NUM of output: {}, Type: {}", num_outputs, type_of(&num_outputs));
-        let response = match jitload.jitload_forward(&mut sess, &mut sess_args, model) {
+        //let response = match jitload.jitload_forward(&mut sess, &mut sess_args, model) {
+        let response = match model.run(&mut sess, &mut sess_args) {
             Ok(result) => {
                 let mut jitload_forward = TorchJitloadForwardResult::new();
                 let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
@@ -101,28 +99,5 @@ impl Agent {
         };
 
         Ok(response)
-    }
-
-    pub(crate) fn create_torch_model(
-        &self,
-        req: CreateTorchSavedModelRequest,
-    ) -> ttrpc::Result<CreateResourceResponse> {
-        info!("Request to create PyTorch model resource");
-        match torch::SavedModel::new().from_in_memory(&req.model) {
-            Ok(model) => {
-                info!("Created new Torch model with id: {}", model.id());
-
-                let mut resp = CreateResourceResponse::new();
-                resp.resource_id = model.id().into();
-                let e = self.resources.insert(model.id(), Box::new(model));
-                assert!(e.is_none());
-
-                Ok(resp)
-            }
-            Err(e) => {
-                error!("Could not register model");
-                Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))
-            }
-        }
     }
 }

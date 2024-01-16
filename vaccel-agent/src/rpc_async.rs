@@ -2,8 +2,11 @@ use crate::Agent;
 use async_trait::async_trait;
 #[allow(unused_imports)]
 use protocols::tensorflow::{
-    TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
-    TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
+    TensorflowLiteModelLoadRequest, TensorflowLiteModelLoadResponse, TensorflowLiteModelRunRequest,
+    TensorflowLiteModelRunResponse, TensorflowLiteModelUnloadRequest,
+    TensorflowLiteModelUnloadResponse, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
+    TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
+    TensorflowModelUnloadResponse,
 };
 use protocols::{
     asynchronous::{agent::VaccelEmpty, agent_ttrpc::VaccelAgent},
@@ -15,7 +18,7 @@ use protocols::{
         RegisterResourceRequest, UnregisterResourceRequest,
     },
     session::{
-        CreateSessionRequest, CreateSessionResponse, UpdateSessionRequest, DestroySessionRequest, 
+        CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
     torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
 };
@@ -114,6 +117,30 @@ impl VaccelAgent for Agent {
         req: TensorflowModelRunRequest,
     ) -> ttrpc::Result<TensorflowModelRunResponse> {
         self.do_tensorflow_model_run(req)
+    }
+
+    async fn tensorflow_lite_model_load(
+        &self,
+        _ctx: &::ttrpc::asynchronous::TtrpcContext,
+        req: TensorflowLiteModelLoadRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelLoadResponse> {
+        self.do_tflite_model_load(req)
+    }
+
+    async fn tensorflow_lite_model_unload(
+        &self,
+        _ctx: &::ttrpc::asynchronous::TtrpcContext,
+        req: TensorflowLiteModelUnloadRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelUnloadResponse> {
+        self.do_tflite_model_unload(req)
+    }
+
+    async fn tensorflow_lite_model_run(
+        &self,
+        _ctx: &::ttrpc::asynchronous::TtrpcContext,
+        req: TensorflowLiteModelRunRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
+        self.do_tflite_model_run(req)
     }
 
     async fn torch_jitload_forward(

@@ -33,7 +33,6 @@ impl Agent {
         &self,
         req: UpdateSessionRequest,
     ) -> ttrpc::Result<VaccelEmpty> {
-        let hint = &req.flags;
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())

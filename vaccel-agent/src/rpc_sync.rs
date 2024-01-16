@@ -1,8 +1,11 @@
 use crate::Agent;
 #[allow(unused_imports)]
 use protocols::tensorflow::{
-    TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
-    TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
+    TensorflowLiteModelLoadRequest, TensorflowLiteModelLoadResponse, TensorflowLiteModelRunRequest,
+    TensorflowLiteModelRunResponse, TensorflowLiteModelUnloadRequest,
+    TensorflowLiteModelUnloadResponse, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
+    TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
+    TensorflowModelUnloadResponse,
 };
 use protocols::{
     genop::{GenopRequest, GenopResponse},
@@ -109,6 +112,30 @@ impl VaccelAgent for Agent {
         req: TensorflowModelRunRequest,
     ) -> ttrpc::Result<TensorflowModelRunResponse> {
         self.do_tensorflow_model_run(req)
+    }
+
+    fn tensorflow_lite_model_load(
+        &self,
+        _ctx: &::ttrpc::sync::TtrpcContext,
+        req: TensorflowLiteModelLoadRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelLoadResponse> {
+        self.do_tflite_model_load(req)
+    }
+
+    fn tensorflow_lite_model_unload(
+        &self,
+        _ctx: &::ttrpc::sync::TtrpcContext,
+        req: TensorflowLiteModelUnloadRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelUnloadResponse> {
+        self.do_tflite_model_unload(req)
+    }
+
+    fn tensorflow_lite_model_run(
+        &self,
+        _ctx: &::ttrpc::sync::TtrpcContext,
+        req: TensorflowLiteModelRunRequest,
+    ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
+        self.do_tflite_model_run(req)
     }
 
     fn torch_jitload_forward(
