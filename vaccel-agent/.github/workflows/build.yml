@@ -21,37 +21,58 @@ jobs:
       fail-fast: false
 
     steps:
+    - name: Cleanup previous jobs
+      run: |
+        echo "Cleaning up previous runs"
+        sudo rm -rf ${{ github.workspace }}/*
+        sudo rm -rf ${{ github.workspace }}/.??*
+
     - name: Find SHA
       run: |
         if [[ "${{github.event.pull_request.head.sha}}" != "" ]]
         then
-          echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
+        echo "ARTIFACT_SHA=$(echo ${{github.event.pull_request.head.sha}})" >> $GITHUB_ENV
         else
-          #echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
-          echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
+        #echo "ARTIFACT_SHA=$(echo ${{github.sha}})" >> $GITHUB_ENV
+        echo "ARTIFACT_SHA=$(echo ${GITHUB_REF##*/})" >> $GITHUB_ENV
         fi
 
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        path: vaccel-agent
+
+    - name: Checkout grpc code
+      uses: actions/checkout@v4
+      with:
+        repository: nubificus/vaccel-grpc
+        path: vaccel-grpc
+
+    - name: Checkout bindings code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        repository: nubificus/vaccel-bindings
+        path: vaccel-bindings
 
     - name: Build project
       id: build_agent
       run: |
-        mkdir -p build_${{matrix.build_type}} && \
-        cd build_${{matrix.build_type}} && \
-        cmake ${{github.workspace}} \
-          -DCMAKE_INSTALL_PREFIX=/usr/local \
-          -DCMAKE_BUILD_TYPE=${{matrix.build_type}} && \
+        mkdir -p vaccel-agent/build_${{matrix.build_type}} && \
+        cd vaccel-agent/build_${{matrix.build_type}} && \
+        cmake ${{github.workspace}}/vaccel-agent \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=${{matrix.build_type}} && \
         make && \
-        export BINARY=$(find ./ -name "vaccelrt-agent")
+        export BINARY=$(find ./ -name "vaccel-agent")
         mkdir binary && cp $BINARY ./binary
-        echo "BINARY_NAME=binary/vaccelrt-agent" >> $GITHUB_ENV
+        echo "BINARY_NAME=binary/vaccel-agent" >> $GITHUB_ENV
 
     - name: Build deb
       if: ${{ env.ARTIFACT_SHA == 'main' || env.ARTIFACT_SHA == 'master' }}
       id: build_agent_deb
       run: |
-        cd build_${{matrix.build_type}} && \
+        cd vaccel-agent/build_${{matrix.build_type}} && \
         cpack 
 
     - name: Get package name
@@ -59,7 +80,7 @@ jobs:
       shell: bash
       id: get_package
       run: |
-        echo ::set-output name=NAME::$(basename build_${{ matrix.build_type }}/vaccelrt-*.deb)
+        echo ::set-output name=NAME::$(basename vaccel-agent/build_${{ matrix.build_type }}/vaccel-*.deb)
 
     - name: Upload artifact
       uses: cloudkernels/minio-upload@v4
@@ -67,7 +88,7 @@ jobs:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
         secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        local-path: build_${{matrix.build_type}}/${{ env.BINARY_NAME }}
+        local-path: vaccel-agent/build_${{matrix.build_type}}/${{ env.BINARY_NAME }}
         remote-path: nbfc-assets/github/vaccelrt/agent/${{env.ARTIFACT_SHA}}/${{matrix.archconfig}}/${{matrix.build_type}}/
         policy: 1
 
@@ -78,9 +99,9 @@ jobs:
         url: https://s3.nubificus.co.uk
         access-key: ${{ secrets.AWS_ACCESS_KEY }}
         secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        local-path: build_${{ matrix.build_type }}/${{ steps.get_package.outputs.NAME }}
+        local-path: vaccel-agent/build_${{ matrix.build_type }}/${{ steps.get_package.outputs.NAME }}
         remote-path: nbfc-assets/github/vaccelrt/agent/${{ env.ARTIFACT_SHA }}/${{ matrix.archconfig }}/${{ matrix.build_type }}-deb/
         policy: 1
 
     - name: Clean-up
-      run: sudo rm -rf artifacts build_${{ matrix.build_type }}
+      run: sudo rm -rf artifacts vaccel-*
