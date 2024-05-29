@@ -25,6 +25,14 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
+        path: vaccel-bindings
+
+    - name: Checkout grpc code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        repository: nubificus/vaccel-grpc
+        path: vaccel-grpc
 
     - name: Install deps
       run: |
@@ -37,6 +45,7 @@ jobs:
 
     - name: Build bindings
       run: |
+        cd vaccel-bindings
         if [[ ${{matrix.build_type}} == "release" ]]
         then
           cargo build --release -j $(nproc)
