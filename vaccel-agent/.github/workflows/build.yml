@@ -80,7 +80,7 @@ jobs:
       shell: bash
       id: get_package
       run: |
-        echo ::set-output name=NAME::$(basename vaccel-agent/build_${{ matrix.build_type }}/vaccel-*.deb)
+        echo ::set-output name=NAME::$(basename vaccel-agent/build_${{ matrix.build_type }}/vaccelrt-*.deb)
 
     - name: Upload artifact
       uses: cloudkernels/minio-upload@v4
