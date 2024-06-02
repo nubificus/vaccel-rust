@@ -3,28 +3,19 @@ extern crate bindgen;
 use std::path::PathBuf;
 
 fn main() {
-    let clang_arg = match pkg_config::Config::new().probe("vaccel") {
-        Ok(mut lib) => format!(
-            "-I{}",
-            &mut lib
-                .include_paths
-                .pop()
-                .unwrap()
-                .into_os_string()
-                .into_string()
-                .unwrap(),
-        ),
-        Err(_) => {
-            let prefix = cmake::build("vaccelrt");
-            // Set the -L search path
-            println!("cargo:rustc-link-search=native={}/lib", prefix.display());
-
-            // Re-create bindings if top-level vaccelrt header file changes
-            println!("cargo:rerun-if-changed=vaccelrt/src/include");
-
-            format!("-I{}/include", prefix.display())
-        }
-    };
+    let mut lib = pkg_config::Config::new()
+        .probe("vaccel")
+        .expect("Could not find vaccel");
+    let clang_arg = format!(
+        "-I{}",
+        &mut lib
+            .include_paths
+            .pop()
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap(),
+    );
 
     println!("vaccelrt include path: {}", clang_arg);
 

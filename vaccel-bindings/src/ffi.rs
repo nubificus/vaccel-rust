@@ -80,7 +80,7 @@ where
         }
     }
 }
-pub const VACCELRT_VERSION: &[u8; 18] = b"0.6.0-37-8e015f1e\0";
+pub const VACCELRT_VERSION: &[u8; 18] = b"0.6.0-47-76e67e19\0";
 pub const _ERRNO_H: u32 = 1;
 pub const _FEATURES_H: u32 = 1;
 pub const _DEFAULT_SOURCE: u32 = 1;
@@ -7664,7 +7664,7 @@ impl Default for vaccel_torch_tensor {
 extern "C" {
     pub fn vaccel_torch_tensor_new(
         nr_dims: ::std::os::raw::c_int,
-        dims: *mut i64,
+        dims: *const i64,
         type_: vaccel_torch_data_type,
     ) -> *mut vaccel_torch_tensor;
 }

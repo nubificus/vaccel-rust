@@ -11,6 +11,8 @@ cargo_bin = find_program('cargo', version : '>=1.64.0', required : true)
 
 cargo_meson_sh = files(meson.project_source_root() + '/scripts/cargo.sh')
 
+libvaccel_dep = dependency('vaccel')
+
 opt_async = get_option('async')
 opt_async_stream = get_option('async-stream')
 opt_client = get_option('client')
@@ -37,6 +39,9 @@ if opt_client.enabled()
     env : {
       'RUSTFLAGS': '-C panic=abort',
       'CARGO_TARGET_DIR': join_paths(meson.current_build_dir(), 'cargo_target'),
+      'PKG_CONFIG_PATH':
+        join_paths(libvaccel_dep.get_variable(pkgconfig: 'libdir'), 'pkgconfig')
+        + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
       files('Cargo.toml'), 'libvaccel_client.a', '@OUTDIR@',
@@ -69,6 +74,9 @@ if opt_agent.enabled()
     env : {
       'RUSTFLAGS': '-C panic=abort',
       'CARGO_TARGET_DIR': join_paths(meson.current_build_dir(), 'cargo_target'),
+      'PKG_CONFIG_PATH':
+        join_paths(libvaccel_dep.get_variable(pkgconfig: 'libdir'), 'pkgconfig')
+        + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
       files('Cargo.toml'), 'vaccel-agent', '@OUTDIR@', features,
