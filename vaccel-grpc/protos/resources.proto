@@ -31,17 +31,17 @@ message CreateTensorflowSavedModelRequest {
 }
 
 message CreateCaffeModelRequest {
-	bytes prototxt = 2;
-	bytes binary_model = 3;
-	bytes labels = 4;
+	bytes prototxt = 1;
+	bytes binary_model = 2;
+	bytes labels = 3;
 }
 
 message CreateResourceRequest {
 	oneof resource {
-		CreateSharedObjRequest shared_obj = 0;
-		CreateSingleModelRequest single_model = 1;
-		CreateTensorflowSavedModelRequest tf_saved_model = 2;
-		CreateCaffeModelRequest caffe_model = 3;
+		CreateSharedObjRequest shared_obj = 1;
+		CreateSingleModelRequest single_model = 2;
+		CreateTensorflowSavedModelRequest tf_saved_model = 3;
+		CreateCaffeModelRequest caffe_model = 4;
 	}
 }
 
