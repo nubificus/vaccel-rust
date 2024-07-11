@@ -24,7 +24,7 @@ rand = "0.8"
 
 [build-dependencies]
 libc = ">=0.2.39"
-bindgen = "0.59.2"
+bindgen = "0.69"
 pkg-config = "0.3.25"
 cmake = "0.1.45"
 
