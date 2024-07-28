@@ -1,0 +1,32 @@
+[package]
+name = "vaccel-client"
+version = "0.3.7"
+authors = ["Babis Chalios <mail@bchalios.io>", 
+           "Kostis Papazafeiropoulos <papazof@gmail.com>", 
+           "Anastassios Nanos <ananos@nubificus.co.uk>", 
+           "Shenghao Qiu <shenghao@nubificus.co.uk"]
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+name = "vaccel_client"
+path = "src/lib.rs"
+crate-type = ["staticlib"]
+
+[dependencies]
+protocols = { path = "../vaccel-grpc", version = "0.3.7" }
+vaccel = { path = "../vaccel-bindings", version = "0.5.7" }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
+protobuf = "3.1.0"
+env_logger = "0.9.0"
+log = "0.4.16"
+dashmap = { version = "5.5.3" }
+nix = "0.24.1"
+libc = "0.2"
+tokio = { version = "1.33", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }
+#tracing = "0.1"
+#tracing-subscriber = "0.3"
+
+[features]
+async = ["dep:tokio"]
+async-stream = ["async"]
