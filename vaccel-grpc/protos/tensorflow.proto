@@ -1,0 +1,198 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package vaccel;
+
+import "error.proto";
+
+message TensorflowModelLoadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowModelLoadResponse {
+	oneof result {
+		bytes graph_def = 1;
+		VaccelError error = 2;
+	}
+};
+
+message TensorflowModelUnloadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowModelUnloadResponse {
+	bool success = 1;
+	VaccelError error = 2;
+};
+
+enum TFDataType {
+	// Add unused value here so that we are compatible
+	// with what vAccelRT returns us
+	UNUSED = 0;
+	FLOAT = 1;
+	DOUBLE = 2;
+	INT32 = 3;  // Int32 tensors are always in 'host' memory.
+	UINT8 = 4;
+	INT16 = 5;
+	INT8 = 6;
+	STRING = 7;
+	COMPLEX = 8;    // Old identifier kept for API backwards compatibility
+	INT64 = 9;
+	BOOL = 10;
+	QINT8 = 11;     // Quantized int8
+	QUINT8 = 12;    // Quantized uint8
+	QINT32 = 13;    // Quantized int32
+	BFLOAT16 = 14;  // Float32 truncated to 16 bits.  Only for cast ops.
+	QINT16 = 15;    // Quantized int16
+	QUINT16 = 16;   // Quantized uint16
+	UINT16 = 17;
+	COMPLEX128 = 18;  // Double-precision complex
+	HALF = 19;
+	RESOURCE = 20;
+	VARIANT = 21;
+	UINT32 = 22;
+	UINT64 = 23;
+};
+
+message TFTensor {
+	// Data of the tensor
+	bytes data = 1;
+
+	// Dimensions of the tensor
+	repeated int64 dims = 2;
+
+	// Data type
+	TFDataType type = 3;
+};
+
+message TFNode {
+	// Name of the node
+	string name = 1;
+
+	// Id of the node
+	int32 id = 2;
+};
+
+message TensorflowModelRunRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+
+	// Run options
+	bytes run_options = 3;
+
+	// Input nodes & tensors
+	repeated TFNode in_nodes = 4;
+	repeated TFTensor in_tensors = 5;
+
+	// Output nodes
+	repeated TFNode out_nodes = 6;
+};
+
+message InferenceResult {
+	// An inference result is a number of output tensors
+	repeated TFTensor out_tensors = 1;
+};
+
+message TensorflowModelRunResponse {
+	oneof result {
+		VaccelError error = 1;
+		InferenceResult result = 2;
+	}
+};
+
+/* TFLite */
+
+message TensorflowLiteModelLoadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowLiteModelLoadResponse {
+	oneof result {
+		VaccelError error = 1;
+	}
+};
+
+message TensorflowLiteModelUnloadRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+};
+
+message TensorflowLiteModelUnloadResponse {
+	oneof result {
+		VaccelError error = 1;
+	}
+};
+
+enum TFLiteType {
+	// Add unused value here so that we are compatible
+	// with what vAccelRT returns us
+	UNUSED = 0;
+	NOTYPE = 1;
+	FLOAT32 = 2;
+	INT32 = 3;
+	UINT8 = 4;
+	INT64 = 5;
+	STRING = 6;
+	BOOL = 7;
+	INT16 = 8;
+	COMPLEX64 = 9;
+	INT8 = 10;
+	FLOAT16 = 11;
+	FLOAT64 = 12;
+	COMPLEX128 = 13;
+	UINT64 = 14;
+	RESOURCE = 15;
+	VARIANT = 16;
+	UINT32 = 17;
+	UINT16 = 18;
+	INT4 = 19;
+};
+
+message TFLiteTensor {
+	// Data of the tensor
+	bytes data = 1;
+
+	// Dimensions of the tensor
+	repeated int32 dims = 2;
+
+	// Data type
+	TFLiteType type = 3;
+};
+
+message TensorflowLiteModelRunRequest {
+	uint32 session_id = 1;
+	int64 model_id = 2;
+
+	// Input tensors
+	repeated TFLiteTensor in_tensors = 3;
+	// Number of output tensors
+	int32 nr_outputs = 4;
+};
+
+message InferenceLiteResult {
+	// An inference result is a number of output tensors
+	repeated TFLiteTensor out_tensors = 1;
+};
+
+message TensorflowLiteModelRunResponse {
+	oneof result {
+		VaccelError error = 1;
+		InferenceLiteResult result = 2;
+	}
+};
