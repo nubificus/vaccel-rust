@@ -1,0 +1,33 @@
+[package]
+name = "vaccel"
+version = "0.5.7"
+authors = ["Babis Chalios <mail@bchalios.io>", 
+           "Kostis Papazafeiropoulos <papazof@gmail.com>", 
+           "Anastassios Nanos <ananos@nubificus.co.uk>",
+           "George Pyrros <gpyrros@nubificus.co.uk>",
+           "Shenghao Qiu <shenghao@nubificus.co.uk>"]
+edition = "2021"
+license = "Apache-2.0"
+build = "build.rs"
+
+[lib]
+name = "vaccel"
+path = "src/lib.rs"
+
+[dependencies]
+protocols = { path = "../vaccel-grpc", version = "0.3.7" }
+protobuf = "3.1.0"
+env_logger = "0.9.0"
+log = "0.4.16"
+libc = "0.2.125"
+rand = "0.8"
+
+[build-dependencies]
+libc = ">=0.2.39"
+bindgen = "0.69"
+pkg-config = "0.3.25"
+cmake = "0.1.45"
+
+[dev-dependencies]
+env_logger = "0.9.0"
+log = "0.4.16"

@@ -1,0 +1,54 @@
+name: Test Building bindings
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: [self-hosted, "${{ matrix.archconfig }}", rust]
+
+    strategy:
+      matrix:
+        archconfig: [x86_64, aarch64, armv7l]
+        build_type: [debug, release]
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        path: vaccel-bindings
+
+    - name: Checkout grpc code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        repository: nubificus/vaccel-grpc
+        path: vaccel-grpc
+
+    - name: Install deps
+      run: |
+        sudo apt-get update && \
+        sudo apt-get install -y protobuf-compiler
+
+        #- name: Cargo hack
+        #run: |
+        #sudo chmod a+w /opt/cargo -R
+
+    - name: Build bindings
+      run: |
+        cd vaccel-bindings
+        if [[ ${{matrix.build_type}} == "release" ]]
+        then
+          cargo build --release -j $(nproc)
+        else
+          cargo build -j $(nproc)
+        fi
