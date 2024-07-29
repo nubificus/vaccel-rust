@@ -1,0 +1,19 @@
+option('async',
+  type : 'feature',
+  value : 'disabled',
+  description : 'Use the async client/agent implementation')
+
+option('async-stream',
+  type : 'feature',
+  value : 'disabled',
+  description : 'Use the async streaming client/agent implementation')
+
+option('client',
+  type : 'feature',
+  value : 'disabled',
+  description : 'Build the client')
+
+option('agent',
+  type : 'feature',
+  value : 'enabled',
+  description : 'Build the agent')
