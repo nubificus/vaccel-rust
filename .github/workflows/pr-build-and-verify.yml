@@ -44,14 +44,14 @@ jobs:
       plugin: 'agent'
     secrets: inherit
 
-#  validate_code:
-#    name: Validate Code
-#    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
-#    uses: nubificus/vaccel/.github/workflows/validate-code.yml@main
-#    with:
-#      runner: '["rust"]'
-#      plugin: 'agent'
-#    secrets: inherit
+  validate_code:
+    name: Validate Code
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
+    uses: ./.github/workflows/validate-code.yml
+    with:
+      runner: '["rust"]'
+      plugin: 'agent'
+    secrets: inherit
 
 #  generate_coverage:
 #    needs: [test_build, verify_build, validate_files_and_commits, validate_code]
@@ -59,3 +59,11 @@ jobs:
 #    uses: ./.github/workflows/coverage-report.yml
 #    with:
 #      comment-diff: true
+
+  # Dummy job for setting required checks
+  jobs_completed:
+    needs: [verify_build, validate_files_and_commits, validate_code]
+    name: Jobs Completed
+    runs-on: self-hosted
+    steps:
+      - run: exit 0
