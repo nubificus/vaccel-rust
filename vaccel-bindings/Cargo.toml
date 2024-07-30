@@ -1,6 +1,5 @@
 [package]
 name = "vaccel"
-version = "0.5.7"
 authors = ["Babis Chalios <mail@bchalios.io>", 
            "Kostis Papazafeiropoulos <papazof@gmail.com>", 
            "Anastassios Nanos <ananos@nubificus.co.uk>",
@@ -15,7 +14,7 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { path = "../vaccel-grpc", version = "0.3.7" }
+protocols = { path = "../vaccel-grpc" }
 protobuf = "3.1"
 env_logger = "0.11"
 log = "0.4"

@@ -1,6 +1,5 @@
 [package]
 name = "vaccel-client"
-version = "0.3.7"
 authors = ["Babis Chalios <mail@bchalios.io>", 
            "Kostis Papazafeiropoulos <papazof@gmail.com>", 
            "Anastassios Nanos <ananos@nubificus.co.uk>", 
@@ -12,8 +11,8 @@ license = "Apache-2.0"
 crate-type = ["staticlib"]
 
 [dependencies]
-protocols = { path = "../vaccel-grpc", version = "0.3.7" }
-vaccel = { path = "../vaccel-bindings", version = "0.5.7" }
+protocols = { path = "../vaccel-grpc" }
+vaccel = { path = "../vaccel-bindings" }
 ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
 protobuf = "3.1"
 env_logger = "0.11"
