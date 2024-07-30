@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 pub mod genop;
 pub mod image;
 #[cfg(target_pointer_width = "64")]

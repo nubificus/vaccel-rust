@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{util::create_ttrpc_client, Error, Result};
 use dashmap::DashMap;
 use log::debug;

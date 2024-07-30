@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use super::DataType;
 use crate::{ffi, Error, Result};
 use protobuf::Enum;

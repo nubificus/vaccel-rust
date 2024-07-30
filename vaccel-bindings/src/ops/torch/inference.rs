@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use super::{Buffer, Code, DataType, Tensor, TensorAny, TensorType};
 use crate::{ffi, ops::InferenceModel, resources::SingleModel, Error, Result, Session};
 use protobuf::Enum;

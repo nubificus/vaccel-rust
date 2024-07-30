@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 extern crate env_logger;
 
 use env_logger::Env;

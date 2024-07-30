@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{ffi, Error, Resource, Result, VaccelId};
 use std::{any::Any, ffi::CString, path::Path};
 
