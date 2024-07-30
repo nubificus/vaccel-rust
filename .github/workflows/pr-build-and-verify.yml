@@ -1,0 +1,61 @@
+name: Build and Verify
+
+on:
+  pull_request:
+    branches: ["main"]
+    types: [synchronize, labeled]
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+#  test_build:
+#    name: Test Build
+#    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
+#    uses: nubificus/vaccel/.github/workflows/test-build.yml@main
+#    with:
+#      runner: '["rust"]'
+#      plugin: 'agent'
+#      options: ''
+#      valgrind: false
+#    secrets: inherit
+
+  verify_build:
+    name: Verify Build
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
+    uses: nubificus/vaccel/.github/workflows/verify-build.yml@main
+    with:
+      runner: '["rust"]'
+      plugin: 'agent'
+      options: 'client=enabled'
+      dist-options: 'client=disabled'
+      valgrind: false
+      skip-examples: true
+    secrets: inherit
+
+  validate_files_and_commits:
+    name: Validate Files and Commits
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
+    uses: nubificus/vaccel/.github/workflows/validate-files-and-commits.yml@main
+    with:
+      plugin: 'agent'
+    secrets: inherit
+
+#  validate_code:
+#    name: Validate Code
+#    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
+#    uses: nubificus/vaccel/.github/workflows/validate-code.yml@main
+#    with:
+#      runner: '["rust"]'
+#      plugin: 'agent'
+#    secrets: inherit
+
+#  generate_coverage:
+#    needs: [test_build, verify_build, validate_files_and_commits, validate_code]
+#    name: Generate Coverage Report
+#    uses: ./.github/workflows/coverage-report.yml
+#    with:
+#      comment-diff: true

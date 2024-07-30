@@ -1,0 +1,31 @@
+name: Build and Upload
+
+on:
+  pull_request:
+    types: [closed]
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check_merged:
+    name: Check PR is merged
+    uses: nubificus/vaccel/.github/workflows/check-merged.yml@main
+    with:
+      plugin: 'agent'
+    secrets: inherit
+
+  build_dist:
+    needs: [check_merged]
+    name: Build and Upload
+    if: ${{ needs.check_merged.outputs.is_merged == 'true' }}
+    uses: nubificus/vaccel/.github/workflows/verify-build.yml@main
+    with:
+      release: true
+      runner: '["rust"]'
+      plugin: 'agent'
+      options: ''
+    secrets: inherit
