@@ -1,0 +1,139 @@
+name: Validate Source Code
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        type: string
+        default: '["rust"]'
+      options:
+        type: string
+        default: ''
+      plugin:
+        type: string
+        default: ''
+    secrets:
+      GIT_CLONE_PAT:
+        required: false
+      AWS_ACCESS_KEY:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+
+jobs:
+  linter_rust_clippy:
+    name: Lint Rust (rust-clippy)
+    runs-on: [self-hosted, x86_64, "${{ fromJSON(inputs.runner) }}"]
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      CC: gcc-12
+      CXX: g++-12
+    steps:
+      - name: Checkout .github directory
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+          repository: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          ref: ${{ (inputs.plugin != '' && 'main') || '' }}
+
+      - name: Initialize workspace
+        id: initialize_workspace
+        uses: ./.github/actions/initialize-workspace
+        with:
+          remote-actions-repo: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          token: ${{ secrets.GIT_CLONE_PAT || github.token }}
+
+      - name: Download artifacts from s3
+        if: ${{ inputs.plugin != '' }} 
+        uses: ./.github/actions/download-from-s3
+        with:
+          branch: ${{ steps.initialize_workspace.outputs.remote-branch }}
+          build-type: 'release'
+          arch: 'x86_64'
+          access-key: ${{ secrets.AWS_ACCESS_KEY }}
+          secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          output-dir: ./artifacts/downloads/x86_64/release
+          install: 'true'
+
+      - name: Run rust-clippy
+        run: cargo clippy --workspace --all-targets --all-features
+        shell: bash
+
+      - name: Clean-up
+        if: ${{ always() }}
+        run: |
+          [ -n "$(dpkg -l vaccel 2> /dev/null)" ] && \
+            sudo apt-get purge -y vaccel || echo
+        shell: bash
+
+  linter_rust_fmt:
+    name: Lint Rust (rust-fmt)
+    runs-on: [self-hosted, x86_64, "${{ fromJSON(inputs.runner) }}"]
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      CC: gcc-12
+      CXX: g++-12
+    steps:
+      - name: Checkout .github directory
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+          repository: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          ref: ${{ (inputs.plugin != '' && 'main') || '' }}
+
+      - name: Initialize workspace
+        id: initialize_workspace
+        uses: ./.github/actions/initialize-workspace
+        with:
+          remote-actions-repo: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          token: ${{ secrets.GIT_CLONE_PAT || github.token }}
+
+      - name: Run rust-fmt
+        run: cargo fmt --all --check
+        shell: bash
+
+  linter_super_linter:
+    name: Lint Shell/GHActions/Markdown/YAML
+    runs-on: [self-hosted, x86_64, "${{ fromJSON(inputs.runner) }}"]
+
+    permissions:
+      contents: read
+      packages: read
+      statuses: write
+
+    steps:
+      - name: Checkout .github directory
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+          repository: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          ref: ${{ (inputs.plugin != '' && 'main') || '' }}
+
+      - name: Initialize workspace
+        id: initialize_workspace
+        uses: ./.github/actions/initialize-workspace
+        with:
+          fetch-depth: 0
+          remote-actions-repo: ${{ (inputs.plugin != '' && 'nubificus/vaccel') || '' }}
+          token: ${{ secrets.GIT_CLONE_PAT || github.token }}
+
+      - name: Run super-linter
+        uses: super-linter/super-linter@v6
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: false
+          VALIDATE_ALL_CODEBASE: true
+          VALIDATE_BASH: true
+          VALIDATE_SHELL_SHFMT: true
+          VALIDATE_GITHUB_ACTIONS: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_YAML: true
