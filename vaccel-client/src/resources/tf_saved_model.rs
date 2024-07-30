@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use super::VaccelResource;
 #[cfg(feature = "async")]
 use crate::asynchronous::client::VsockClient;

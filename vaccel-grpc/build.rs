@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use std::{env, fs, fs::File, io::prelude::*};
 use ttrpc_codegen::Codegen;
 use ttrpc_codegen::{Customize, ProtobufCustomize};

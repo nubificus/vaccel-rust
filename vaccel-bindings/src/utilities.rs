@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use std::{fmt, fs::File, io::Read, path::{Path, PathBuf}};
 use crate::Error as VaccelError;
 

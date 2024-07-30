@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{ffi, Error, Result, Session};
 use std::os::raw::c_void;
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::ffi;
 use std::{ffi::CStr, fmt};
 

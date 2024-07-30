@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{ttrpc_error, vaccel_error, Agent};
 use protocols::torch::{
     TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchJitloadForwardResult, TorchTensor,

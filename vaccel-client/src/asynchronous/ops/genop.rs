@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use super::client::VsockClient;
 use crate::Result;
 use protobuf::Message;

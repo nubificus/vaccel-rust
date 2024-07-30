@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{ttrpc_error, Agent};
 use log::{error, info};
 use protocols::image::{ImageClassificationRequest, ImageClassificationResponse};
