@@ -1,6 +1,6 @@
 extern crate bindgen;
 
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 fn main() {
     let mut lib = pkg_config::Config::new()
@@ -35,7 +35,7 @@ fn main() {
         .clang_arg(clang_arg)
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         // Derive Default Trait
         .derive_default(true)
         // Do not prepend C enum name
@@ -49,7 +49,7 @@ fn main() {
         .expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from("src");
+    let out_path = PathBuf::from(env::var("OUT_DIR").expect("Could not read OUT_DIR"));
     bindings
         .write_to_file(out_path.join("ffi.rs"))
         .expect("Couldn't write bindings!");

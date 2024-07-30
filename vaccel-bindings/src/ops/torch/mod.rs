@@ -12,7 +12,7 @@ pub use tensor::{Tensor, TensorAny, TensorType};
 pub enum Code {
     Ok = 0,
     Cancelled,
-    Unkown,
+    Unknown,
     InvalidArgument,
     DeadlineExceeded,
     NotFound,
@@ -34,7 +34,7 @@ impl Code {
         match self {
             Code::Ok => 0,
             Code::Cancelled => 1,
-            Code::Unkown => 2,
+            Code::Unknown => 2,
             Code::InvalidArgument => 3,
             Code::DeadlineExceeded => 4,
             Code::NotFound => 5,
