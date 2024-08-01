@@ -28,11 +28,18 @@ if opt_async_stream.enabled()
 endif
 
 if opt_client.enabled()
+  if meson.is_subproject()
+    install_client = false
+  else
+    install_client = true
+  endif
+
   libvaccel_client = custom_target('vaccel-client',
     capture : false,
     console : true,
     build_by_default : true,
-    install : false,
+    install : install_client,
+    install_dir : get_option('libdir'),
     input : files('Cargo.toml'),
     depfile : 'libvaccel_client.d',
     output : ['libvaccel_client.a'],
@@ -67,7 +74,7 @@ if opt_agent.enabled()
     console : true,
     build_by_default : true,
     install : true,
-    install_dir : 'bin',
+    install_dir : get_option('bindir'),
     input : files('Cargo.toml'),
     depfile : 'vaccel-agent.d',
     output : ['vaccel-agent'],
@@ -94,7 +101,7 @@ summary({
 
 # only build binary dist/deb for vaccel-agent,
 # we ship the client lib with the plugin.
-if opt_agent.enabled()
+if opt_agent.enabled() and not meson.is_subproject()
   meson.add_dist_script(
     'scripts/dist.sh',
     'vaccel-agent',
@@ -107,5 +114,21 @@ if opt_agent.enabled()
     'disabled',
     'agent',
     'enabled',
+    )
+endif
+
+if opt_client.enabled() and not meson.is_subproject()
+  meson.add_dist_script(
+    'scripts/dist.sh',
+    'vaccel-client',
+    get_option('buildtype'),
+    'async',
+    opt_async.enabled() ? 'enabled' : 'disabled',
+    'async-stream',
+    opt_async_stream.enabled() ? 'enabled' : 'disabled',
+    'client',
+    'enabled',
+    'agent',
+    'disabled',
     )
 endif
