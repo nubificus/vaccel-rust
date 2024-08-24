@@ -5,11 +5,9 @@ project('vaccel-rust', 'c', 'rust',
   version : run_command('scripts/generate-version.sh',
     '', '--no-dirty', check: false).stdout().strip())
 
-cargo_toml = files('Cargo.toml')
-
 cargo_bin = find_program('cargo', version : '>=1.64.0', required : true)
-
 cargo_meson_sh = files(meson.project_source_root() + '/scripts/cargo.sh')
+cargo_toml = files('Cargo.toml')
 
 libvaccel_dep = dependency('vaccel')
 
@@ -34,15 +32,15 @@ if opt_client.enabled()
     install_client = true
   endif
 
-  libvaccel_client = custom_target('vaccel-client',
+  vaccel_client = custom_target('vaccel-client',
     capture : false,
     console : true,
     build_by_default : true,
     install : install_client,
-    install_dir : get_option('libdir'),
+    install_dir : [get_option('libdir'), get_option('includedir')],
     input : files('Cargo.toml'),
     depfile : 'libvaccel_client.d',
-    output : ['libvaccel_client.a'],
+    output : ['libvaccel_client.a', 'vaccel-client.h'],
     env : {
       'RUSTFLAGS': '-C panic=abort',
       'CARGO_TARGET_DIR': join_paths(meson.current_build_dir(), 'cargo_target'),
@@ -51,7 +49,7 @@ if opt_client.enabled()
         + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
-      files('Cargo.toml'), 'libvaccel_client.a', '@OUTDIR@',
+      files('Cargo.toml'), '*vaccel*client.*', '@OUTDIR@',
       features, features_client, '-p', 'vaccel-client'])
 
   cc = meson.get_compiler('c')
@@ -63,7 +61,11 @@ if opt_client.enabled()
     m_dep,
     rt_dep,
   ]
+  libvaccel_client = vaccel_client[0]
+  vaccel_client_h = vaccel_client[1]
   libvaccel_client_dep = declare_dependency(
+    sources : vaccel_client_h,
+    include_directories : include_directories('.'),
     dependencies : vaccel_client_deps,
     link_with : libvaccel_client)
 endif

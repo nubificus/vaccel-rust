@@ -25,3 +25,6 @@ tokio = { version = "1.38", features = ["rt", "rt-multi-thread", "signal", "macr
 [features]
 async = ["dep:tokio"]
 async-stream = ["async"]
+
+[build-dependencies]
+cbindgen = "0.27"

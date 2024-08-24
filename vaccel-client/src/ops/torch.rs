@@ -70,7 +70,7 @@ pub unsafe extern "C" fn torch_jitload_forward(
     client_ptr: *const VsockClient,
     sess_id: u32,
     model_id: ffi::vaccel_id_t,
-    run_options_ptr: *mut ffi::vaccel_torch_buffer,
+    run_options_ptr:  *const ffi::vaccel_torch_buffer,
     in_tensors_ptr: *const *mut ffi::vaccel_torch_tensor,
     nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_torch_tensor,
