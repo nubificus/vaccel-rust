@@ -18,7 +18,7 @@ jobs:
 #    uses: nubificus/vaccel/.github/workflows/test-build.yml@main
 #    with:
 #      runner: '["rust"]'
-#      plugin: 'agent'
+#      plugin: 'rpc-rust'
 #      options: ''
 #      valgrind: false
 #    secrets: inherit
@@ -29,9 +29,8 @@ jobs:
     uses: nubificus/vaccel/.github/workflows/verify-build.yml@main
     with:
       runner: '["rust"]'
-      plugin: 'agent'
-      options: 'client=enabled'
-      dist-options: 'client=disabled'
+      plugin: 'rpc-rust'
+      options: 'rpc-client=enabled,rpc-agent=enabled'
       valgrind: false
       skip-examples: true
     secrets: inherit
@@ -41,7 +40,7 @@ jobs:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
     uses: nubificus/vaccel/.github/workflows/validate-files-and-commits.yml@main
     with:
-      plugin: 'agent'
+      plugin: 'rpc-rust'
     secrets: inherit
 
   validate_code:
@@ -50,7 +49,7 @@ jobs:
     uses: ./.github/workflows/validate-code.yml
     with:
       runner: '["rust"]'
-      plugin: 'agent'
+      plugin: 'rpc-rust'
     secrets: inherit
 
 #  generate_coverage:

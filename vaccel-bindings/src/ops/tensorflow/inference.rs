@@ -7,7 +7,7 @@ use crate::{
     Error, Result, Session,
 };
 use protobuf::Enum;
-use protocols::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
+use vaccel_rpc_proto::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
 
 pub struct InferenceArgs {
     run_options: *const ffi::vaccel_tf_buffer,

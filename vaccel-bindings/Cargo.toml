@@ -14,17 +14,16 @@ name = "vaccel"
 path = "src/lib.rs"
 
 [dependencies]
-protocols = { path = "../vaccel-grpc" }
+vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
 protobuf = "3.1"
 env_logger = "0.11"
 log = "0.4"
 libc = "0.2"
 
 [build-dependencies]
-libc = ">=0.2.39"
+libc = "0.2"
 bindgen = "0.69"
 pkg-config = "0.3"
-cmake = "0.1"
 
 [dev-dependencies]
 env_logger = "0.11"

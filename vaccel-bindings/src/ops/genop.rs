@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, profiling::ProfRegions, Error, Result, Session};
-use protocols::genop::GenopArg as ProtGenopArg;
+use vaccel_rpc_proto::genop::GenopArg as ProtGenopArg;
 
 #[derive(Debug)]
 pub struct GenopArg {

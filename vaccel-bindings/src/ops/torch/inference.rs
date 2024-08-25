@@ -3,7 +3,7 @@
 use super::{Buffer, Code, DataType, Tensor, TensorAny, TensorType};
 use crate::{ffi, ops::InferenceModel, resources::SingleModel, Error, Result, Session};
 use protobuf::Enum;
-use protocols::torch::{TorchDataType, TorchTensor};
+use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 pub struct InferenceArgs {
     // Do we have const here?
@@ -20,8 +20,7 @@ impl Default for InferenceArgs {
 impl InferenceArgs {
     pub fn new() -> Self {
         InferenceArgs {
-            run_options: std::ptr::null::<ffi::vaccel_torch_buffer>()
-                as *const ffi::vaccel_torch_buffer,
+            run_options: std::ptr::null::<ffi::vaccel_torch_buffer>(),
             in_tensors: vec![],
             nr_outputs: 0,
         }

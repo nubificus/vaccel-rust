@@ -2,13 +2,13 @@
 
 #![allow(dead_code, unused_variables)]
 use crate::ffi;
-use protocols::profiling::{
-    prof_region::Sample as ProtSample, ProfRegion as ProtProfRegion, ProfRegions as ProtProfRegions,
-};
 use std::{
     collections::{btree_map, BTreeMap},
     ops::Deref,
     time::Duration,
+};
+use vaccel_rpc_proto::profiling::{
+    prof_region::Sample as ProtSample, ProfRegion as ProtProfRegion, ProfRegions as ProtProfRegions,
 };
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;

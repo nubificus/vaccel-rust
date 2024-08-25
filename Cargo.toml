@@ -1,3 +1,3 @@
 [workspace]
-members = ["vaccel-client", "vaccel-agent", "vaccel-bindings", "vaccel-grpc"]
-default-members = ["vaccel-agent"]
+members = ["vaccel-rpc-client", "vaccel-rpc-agent", "vaccel-bindings", "vaccel-rpc-proto"]
+default-members = ["vaccel-rpc-agent"]
