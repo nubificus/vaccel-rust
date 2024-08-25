@@ -3,7 +3,7 @@
 use super::{Code, Tensor, TensorAny, TensorType, Type};
 use crate::{ffi, ops::InferenceModel, resources::SingleModel, Error, Result, Session};
 use protobuf::Enum;
-use protocols::tensorflow::{TFLiteTensor, TFLiteType, TensorflowLiteModelRunRequest};
+use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType, TensorflowLiteModelRunRequest};
 
 pub struct InferenceArgs {
     in_tensors: Vec<*const ffi::vaccel_tflite_tensor>,

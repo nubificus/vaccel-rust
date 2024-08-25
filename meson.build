@@ -13,8 +13,8 @@ libvaccel_dep = dependency('vaccel')
 
 opt_async = get_option('async')
 opt_async_stream = get_option('async-stream')
-opt_client = get_option('client')
-opt_agent = get_option('agent')
+opt_rpc_client = get_option('rpc-client')
+opt_rpc_agent = get_option('rpc-agent')
 
 features = []
 features_client = []
@@ -25,22 +25,22 @@ if opt_async_stream.enabled()
   features_client = '--features=async-stream'
 endif
 
-if opt_client.enabled()
+if opt_rpc_client.enabled()
   if meson.is_subproject()
     install_client = false
   else
     install_client = true
   endif
 
-  vaccel_client = custom_target('vaccel-client',
+  vaccel_rpc_client = custom_target('vaccel-rpc-client',
     capture : false,
     console : true,
     build_by_default : true,
     install : install_client,
     install_dir : [get_option('libdir'), get_option('includedir')],
     input : files('Cargo.toml'),
-    depfile : 'libvaccel_client.d',
-    output : ['libvaccel_client.a', 'vaccel-client.h'],
+    depfile : 'libvaccel_rpc_client.d',
+    output : ['libvaccel_rpc_client.a', 'vaccel-rpc-client.h'],
     env : {
       'RUSTFLAGS': '-C panic=abort',
       'CARGO_TARGET_DIR': join_paths(meson.current_build_dir(), 'cargo_target'),
@@ -50,36 +50,36 @@ if opt_client.enabled()
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
       files('Cargo.toml'), '*vaccel*client.*', '@OUTDIR@',
-      features, features_client, '-p', 'vaccel-client'])
+      features, features_client, '-p', 'vaccel-rpc-client'])
 
   cc = meson.get_compiler('c')
   m_dep = cc.find_library('m')
   rt_dep = cc.find_library('rt')
-  vaccel_client_deps = [
+  vaccel_rpc_client_deps = [
     dependency('threads'),
     dependency('dl'),
     m_dep,
     rt_dep,
   ]
-  libvaccel_client = vaccel_client[0]
-  vaccel_client_h = vaccel_client[1]
-  libvaccel_client_dep = declare_dependency(
-    sources : vaccel_client_h,
+  libvaccel_rpc_client = vaccel_rpc_client[0]
+  vaccel_rpc_client_h = vaccel_rpc_client[1]
+  libvaccel_rpc_client_dep = declare_dependency(
+    sources : vaccel_rpc_client_h,
     include_directories : include_directories('.'),
-    dependencies : vaccel_client_deps,
-    link_with : libvaccel_client)
+    dependencies : vaccel_rpc_client_deps,
+    link_with : libvaccel_rpc_client)
 endif
 
-if opt_agent.enabled()
-  vaccel_agent = custom_target('vaccel-agent',
+if opt_rpc_agent.enabled()
+  vaccel_rpc_agent = custom_target('vaccel-rpc-agent',
     capture : false,
     console : true,
     build_by_default : true,
     install : true,
     install_dir : get_option('bindir'),
     input : files('Cargo.toml'),
-    depfile : 'vaccel-agent.d',
-    output : ['vaccel-agent'],
+    depfile : 'vaccel-rpc-agent.d',
+    output : ['vaccel-rpc-agent'],
     env : {
       'RUSTFLAGS': '-C panic=abort',
       'CARGO_TARGET_DIR': join_paths(meson.current_build_dir(), 'cargo_target'),
@@ -88,49 +88,49 @@ if opt_agent.enabled()
         + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
-      files('Cargo.toml'), 'vaccel-agent', '@OUTDIR@', features,
-      '-p', 'vaccel-agent'])
+      files('Cargo.toml'), 'vaccel-rpc-agent', '@OUTDIR@', features,
+      '-p', 'vaccel-rpc-agent'])
 endif
 
 summary({
-  'Use the async client/agent implementation': opt_async.enabled(),
-  'Use the async streaming client/agent implementation': opt_async_stream.enabled(),
-  'Build the client': opt_client.enabled(),
-  'Build the agent': opt_agent.enabled(),
+  'Use the async rpc client/agent implementation': opt_async.enabled(),
+  'Use the async streaming rpc client/agent implementation': opt_async_stream.enabled(),
+  'Build the rpc client': opt_rpc_client.enabled(),
+  'Build the rpc agent': opt_rpc_agent.enabled(),
   },
   section : 'Configuration',
   bool_yn : true)
 
-# only build binary dist/deb for vaccel-agent,
+# only build binary dist/deb for vaccel-rpc-agent,
 # we ship the client lib with the plugin.
-if opt_agent.enabled() and not meson.is_subproject()
+if opt_rpc_agent.enabled() and not meson.is_subproject()
   meson.add_dist_script(
     'scripts/dist.sh',
-    'vaccel-agent',
+    'vaccel-rpc-agent',
     get_option('buildtype'),
     'async',
     opt_async.enabled() ? 'enabled' : 'disabled',
     'async-stream',
     opt_async_stream.enabled() ? 'enabled' : 'disabled',
-    'client',
+    'rpc-client',
     'disabled',
-    'agent',
+    'rpc-agent',
     'enabled',
     )
 endif
 
-if opt_client.enabled() and not meson.is_subproject()
+if opt_rpc_client.enabled() and not meson.is_subproject()
   meson.add_dist_script(
     'scripts/dist.sh',
-    'vaccel-client',
+    'vaccel-rpc-client',
     get_option('buildtype'),
     'async',
     opt_async.enabled() ? 'enabled' : 'disabled',
     'async-stream',
     opt_async_stream.enabled() ? 'enabled' : 'disabled',
-    'client',
+    'rpc-client',
     'enabled',
-    'agent',
+    'rpc-agent',
     'disabled',
     )
 endif

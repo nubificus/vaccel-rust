@@ -3,8 +3,8 @@
 use super::DataType;
 use crate::{ffi, Error, Result};
 use protobuf::Enum;
-use protocols::torch::{TorchDataType, TorchTensor};
 use std::ops::{Deref, DerefMut};
+use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 #[derive(Debug, PartialEq)]
 /*****************/

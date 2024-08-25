@@ -3,8 +3,8 @@
 use super::{Code, Type as DataType};
 use crate::{ffi, Error, Result};
 use protobuf::Enum;
-use protocols::tensorflow::{TFLiteTensor, TFLiteType};
 use std::ops::{Deref, DerefMut};
+use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType};
 
 pub struct Tensor<T: TensorType> {
     inner: *mut ffi::vaccel_tflite_tensor,

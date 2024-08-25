@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, Error, Result};
-use protocols::tensorflow::TFNode;
 use std::{
     ffi::{CStr, CString},
     fmt,
 };
+use vaccel_rpc_proto::tensorflow::TFNode;
 
 pub struct Node {
     inner: *mut ffi::vaccel_tf_node,
