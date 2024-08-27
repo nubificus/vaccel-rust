@@ -65,6 +65,13 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+/// `run_options_ptr`, `in_tensors_ptr` and `out_tensors_ptr` are expected to be
+/// valid pointers to objects allocated manually or by the respective vAccel
+/// functions.
 #[no_mangle]
 pub unsafe extern "C" fn torch_jitload_forward(
     client_ptr: *const VaccelRpcClient,

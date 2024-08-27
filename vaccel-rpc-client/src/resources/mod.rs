@@ -73,6 +73,12 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+/// `data` is expected to be a valid pointer to an object allocated
+/// manually or by the respective vAccel function.
 #[no_mangle]
 pub unsafe extern "C" fn create_resource(
     client_ptr: *const VaccelRpcClient,
@@ -119,6 +125,10 @@ pub unsafe extern "C" fn create_resource(
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn destroy_resource(
     client_ptr: *const VaccelRpcClient,

@@ -16,6 +16,10 @@ pub extern "C" fn create_client() -> *mut VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn destroy_client(client: *mut VaccelRpcClient) {
     if !client.is_null() {

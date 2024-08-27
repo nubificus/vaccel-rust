@@ -19,6 +19,10 @@ impl Buffer {
         }
     }
 
+    /// # Safety
+    ///
+    /// `buffer` is expected to be a valid pointer to an object allocated
+    /// manually or by the respective vAccel function.
     pub unsafe fn from_vaccel_buffer(buffer: *mut ffi::vaccel_tf_buffer) -> Result<Self> {
         let mut size = Default::default();
         let data = ffi::vaccel_tf_buffer_get_data(buffer, &mut size);

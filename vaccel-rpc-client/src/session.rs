@@ -55,6 +55,10 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn sess_init(client_ptr: *mut VaccelRpcClient, flags: u32) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
@@ -68,6 +72,10 @@ pub unsafe extern "C" fn sess_init(client_ptr: *mut VaccelRpcClient, flags: u32)
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn sess_update(
     client_ptr: *const VaccelRpcClient,
@@ -86,6 +94,10 @@ pub unsafe extern "C" fn sess_update(
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn sess_free(client_ptr: *mut VaccelRpcClient, sess_id: u32) -> i32 {
     let client = match unsafe { client_ptr.as_mut() } {
@@ -109,6 +121,10 @@ pub unsafe extern "C" fn sess_free(client_ptr: *mut VaccelRpcClient, sess_id: u3
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn register_resource(
     client_ptr: *const VaccelRpcClient,
@@ -127,6 +143,10 @@ pub unsafe extern "C" fn register_resource(
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn unregister_resource(
     client_ptr: *const VaccelRpcClient,

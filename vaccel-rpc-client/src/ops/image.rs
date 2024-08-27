@@ -28,6 +28,12 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+/// `img` and `tags` are expected to be valid pointers to objects allocated
+/// manually or by the respective vAccel functions.
 #[no_mangle]
 pub unsafe extern "C" fn image_classify(
     client_ptr: *const VaccelRpcClient,
