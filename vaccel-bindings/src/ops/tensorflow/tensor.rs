@@ -83,6 +83,10 @@ impl<T: TensorType> Tensor<T> {
         }
     }
 
+    /// # Safety
+    ///
+    /// `tensor` is expected to be a valid pointer to an object allocated
+    /// manually or by the respective vAccel function.
     pub unsafe fn from_vaccel_tensor(tensor: *mut ffi::vaccel_tf_tensor) -> Result<Tensor<T>> {
         if tensor.is_null() {
             return Err(Error::InvalidArgument);

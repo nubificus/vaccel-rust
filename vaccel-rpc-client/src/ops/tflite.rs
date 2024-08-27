@@ -98,6 +98,10 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn tflite_session_load(
     client_ptr: *const VaccelRpcClient,
@@ -116,6 +120,10 @@ pub unsafe extern "C" fn tflite_session_load(
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
 #[no_mangle]
 pub unsafe extern "C" fn tflite_session_delete(
     client_ptr: *const VaccelRpcClient,
@@ -134,6 +142,12 @@ pub unsafe extern "C" fn tflite_session_delete(
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+/// `in_tensors_ptr` and `out_tensors_ptr` are expected to be valid pointers to
+/// objects allocated manually or by the respective vAccel functions.
 #[no_mangle]
 pub unsafe extern "C" fn tflite_session_run(
     client_ptr: *const VaccelRpcClient,

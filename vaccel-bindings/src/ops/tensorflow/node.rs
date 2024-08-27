@@ -23,6 +23,10 @@ impl Node {
         Node { inner }
     }
 
+    /// # Safety
+    ///
+    /// `node` is expected to be a valid pointer to an object allocated
+    /// manually or by the respective vAccel function.
     pub unsafe fn from_vaccel_node(node: *mut ffi::vaccel_tf_node) -> Result<Self> {
         let name = ffi::vaccel_tf_node_get_name(node);
         if name.is_null() {

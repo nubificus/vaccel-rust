@@ -43,6 +43,12 @@ impl VaccelRpcClient {
     }
 }
 
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+/// `read_args_ptr` and `write_args_ptr` are expected to be valid pointers to
+/// objects allocated manually or by the respective vAccel functions.
 #[no_mangle]
 pub unsafe extern "C" fn genop(
     client_ptr: *mut VaccelRpcClient,
