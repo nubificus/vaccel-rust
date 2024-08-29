@@ -2,11 +2,13 @@ project('vaccel-rust', 'c', 'rust',
   meson_version : '>=1.1',
   license : 'Apache-2.0',
   license_files : 'LICENSE',
-  version : run_command('scripts/generate-version.sh',
-    '', '--no-dirty', check: false).stdout().strip())
+  version : run_command('sh', '-c',
+    'git submodule update --init >/dev/null && ' +
+    'scripts/common/generate-version.sh . --no-dirty',
+    check: false).stdout().strip())
 
 cargo_bin = find_program('cargo', version : '>=1.64.0', required : true)
-cargo_meson_sh = files(meson.project_source_root() + '/scripts/cargo.sh')
+cargo_meson_sh = files(meson.project_source_root() + '/scripts/common/cargo.sh')
 cargo_toml = files('Cargo.toml')
 
 libvaccel_dep = dependency('vaccel')
@@ -105,7 +107,7 @@ summary({
 # we ship the client lib with the plugin.
 if opt_rpc_agent.enabled() and not meson.is_subproject()
   meson.add_dist_script(
-    'scripts/dist.sh',
+    'scripts/common/dist.sh',
     'vaccel-rpc-agent',
     get_option('buildtype'),
     'async',
@@ -121,7 +123,7 @@ endif
 
 if opt_rpc_client.enabled() and not meson.is_subproject()
   meson.add_dist_script(
-    'scripts/dist.sh',
+    'scripts/common/dist.sh',
     'vaccel-rpc-client',
     get_option('buildtype'),
     'async',
