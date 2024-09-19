@@ -8,18 +8,13 @@ fn main() {
     let mut lib = pkg_config::Config::new()
         .probe("vaccel")
         .expect("Could not find vaccel");
-    let clang_arg = format!(
-        "-I{}",
-        &mut lib
-            .include_paths
-            .pop()
-            .unwrap()
-            .into_os_string()
-            .into_string()
-            .unwrap(),
-    );
+    let clang_flags: Vec<String> = lib
+        .include_paths
+        .into_iter()
+        .map(|x| format!("-I{}", x.display().to_string()))
+        .collect();
 
-    println!("vaccelrt include path: {}", clang_arg);
+    println!("vaccel include path: {}", clang_flags.join(" "));
 
     // Tell cargo to tell rustc to link to libvaccel.
     println!("cargo:rustc-link-lib=vaccel");
@@ -34,7 +29,7 @@ fn main() {
         // The input header we would like to generate
         // bindings for.
         .header("wrapper.h")
-        .clang_arg(clang_arg)
+        .clang_args(clang_flags)
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
