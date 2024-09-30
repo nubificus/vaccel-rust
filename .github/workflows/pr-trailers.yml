@@ -23,6 +23,4 @@ jobs:
     name: Add Git Trailers to PR commits
     if: ${{ github.event.pull_request.base.ref == 'main' && github.event.review.state == 'approved' }}
     uses: nubificus/vaccel/.github/workflows/add-git-trailers.yml@main
-    with:
-      plugin: 'rpc-rust'
     secrets: inherit
