@@ -18,7 +18,7 @@ use vaccel::{profiling::ProfRegions, Resource, Session, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::{create_rpc_agent, RpcAgent};
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::{create_rpc_agent, RpcAgent};
+use vaccel_rpc_proto::sync::agent_ttrpc::create_rpc_agent;
 use vaccel_rpc_proto::{
     error::VaccelError,
     profiling::{ProfilingRequest, ProfilingResponse},
@@ -33,6 +33,28 @@ pub struct VaccelRpcAgent {
 
 unsafe impl Sync for VaccelRpcAgent {}
 unsafe impl Send for VaccelRpcAgent {}
+
+impl VaccelRpcAgent {
+    pub(crate) fn new() -> VaccelRpcAgent {
+        VaccelRpcAgent {
+            sessions: Arc::new(DashMap::new()),
+            resources: Arc::new(DashMap::new()),
+            timers: Arc::new(DashMap::new()),
+        }
+    }
+
+    pub(crate) fn do_get_timers(&self, req: ProfilingRequest) -> ttrpc::Result<ProfilingResponse> {
+        let timers = self
+            .timers
+            .entry(req.session_id)
+            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
+
+        Ok(ProfilingResponse {
+            result: Some(timers.clone().into()).into(),
+            ..Default::default()
+        })
+    }
+}
 
 pub(crate) fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
@@ -56,13 +78,7 @@ pub(crate) fn vaccel_error(err: vaccel::Error) -> VaccelError {
 }
 
 pub fn server_init(server_address: &str) -> Result<Server, Box<dyn Error>> {
-    let vaccel_rpc_agent = Box::new(VaccelRpcAgent {
-        sessions: Arc::new(DashMap::new()),
-        resources: Arc::new(DashMap::new()),
-        timers: Arc::new(DashMap::new()),
-    }) as Box<dyn RpcAgent + Send + Sync>;
-
-    let agent_worker = Arc::new(vaccel_rpc_agent);
+    let agent_worker = Arc::new(VaccelRpcAgent::new());
     let aservice = create_rpc_agent(agent_worker);
 
     if server_address.is_empty() {
@@ -83,18 +99,4 @@ pub fn server_init(server_address: &str) -> Result<Server, Box<dyn Error>> {
     };
 
     Ok(server)
-}
-
-impl VaccelRpcAgent {
-    pub(crate) fn do_get_timers(&self, req: ProfilingRequest) -> ttrpc::Result<ProfilingResponse> {
-        let timers = self
-            .timers
-            .entry(req.session_id)
-            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
-
-        Ok(ProfilingResponse {
-            result: Some(timers.clone().into()).into(),
-            ..Default::default()
-        })
-    }
 }
