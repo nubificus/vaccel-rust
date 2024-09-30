@@ -5,13 +5,13 @@ extern crate bindgen;
 use std::{env, path::PathBuf};
 
 fn main() {
-    let mut lib = pkg_config::Config::new()
+    let lib = pkg_config::Config::new()
         .probe("vaccel")
         .expect("Could not find vaccel");
     let clang_flags: Vec<String> = lib
         .include_paths
         .into_iter()
-        .map(|x| format!("-I{}", x.display().to_string()))
+        .map(|x| format!("-I{}", x.display()))
         .collect();
 
     println!("vaccel include path: {}", clang_flags.join(" "));

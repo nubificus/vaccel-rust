@@ -57,7 +57,7 @@ impl Session {
     /// # Arguments
     ///
     /// * `res` - The resource we are registering to the session. This should have been previously
-    /// created in the database of vAccel runtime
+    ///   created in the database of vAccel runtime
     pub fn register(&mut self, res: &mut dyn Resource) -> Result<()> {
         if !res.initialized() {
             return Err(Error::Uninitialized);
