@@ -76,7 +76,7 @@ impl Session {
     /// # Arguments
     ///
     /// * `read` - A slice of `vaccel_arg` with the arguments that are read only. The first
-    /// argument of the slice is the type of the operation
+    ///   argument of the slice is the type of the operation
     /// * `write` - A slice of `vaccel_arg` with the read-write arguments of the operation.
     pub fn genop(
         &mut self,

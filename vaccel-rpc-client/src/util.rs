@@ -11,7 +11,7 @@ use ttrpc::asynchronous::Client as TtrpcClient;
 use ttrpc::Client as TtrpcClient;
 use vaccel::ffi;
 
-pub fn create_ttrpc_client(server_address: &String) -> Result<TtrpcClient, u32> {
+pub fn create_ttrpc_client(server_address: &str) -> Result<TtrpcClient, u32> {
     if server_address.is_empty() {
         return Err(ffi::VACCEL_EINVAL);
     }

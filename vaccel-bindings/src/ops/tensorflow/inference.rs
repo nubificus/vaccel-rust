@@ -148,7 +148,7 @@ impl InferenceModel<InferenceArgs, InferenceResult> for TFSavedModel {
     /// # Arguments
     ///
     /// * `session` - The session in the context of which we perform the operation. The model needs
-    /// to be registered with this session.
+    ///   to be registered with this session.
     ///
     fn load(&mut self, sess: &mut Session) -> Result<tf::Status> {
         let mut status = tf::Status::new();
