@@ -14,8 +14,6 @@ jobs:
   check_merged:
     name: Check PR is merged
     uses: nubificus/vaccel/.github/workflows/check-merged.yml@main
-    with:
-      plugin: 'rpc-rust'
     secrets: inherit
 
   build_dist:
@@ -25,7 +23,8 @@ jobs:
     uses: nubificus/vaccel/.github/workflows/verify-build.yml@main
     with:
       release: true
-      runner: '["rust"]'
-      plugin: 'rpc-rust'
+      runner: '["rust", "dind", "2204"]'
+      package: 'rust'
       options: 'rpc-client=enabled,rpc-agent=enabled'
+      upload-subpath: 'rust'
     secrets: inherit
