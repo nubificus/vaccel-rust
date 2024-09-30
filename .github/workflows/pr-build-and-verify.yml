@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-#  test_build:
+#  test-build:
 #    name: Test Build
 #    if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
 #    uses: nubificus/vaccel/.github/workflows/test-build.yml@main
@@ -23,7 +23,7 @@ jobs:
 #      valgrind: false
 #    secrets: inherit
 
-  verify_build:
+  verify-build:
     name: Verify Build
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
     uses: nubificus/vaccel/.github/workflows/verify-build.yml@main
@@ -36,13 +36,13 @@ jobs:
       upload-subpath: 'rust'
     secrets: inherit
 
-  validate_files_and_commits:
+  validate-files-and-commits:
     name: Validate Files and Commits
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
     uses: nubificus/vaccel/.github/workflows/validate-files-and-commits.yml@main
     secrets: inherit
 
-  validate_code:
+  validate-code:
     name: Validate Code
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ok-to-test') }}
     uses: ./.github/workflows/validate-code.yml
@@ -50,17 +50,17 @@ jobs:
       runner: '["rust", "dind", "2204"]'
     secrets: inherit
 
-#  generate_coverage:
-#    needs: [test_build, verify_build, validate_files_and_commits, validate_code]
+#  generate-coverage:
+#    needs: [test-build, verify-build, validate-files-and-commits, validate-code]
 #    name: Generate Coverage Report
 #    uses: ./.github/workflows/coverage-report.yml
 #    with:
 #      comment-diff: true
 
   # Dummy job for setting required checks
-  jobs_completed:
-    needs: [verify_build, validate_files_and_commits, validate_code]
+  jobs-completed:
+    needs: [verify-build, validate-files-and-commits, validate-code]
     name: Jobs Completed
-    runs-on: self-hosted
+    runs-on: [gcc-2204-amd64]
     steps:
       - run: exit 0
