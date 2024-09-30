@@ -27,7 +27,7 @@ on:
         required: false
 
 jobs:
-  linter_rust_clippy:
+  linter-rust-clippy:
     name: Lint Rust (rust-clippy)
     runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
@@ -83,7 +83,7 @@ jobs:
             ${{ steps.download-artifacts.outputs.installed }} || echo
         shell: bash
 
-  linter_rust_fmt:
+  linter-rust-fmt:
     name: Lint Rust (rust-fmt)
     runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
@@ -117,7 +117,7 @@ jobs:
         run: cargo fmt --all --check
         shell: bash
 
-  linter_super_linter:
+  linter-super-linter:
     name: Lint Shell/GHActions/Markdown/YAML
     runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
