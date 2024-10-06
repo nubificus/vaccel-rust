@@ -13,6 +13,10 @@ build = "build.rs"
 name = "vaccel"
 path = "src/lib.rs"
 
+[features]
+default = ["profiling"]
+profiling = []
+
 [dependencies]
 vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
 protobuf = "3.1"
