@@ -133,18 +133,24 @@ impl ProfRegions {
     }
 
     pub fn clear(&mut self) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         self.map.clear();
     }
 
     pub fn insert(&mut self, name: &str, samples: Vec<Sample>) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         self.map.insert(name.to_string(), samples);
     }
 
     pub fn start(&mut self, name: &str) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
+            unsafe {
+                if !ffi::vaccel_prof_enabled() {
+                    return;
+                }
+            }
+
             self.map
                 .entry(format!("[{}] {}", self.name, name))
                 .and_modify(|e| e.push(Sample::default()))
@@ -153,8 +159,14 @@ impl ProfRegions {
     }
 
     pub fn stop(&mut self, name: &str) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
+            unsafe {
+                if !ffi::vaccel_prof_enabled() {
+                    return;
+                }
+            }
+
             self.map
                 .entry(format!("[{}] {}", self.name, name))
                 .and_modify(|e| {
@@ -167,25 +179,25 @@ impl ProfRegions {
     }
 
     pub fn get_single(&self, name: &str) -> Option<&Vec<Sample>> {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             self.map.get(&format!("[{}] {}", self.name, name))
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         None
     }
 
     pub fn get(&self) -> Option<&BTreeMap<String, Vec<Sample>>> {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             Some(&self.map)
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         None
     }
 
     pub fn get_ffi(&self) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             Some(
                 self.map
@@ -197,21 +209,21 @@ impl ProfRegions {
                     .collect(),
             )
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         None
     }
 
     fn format(name: &str, time: u128, entries: usize) -> String {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             format!("{name}: total_time: {time} nsec nr_entries: {entries}")
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         String::new()
     }
 
     pub fn print_single(&self, name: &str) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             let n = format!("[{}] {}", self.name, name);
             if let Some(e) = self.map.get(&n) {
@@ -223,7 +235,7 @@ impl ProfRegions {
     }
 
     pub fn print_total_single(&self, name: &str) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             let n = format!("[{}] {}", self.name, name);
             if let Some(e) = self.map.get(&n) {
@@ -234,7 +246,7 @@ impl ProfRegions {
     }
 
     pub fn print(&self) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             for (n, e) in &self.map {
                 if let Some(t) = e.last() {
@@ -245,7 +257,7 @@ impl ProfRegions {
     }
 
     pub fn print_total(&self) {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             for (n, e) in &self.map {
                 let s: u128 = e.iter().map(|x| x.time.as_nanos()).sum();
@@ -255,7 +267,7 @@ impl ProfRegions {
     }
 
     pub fn print_to_buf(&self) -> String {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             let mut buf = Vec::new();
             for (n, e) in &self.map {
@@ -265,12 +277,12 @@ impl ProfRegions {
             }
             buf.join("\n")
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         String::new()
     }
 
     pub fn print_total_to_buf(&self) -> String {
-        #[cfg(debug_assertions)]
+        #[cfg(feature = "profiling")]
         {
             let mut buf = Vec::new();
             for (n, e) in &self.map {
@@ -279,7 +291,7 @@ impl ProfRegions {
             }
             buf.join("\n")
         }
-        #[cfg(not(debug_assertions))]
+        #[cfg(not(feature = "profiling"))]
         String::new()
     }
 }
@@ -347,36 +359,36 @@ fn main() {
     let mut timers = ProfRegions::new();
 
     timers.start("test");
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     sleep(Duration::from_secs(1));
     timers.stop("test");
     timers.print("test", "");
 
     timers.start("test");
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     sleep(Duration::from_secs(2));
     timers.stop("test");
     timers.print("test", "");
 
     timers.start("test1");
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     std::thread::sleep(Duration::from_secs(1));
     timers.stop("test1");
 
     timers.print_avg("test", "");
     timers.stop("test2");
     timers.print_avg("test2", "");
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     println!("ALL:");
     timers.print_all("");
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     {
         println!("{:?}", timers.get("test"));
         println!("{:?}", timers.get("test2"));
     }
 
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "profiling")]
     println!("{}", timers.print_all_avg_to_buf("vaccel"));
 }
 */
