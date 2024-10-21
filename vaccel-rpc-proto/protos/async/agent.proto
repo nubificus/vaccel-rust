@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 import "session.proto";
-import "resources.proto";
+import "resource.proto";
 import "image.proto";
 import "tensorflow.proto";
 import "torch.proto";
@@ -31,10 +31,8 @@ service RpcAgent {
 	rpc DestroySession(DestroySessionRequest) returns (VaccelEmpty);
 
 	// vAccel resource handling
-	rpc CreateResource(CreateResourceRequest) returns (CreateResourceResponse);
-	rpc RegisterResource(RegisterResourceRequest) returns (VaccelEmpty);
+	rpc RegisterResource(RegisterResourceRequest) returns (RegisterResourceResponse);
 	rpc UnregisterResource(UnregisterResourceRequest) returns (VaccelEmpty);
-	rpc DestroyResource(DestroyResourceRequest) returns (VaccelEmpty);
 
 	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);

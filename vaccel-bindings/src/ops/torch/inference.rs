@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Buffer, Code, DataType, Tensor, TensorAny, TensorType};
-use crate::{ffi, ops::InferenceModel, resources::SingleModel, Error, Result, Session};
+use crate::{ffi, ops::InferenceModel, Error, Resource, Result, Session};
 use protobuf::Enum;
+use std::pin::Pin;
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 pub struct InferenceArgs {
@@ -104,10 +105,14 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for SingleModel {
+impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
     type LoadResult = ();
 
-    fn run(&mut self, sess: &mut Session, args: &mut InferenceArgs) -> Result<InferenceResult> {
+    fn run(
+        self: Pin<&mut Self>,
+        sess: &mut Session,
+        args: &mut InferenceArgs,
+    ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
 
         match unsafe {
@@ -128,11 +133,11 @@ impl InferenceModel<InferenceArgs, InferenceResult> for SingleModel {
         }
     }
 
-    fn load(&mut self, _sess: &mut Session) -> Result<()> {
+    fn load(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
         Ok(())
     }
 
-    fn unload(&mut self, _sess: &mut Session) -> Result<()> {
+    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
         Ok(())
     }
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, Resource, Result, VaccelId};
+use crate::{ffi, Error, Result, VaccelId};
 
 /// The vAccel session  type
 ///
@@ -44,37 +44,6 @@ impl Session {
     /// This will close an open session and consume it.
     pub fn close(&mut self) -> Result<()> {
         match unsafe { ffi::vaccel_sess_free(&mut self.inner) as u32 } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
-        }
-    }
-
-    /// Register a vAccel resource to a session
-    ///
-    /// Associate a vAccel resource (such as a TensorFlow model) with a session
-    /// for subsequent use with that session
-    ///
-    /// # Arguments
-    ///
-    /// * `res` - The resource we are registering to the session. This should have been previously
-    ///   created in the database of vAccel runtime
-    pub fn register(&mut self, res: &mut dyn Resource) -> Result<()> {
-        if !res.initialized() {
-            return Err(Error::Uninitialized);
-        }
-
-        let res_ptr = res.to_mut_vaccel_ptr().ok_or(Error::InvalidArgument)?;
-
-        match unsafe { ffi::vaccel_sess_register(&mut self.inner, res_ptr) as u32 } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
-        }
-    }
-
-    pub fn unregister(&mut self, res: &mut dyn Resource) -> Result<()> {
-        let res_ptr = res.to_mut_vaccel_ptr().ok_or(Error::InvalidArgument)?;
-
-        match unsafe { ffi::vaccel_sess_unregister(&mut self.inner, res_ptr) as u32 } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
