@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{Result, Session};
+use std::pin::Pin;
 
 pub mod genop;
 pub mod image;
@@ -12,11 +13,11 @@ pub trait InferenceModel<A, T> {
     type LoadResult;
 
     /// Load an inference session for model
-    fn load(&mut self, sess: &mut Session) -> Result<Self::LoadResult>;
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadResult>;
 
     /// Run inference on model
-    fn run(&mut self, sess: &mut Session, args: &mut A) -> Result<T>;
+    fn run(self: Pin<&mut Self>, sess: &mut Session, args: &mut A) -> Result<T>;
 
     /// Unload an inference session for model
-    fn unload(&mut self, sess: &mut Session) -> Result<()>;
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()>;
 }

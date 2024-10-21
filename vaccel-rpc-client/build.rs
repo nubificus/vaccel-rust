@@ -38,6 +38,7 @@ fn main() {
         .rename_item("vaccel_torch_tensor", "struct vaccel_torch_tensor")
         .rename_item("vaccel_prof_region", "struct vaccel_prof_region")
         .rename_item("vaccel_resource", "struct vaccel_resource")
+        .rename_item("vaccel_file", "struct vaccel_file")
         .generate()
         .expect("Unable to generate vaccel-rpc-client.h")
         .write_to_file(format!("{}/{}/vaccel-rpc-client.h", target_dir, profile));

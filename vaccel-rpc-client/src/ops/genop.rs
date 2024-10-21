@@ -4,10 +4,10 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+use crate::{Error, Result};
 use log::error;
 use std::{convert::TryInto, ptr};
-use vaccel::ffi;
+use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
 use vaccel_rpc_proto::genop::{GenopArg, GenopRequest};

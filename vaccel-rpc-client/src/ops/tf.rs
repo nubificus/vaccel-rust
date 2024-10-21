@@ -4,9 +4,9 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{c_pointer_to_mut_slice, c_pointer_to_slice, Error, Result};
+use crate::{Error, Result};
 use std::os::raw::c_int;
-use vaccel::ffi;
+use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
 #[cfg(not(feature = "async"))]

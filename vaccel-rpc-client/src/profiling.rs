@@ -4,9 +4,9 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{c_pointer_to_mut_slice, Error, Result};
+use crate::{Error, Result};
 use std::{collections::BTreeMap, ptr};
-use vaccel::{ffi, profiling::ProfRegions};
+use vaccel::{c_pointer_to_mut_slice, ffi, profiling::ProfRegions};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
 use vaccel_rpc_proto::profiling::ProfilingRequest;
