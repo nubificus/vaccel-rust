@@ -13,10 +13,7 @@ use vaccel_rpc_proto::{
     genop::{GenopRequest, GenopResponse},
     image::{ImageClassificationRequest, ImageClassificationResponse},
     profiling::{ProfilingRequest, ProfilingResponse},
-    resources::{
-        CreateResourceRequest, CreateResourceResponse, DestroyResourceRequest,
-        RegisterResourceRequest, UnregisterResourceRequest,
-    },
+    resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
     session::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
@@ -57,27 +54,11 @@ impl RpcAgent for VaccelRpcAgent {
         self.do_image_classification(req)
     }
 
-    fn create_resource(
-        &self,
-        _ctx: &::ttrpc::sync::TtrpcContext,
-        req: CreateResourceRequest,
-    ) -> ttrpc::Result<CreateResourceResponse> {
-        self.do_create_resource(req)
-    }
-
-    fn destroy_resource(
-        &self,
-        _ctx: &::ttrpc::sync::TtrpcContext,
-        req: DestroyResourceRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
-        self.do_destroy_resource(req)
-    }
-
     fn register_resource(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
         req: RegisterResourceRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<RegisterResourceResponse> {
         self.do_register_resource(req)
     }
 

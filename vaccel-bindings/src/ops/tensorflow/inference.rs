@@ -3,10 +3,10 @@
 use crate::{
     ffi,
     ops::{tensorflow as tf, InferenceModel},
-    resources::TFSavedModel,
-    Error, Result, Session,
+    Error, Resource, Result, Session,
 };
 use protobuf::Enum;
+use std::pin::Pin;
 use vaccel_rpc_proto::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
 
 pub struct InferenceArgs {
@@ -136,7 +136,7 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for TFSavedModel {
+impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
     type LoadResult = tf::Status;
 
     /// Load a TensorFlow session from a TFSavedModel
@@ -150,7 +150,7 @@ impl InferenceModel<InferenceArgs, InferenceResult> for TFSavedModel {
     /// * `session` - The session in the context of which we perform the operation. The model needs
     ///   to be registered with this session.
     ///
-    fn load(&mut self, sess: &mut Session) -> Result<tf::Status> {
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<tf::Status> {
         let mut status = tf::Status::new();
 
         match unsafe {
@@ -165,9 +165,13 @@ impl InferenceModel<InferenceArgs, InferenceResult> for TFSavedModel {
     /// Run a TensorFlow session
     ///
     /// This will run using a TensorFlow session that has been previously loaded
-    /// using `vaccel_tf_model::load_session`.
+    /// using `load()`.
     ///
-    fn run(&mut self, sess: &mut Session, args: &mut InferenceArgs) -> Result<InferenceResult> {
+    fn run(
+        self: Pin<&mut Self>,
+        sess: &mut Session,
+        args: &mut InferenceArgs,
+    ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.out_nodes.len());
 
         match unsafe {
@@ -192,8 +196,8 @@ impl InferenceModel<InferenceArgs, InferenceResult> for TFSavedModel {
     /// Delete a TensorFlow session
     ///
     /// This will unload a TensorFlow session that was previously loaded in memory
-    /// using `vaccel_tf_model::load_session`.
-    fn unload(&mut self, sess: &mut Session) -> Result<()> {
+    /// using `load()`.
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         let mut status = tf::Status::new();
 
         match unsafe {

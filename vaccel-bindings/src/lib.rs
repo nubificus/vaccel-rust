@@ -6,15 +6,17 @@
 #![allow(dead_code)]
 #![allow(improper_ctypes)]
 
-use std::fmt;
+use std::{fmt, slice};
 
 pub mod ffi;
+pub mod file;
 pub mod ops;
 pub mod profiling;
-pub mod resources;
+pub mod resource;
 pub mod session;
 
-pub use resources::Resource;
+pub use file::File;
+pub use resource::Resource;
 pub use session::Session;
 
 #[derive(Debug)]
@@ -28,14 +30,14 @@ pub enum Error {
     // Uninitialized vAccel object
     Uninitialized,
 
-    // A TensorFlow Error
+    // A TensorFlow error
     #[cfg(target_pointer_width = "64")]
     TensorFlow(ops::tensorflow::Code),
 
-    // A TensorFlow Lite Error
+    // A TensorFlow Lite error
     TensorFlowLite(ops::tensorflow::lite::Code),
 
-    // A pytorch Error
+    // A PyTorch error
     Torch(ops::torch::Code),
 
     // Other error types
@@ -45,8 +47,8 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Runtime(e) => write!(f, "vAccel runtime error {}", e),
-            Error::InvalidArgument => write!(f, "An invalid argument was given to us"),
+            Error::Runtime(e) => write!(f, "vAccel runtime error: {}", e),
+            Error::InvalidArgument => write!(f, "Invalid argument"),
             Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
             #[cfg(target_pointer_width = "64")]
             Error::TensorFlow(e) => write!(f, "TensorFlow error: {:?}", e),
@@ -109,5 +111,29 @@ impl From<u32> for VaccelId {
         VaccelId {
             inner: Some(id.into()),
         }
+    }
+}
+
+pub(crate) fn c_pointer_to_vec<T>(buf: *mut T, len: usize, capacity: usize) -> Option<Vec<T>> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { Vec::from_raw_parts(buf, len, capacity) })
+    }
+}
+
+pub(crate) fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a [T]> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { slice::from_raw_parts(buf, len) })
+    }
+}
+
+pub(crate) fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&'a mut [T]> {
+    if buf.is_null() {
+        None
+    } else {
+        Some(unsafe { slice::from_raw_parts_mut(buf, len) })
     }
 }

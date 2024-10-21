@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Code, Tensor, TensorAny, TensorType, Type};
-use crate::{ffi, ops::InferenceModel, resources::SingleModel, Error, Result, Session};
+use crate::{ffi, ops::InferenceModel, Error, Resource, Result, Session};
 use protobuf::Enum;
+use std::pin::Pin;
 use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType, TensorflowLiteModelRunRequest};
 
 pub struct InferenceArgs {
@@ -110,10 +111,10 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for SingleModel {
+impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
     type LoadResult = ();
 
-    fn load(&mut self, sess: &mut Session) -> Result<()> {
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         match unsafe { ffi::vaccel_tflite_session_load(sess.inner_mut(), self.inner_mut()) as u32 }
         {
             ffi::VACCEL_OK => Ok(()),
@@ -121,7 +122,11 @@ impl InferenceModel<InferenceArgs, InferenceResult> for SingleModel {
         }
     }
 
-    fn run(&mut self, sess: &mut Session, args: &mut InferenceArgs) -> Result<InferenceResult> {
+    fn run(
+        self: Pin<&mut Self>,
+        sess: &mut Session,
+        args: &mut InferenceArgs,
+    ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
 
         match unsafe {
@@ -140,7 +145,7 @@ impl InferenceModel<InferenceArgs, InferenceResult> for SingleModel {
         }
     }
 
-    fn unload(&mut self, sess: &mut Session) -> Result<()> {
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         match unsafe {
             ffi::vaccel_tflite_session_delete(sess.inner_mut(), self.inner_mut()) as u32
         } {

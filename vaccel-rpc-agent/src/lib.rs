@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod ops;
-pub mod resources;
+pub mod resource;
 #[cfg(feature = "async")]
 pub mod rpc_async;
 #[cfg(not(feature = "async"))]
@@ -9,7 +9,7 @@ pub mod rpc_sync;
 pub mod session;
 
 use dashmap::DashMap;
-use std::{default::Default, error::Error, sync::Arc};
+use std::{default::Default, error::Error, pin::Pin, sync::Arc};
 #[cfg(feature = "async")]
 use ttrpc::asynchronous::Server;
 #[cfg(not(feature = "async"))]
@@ -27,7 +27,7 @@ use vaccel_rpc_proto::{
 #[derive(Clone)]
 pub struct VaccelRpcAgent {
     pub sessions: Arc<DashMap<VaccelId, Box<Session>>>,
-    pub resources: Arc<DashMap<VaccelId, Box<dyn Resource>>>,
+    pub resources: Arc<DashMap<VaccelId, Pin<Box<Resource>>>>,
     pub timers: Arc<DashMap<u32, ProfRegions>>,
 }
 
