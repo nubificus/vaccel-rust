@@ -5,7 +5,8 @@ use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
-use std::os::raw::c_int;
+use log::error;
+use std::ffi::c_int;
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
@@ -73,7 +74,7 @@ impl VaccelRpcClient {
 /// valid pointers to objects allocated manually or by the respective vAccel
 /// functions.
 #[no_mangle]
-pub unsafe extern "C" fn torch_jitload_forward(
+pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
     client_ptr: *const VaccelRpcClient,
     sess_id: i64,
     model_id: ffi::vaccel_id_t,
@@ -82,7 +83,7 @@ pub unsafe extern "C" fn torch_jitload_forward(
     nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_torch_tensor,
     nr_outputs: c_int,
-) -> u32 {
+) -> c_int {
     let run_options = unsafe {
         c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
             .unwrap_or(&[])
@@ -95,26 +96,29 @@ pub unsafe extern "C" fn torch_jitload_forward(
                 .iter()
                 .map(|e| unsafe { e.as_ref().unwrap().into() })
                 .collect(),
-            None => return ffi::VACCEL_EINVAL,
+            None => return ffi::VACCEL_EINVAL as c_int,
         };
 
     let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs.try_into().unwrap())
     {
         Some(vec) => vec,
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors, nr_outputs) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
-            ffi::VACCEL_OK
+            ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err,
-        Err(_) => ffi::VACCEL_EINVAL,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }

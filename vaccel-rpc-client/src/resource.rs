@@ -6,7 +6,7 @@ use crate::asynchronous::client::VaccelRpcClient;
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
 use log::error;
-use std::ffi::{c_char, CStr};
+use std::ffi::{c_char, c_int, CStr};
 use vaccel::{c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
@@ -136,18 +136,18 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_unregister(
     client_ptr: *const VaccelRpcClient,
     res_id: ffi::vaccel_id_t,
     sess_id: ffi::vaccel_id_t,
-) -> i32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.resource_unregister(res_id, sess_id) {
-        Ok(()) => ffi::VACCEL_OK as i32,
-        Err(Error::ClientError(err)) => err as i32,
+        Ok(()) => ffi::VACCEL_OK as c_int,
+        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as i32
+            ffi::VACCEL_EIO as c_int
         }
     }
 }

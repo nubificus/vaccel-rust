@@ -5,7 +5,8 @@ use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
-use std::os::raw::c_int;
+use log::error;
+use std::ffi::c_int;
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
@@ -103,20 +104,23 @@ impl VaccelRpcClient {
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn tflite_session_load(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_load(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
-) -> i32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.tflite_model_load(model_id, sess_id) {
-        Ok(_) => ffi::VACCEL_OK as i32,
-        Err(Error::ClientError(err)) => err as i32,
-        Err(_) => ffi::VACCEL_EIO as i32,
+        Ok(_) => ffi::VACCEL_OK as c_int,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }
 
@@ -125,20 +129,23 @@ pub unsafe extern "C" fn tflite_session_load(
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn tflite_session_delete(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_delete(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
-) -> i32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.tflite_model_unload(model_id, sess_id) {
-        Ok(_) => ffi::VACCEL_OK as i32,
-        Err(Error::ClientError(err)) => err as i32,
-        Err(_) => ffi::VACCEL_EIO as i32,
+        Ok(_) => ffi::VACCEL_OK as c_int,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }
 
@@ -149,7 +156,7 @@ pub unsafe extern "C" fn tflite_session_delete(
 /// `in_tensors_ptr` and `out_tensors_ptr` are expected to be valid pointers to
 /// objects allocated manually or by the respective vAccel functions.
 #[no_mangle]
-pub unsafe extern "C" fn tflite_session_run(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_run(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
@@ -157,33 +164,36 @@ pub unsafe extern "C" fn tflite_session_run(
     nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_tflite_tensor,
     nr_outputs: c_int,
-) -> u32 {
+) -> c_int {
     let in_tensors: Vec<TFLiteTensor> =
         match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
             Some(slice) => slice
                 .iter()
                 .map(|e| unsafe { e.as_ref().unwrap().into() })
                 .collect(),
-            None => return ffi::VACCEL_EINVAL,
+            None => return ffi::VACCEL_EINVAL as c_int,
         };
 
     let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs.try_into().unwrap())
     {
         Some(vec) => vec,
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.tflite_model_run(model_id, sess_id, in_tensors, nr_outputs) {
         Ok(result) => {
             out_tensors.copy_from_slice(&result);
-            ffi::VACCEL_OK
+            ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err,
-        Err(_) => ffi::VACCEL_EINVAL,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }
