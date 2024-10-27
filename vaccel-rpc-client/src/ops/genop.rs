@@ -6,7 +6,7 @@ use crate::asynchronous::client::VaccelRpcClient;
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
 use log::error;
-use std::{convert::TryInto, ptr};
+use std::{convert::TryInto, ffi::c_int, ptr};
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
@@ -50,17 +50,17 @@ impl VaccelRpcClient {
 /// `read_args_ptr` and `write_args_ptr` are expected to be valid pointers to
 /// objects allocated manually or by the respective vAccel functions.
 #[no_mangle]
-pub unsafe extern "C" fn genop(
+pub unsafe extern "C" fn vaccel_rpc_client_genop(
     client_ptr: *mut VaccelRpcClient,
     sess_id: i64,
     read_args_ptr: *mut ffi::vaccel_arg,
     nr_read_args: usize,
     write_args_ptr: *mut ffi::vaccel_arg,
     nr_write_args: usize,
-) -> u32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     client.timer_start(sess_id, "genop > read_args");
@@ -83,7 +83,7 @@ pub unsafe extern "C" fn genop(
                 }
             })
             .collect(),
-        None => return ffi::VACCEL_EINVAL,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
     client.timer_stop(sess_id, "genop > read_args");
 
@@ -128,12 +128,12 @@ pub unsafe extern "C" fn genop(
             }
             client.timer_stop(sess_id, "genop > write_args copy");
 
-            ffi::VACCEL_OK
+            ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err,
+        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
-            error!("Genop: {:?}", e);
-            ffi::VACCEL_EINVAL
+            error!("{}", e);
+            ffi::VACCEL_EINVAL as c_int
         }
     };
     client.timer_stop(sess_id, "genop > client.genop");

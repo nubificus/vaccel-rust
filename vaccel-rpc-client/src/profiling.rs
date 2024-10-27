@@ -85,7 +85,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
 ) -> usize {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as usize,
+        None => return 0,
     };
 
     let _ret = match client.get_timers(sess_id) {
@@ -93,11 +93,13 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
             client.timers_extend(sess_id, agent_timers);
             ffi::VACCEL_OK
         }
-        Err(_) => ffi::VACCEL_EINVAL,
+        Err(_) => return 0,
     };
 
+    let timers_len = client.timers_get_len(sess_id);
+
     if nr_timers == 0 {
-        return client.timers_get_len(sess_id);
+        return timers_len;
     }
 
     let timers_ref = c_pointer_to_mut_slice(timers_ptr, nr_timers).unwrap_or(&mut []);
@@ -134,7 +136,9 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
             }
             w.nr_entries = cnt;
         }
-    };
+    } else {
+        return 0;
+    }
 
-    0
+    timers_len
 }

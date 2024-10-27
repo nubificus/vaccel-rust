@@ -6,6 +6,8 @@ use crate::asynchronous::client::VaccelRpcClient;
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
 use dashmap::mapref::entry::Entry;
+use log::error;
+use std::ffi::c_int;
 use vaccel::ffi;
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
@@ -71,7 +73,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_init(
 
     match client.session_init(flags) {
         Ok(id) => id,
-        Err(_) => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
+        Err(e) => {
+            error!("{}", e);
+            -(ffi::VACCEL_EIO as ffi::vaccel_id_t)
+        }
     }
 }
 
@@ -84,16 +89,19 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_update(
     client_ptr: *const VaccelRpcClient,
     sess_id: ffi::vaccel_id_t,
     flags: u32,
-) -> i32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.session_update(sess_id, flags) {
-        Ok(()) => ffi::VACCEL_OK as i32,
-        Err(Error::ClientError(err)) => err as i32,
-        Err(_) => ffi::VACCEL_EIO as i32,
+        Ok(()) => ffi::VACCEL_OK as c_int,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }
 
@@ -105,10 +113,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_update(
 pub unsafe extern "C" fn vaccel_rpc_client_session_release(
     client_ptr: *mut VaccelRpcClient,
     sess_id: ffi::vaccel_id_t,
-) -> i32 {
+) -> c_int {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return ffi::VACCEL_EINVAL as c_int,
     };
 
     match client.session_release(sess_id) {
@@ -120,9 +128,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
             if let Entry::Occupied(t) = timers.entry(sess_id) {
                 t.remove_entry();
             }
-            ffi::VACCEL_OK as i32
+            ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err as i32,
-        Err(_) => ffi::VACCEL_EIO as i32,
+        Err(Error::ClientError(err)) => err as c_int,
+        Err(e) => {
+            error!("{}", e);
+            ffi::VACCEL_EIO as c_int
+        }
     }
 }
