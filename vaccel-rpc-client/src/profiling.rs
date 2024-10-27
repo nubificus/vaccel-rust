@@ -37,21 +37,21 @@ impl VaccelRpcClient {
             .extend(extra);
     }
 
-    pub fn timers_get_len(&self, sess_id: i64) -> usize {
+    pub fn timers_len(&self, sess_id: i64) -> usize {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .len()
     }
 
-    pub fn timers_get_ffi(
+    pub fn timers_to_ffi(
         &self,
         sess_id: i64,
     ) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
-            .get_ffi()
+            .to_ffi()
     }
 
     pub fn get_timers(&mut self, sess_id: i64) -> Result<ProfRegions> {
@@ -96,7 +96,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
         Err(_) => return 0,
     };
 
-    let timers_len = client.timers_get_len(sess_id);
+    let timers_len = client.timers_len(sess_id);
 
     if nr_timers == 0 {
         return timers_len;
@@ -104,7 +104,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
 
     let timers_ref = c_pointer_to_mut_slice(timers_ptr, nr_timers).unwrap_or(&mut []);
 
-    if let Some(client_timers) = client.timers_get_ffi(sess_id) {
+    if let Some(client_timers) = client.timers_to_ffi(sess_id) {
         for (w, (rk, rv)) in timers_ref.iter_mut().zip(client_timers.iter()) {
             let n = rk.as_str();
             let n_len = if n.len() < max_timer_name {

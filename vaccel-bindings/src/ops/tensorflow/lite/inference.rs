@@ -87,7 +87,7 @@ impl InferenceResult {
             return Err(Error::TensorFlowLite(Code::Error));
         }
 
-        Ok(unsafe { Tensor::from_vaccel_tensor(t).unwrap() })
+        Ok(unsafe { Tensor::from_ffi(t).unwrap() })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TFLiteTensor> {

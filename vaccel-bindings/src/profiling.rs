@@ -8,7 +8,8 @@ use std::{
     time::Duration,
 };
 use vaccel_rpc_proto::profiling::{
-    prof_region::Sample as ProtSample, ProfRegion as ProtProfRegion, ProfRegions as ProtProfRegions,
+    prof_region::Sample as ProtoSample, ProfRegion as ProtoProfRegion,
+    ProfRegions as ProtoProfRegions,
 };
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;
@@ -178,7 +179,7 @@ impl ProfRegions {
         }
     }
 
-    pub fn get_single(&self, name: &str) -> Option<&Vec<Sample>> {
+    pub fn single(&self, name: &str) -> Option<&Vec<Sample>> {
         #[cfg(feature = "profiling")]
         {
             self.map.get(&format!("[{}] {}", self.name, name))
@@ -196,7 +197,7 @@ impl ProfRegions {
         None
     }
 
-    pub fn get_ffi(&self) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
+    pub fn to_ffi(&self) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
         #[cfg(feature = "profiling")]
         {
             Some(
@@ -296,8 +297,8 @@ impl ProfRegions {
     }
 }
 
-impl From<&mut ProtSample> for Sample {
-    fn from(arg: &mut ProtSample) -> Self {
+impl From<&mut ProtoSample> for Sample {
+    fn from(arg: &mut ProtoSample) -> Self {
         Sample::new(
             Timespec::from_nanos(arg.start),
             Duration::from_nanos(arg.time),
@@ -305,8 +306,8 @@ impl From<&mut ProtSample> for Sample {
     }
 }
 
-impl From<&ProtSample> for Sample {
-    fn from(arg: &ProtSample) -> Self {
+impl From<&ProtoSample> for Sample {
+    fn from(arg: &ProtoSample) -> Self {
         Sample::new(
             Timespec::from_nanos(arg.start),
             Duration::from_nanos(arg.time),
@@ -314,8 +315,8 @@ impl From<&ProtSample> for Sample {
     }
 }
 
-impl From<ProtProfRegions> for ProfRegions {
-    fn from(arg: ProtProfRegions) -> Self {
+impl From<ProtoProfRegions> for ProfRegions {
+    fn from(arg: ProtoProfRegions) -> Self {
         let mut t = ProfRegions::new("test");
 
         for pt in arg.timer.into_iter() {
@@ -326,25 +327,25 @@ impl From<ProtProfRegions> for ProfRegions {
     }
 }
 
-impl From<&Sample> for ProtSample {
+impl From<&Sample> for ProtoSample {
     fn from(arg: &Sample) -> Self {
-        let mut s = ProtSample::new();
+        let mut s = ProtoSample::new();
         s.start = arg.start.as_nanos() as u64;
         s.time = arg.time.as_nanos() as u64;
         s
     }
 }
 
-impl From<ProfRegions> for ProtProfRegions {
+impl From<ProfRegions> for ProtoProfRegions {
     fn from(arg: ProfRegions) -> Self {
-        let mut pt: Vec<ProtProfRegion> = Vec::new();
+        let mut pt: Vec<ProtoProfRegion> = Vec::new();
         for (n, t) in arg.iter() {
-            let mut p = ProtProfRegion::new();
+            let mut p = ProtoProfRegion::new();
             p.name = n.to_string();
             p.samples = t.iter().map(|x| x.into()).collect();
             pt.push(p);
         }
-        let mut t = ProtProfRegions::new();
+        let mut t = ProtoProfRegions::new();
         t.timer = pt;
         t
     }
