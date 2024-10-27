@@ -17,7 +17,7 @@ use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
 impl VaccelRpcClient {
     pub fn genop(
         &mut self,
-        sess_id: u32,
+        sess_id: i64,
         read_args: Vec<GenopArg>,
         write_args: Vec<GenopArg>,
     ) -> Result<Vec<GenopArg>> {
@@ -52,7 +52,7 @@ impl VaccelRpcClient {
 #[no_mangle]
 pub unsafe extern "C" fn genop(
     client_ptr: *mut VaccelRpcClient,
-    sess_id: u32,
+    sess_id: i64,
     read_args_ptr: *mut ffi::vaccel_arg,
     nr_read_args: usize,
     write_args_ptr: *mut ffi::vaccel_arg,

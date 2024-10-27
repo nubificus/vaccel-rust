@@ -28,7 +28,7 @@ use vaccel_rpc_proto::{
 pub struct VaccelRpcAgent {
     pub sessions: Arc<DashMap<VaccelId, Box<Session>>>,
     pub resources: Arc<DashMap<VaccelId, Pin<Box<Resource>>>>,
-    pub timers: Arc<DashMap<u32, ProfRegions>>,
+    pub timers: Arc<DashMap<VaccelId, ProfRegions>>,
 }
 
 unsafe impl Sync for VaccelRpcAgent {}
@@ -46,7 +46,7 @@ impl VaccelRpcAgent {
     pub(crate) fn do_get_timers(&self, req: ProfilingRequest) -> ttrpc::Result<ProfilingResponse> {
         let timers = self
             .timers
-            .entry(req.session_id)
+            .entry(req.session_id.into())
             .or_insert_with(|| ProfRegions::new("vaccel-agent"));
 
         Ok(ProfilingResponse {

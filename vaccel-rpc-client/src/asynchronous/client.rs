@@ -15,7 +15,7 @@ use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
 #[repr(C)]
 pub struct VaccelRpcClient {
     pub ttrpc_client: RpcAgentClient,
-    pub timers: Arc<DashMap<u32, ProfRegions>>,
+    pub timers: Arc<DashMap<i64, ProfRegions>>,
     pub runtime: Arc<Runtime>,
 }
 

@@ -11,7 +11,7 @@ impl VaccelRpcClient {
 
     async fn genop_stream_send_args(
         &mut self,
-        sess_id: u32,
+        sess_id: i64,
         stream: &ClientStreamSender<GenopRequest, GenopResponse>,
         args: Vec<GenopArg>,
         is_read: bool,
@@ -85,7 +85,7 @@ impl VaccelRpcClient {
 
     pub fn genop_stream(
         &mut self,
-        sess_id: u32,
+        sess_id: i64,
         read_args: Vec<GenopArg>,
         write_args: Vec<GenopArg>,
     ) -> Result<Vec<GenopArg>> {

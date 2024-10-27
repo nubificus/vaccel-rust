@@ -27,7 +27,7 @@ message GenopArg {
 };
 
 message GenopRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 
 	repeated GenopArg read_args = 2;
 	repeated GenopArg write_args = 3;

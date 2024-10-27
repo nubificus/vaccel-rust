@@ -16,7 +16,7 @@ impl VaccelRpcAgent {
 
         let mut timers = self
             .timers
-            .entry(req.session_id)
+            .entry(req.session_id.into())
             .or_insert_with(|| ProfRegions::new("vaccel-agent"));
         timers.start("genop > read_args");
         let mut read_args: Vec<genop::GenopArg> =

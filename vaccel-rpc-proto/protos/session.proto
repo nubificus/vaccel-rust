@@ -21,14 +21,14 @@ message CreateSessionRequest {
 }
 
 message UpdateSessionRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	uint32 flags = 2;
 }
 
 message DestroySessionRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 }
 
 message CreateSessionResponse {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 }

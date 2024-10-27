@@ -19,7 +19,7 @@ package vaccel;
 import "error.proto";
 
 message ProfilingRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 };
 
 message ProfRegion {

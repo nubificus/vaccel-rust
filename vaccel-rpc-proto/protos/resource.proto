@@ -30,7 +30,7 @@ message RegisterResourceRequest {
 	uint32 resource_type = 1;
 	repeated string paths = 2;
 	repeated File files = 3;
-	uint32 session_id = 4;
+	int64 session_id = 4;
 }
 
 message RegisterResourceResponse {
@@ -42,5 +42,5 @@ message RegisterResourceResponse {
 
 message UnregisterResourceRequest {
 	int64 resource_id = 1;
-	uint32 session_id = 2;
+	int64 session_id = 2;
 }

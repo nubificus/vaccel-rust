@@ -45,7 +45,7 @@ impl VaccelRpcAgent {
 
         info!("Updating hint {} for session {}", req.flags, req.session_id);
 
-        vaccel::Session::update(&mut sess, req.flags);
+        sess.update(req.flags);
         Ok(VaccelEmpty::new())
     }
 
@@ -60,10 +60,10 @@ impl VaccelRpcAgent {
                 ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
             })?;
 
-        if let Entry::Occupied(t) = self.timers.entry(req.session_id) {
+        if let Entry::Occupied(t) = self.timers.entry(req.session_id.into()) {
             t.remove_entry();
         }
-        match sess.close() {
+        match sess.release() {
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
             Ok(()) => {
                 info!("Destroyed session {}", req.session_id);

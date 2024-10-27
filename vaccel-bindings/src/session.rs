@@ -23,7 +23,7 @@ impl Session {
     pub fn new(flags: u32) -> Result<Self> {
         let mut inner = ffi::vaccel_session::default();
 
-        match unsafe { ffi::vaccel_sess_init(&mut inner, flags) as u32 } {
+        match unsafe { ffi::vaccel_session_init(&mut inner, flags) as u32 } {
             ffi::VACCEL_OK => Ok(Session { inner }),
             err => Err(Error::Runtime(err)),
         }
@@ -31,7 +31,7 @@ impl Session {
 
     /// Get the session id
     pub fn id(&self) -> VaccelId {
-        VaccelId::from(self.inner.session_id as i64)
+        VaccelId::from(self.inner.id)
     }
 
     /// update hint for session
@@ -39,11 +39,11 @@ impl Session {
         self.inner.hint = flags;
     }
 
-    /// Destroy a vAccel session
+    /// Release a vAccel session's data
     ///
     /// This will close an open session and consume it.
-    pub fn close(&mut self) -> Result<()> {
-        match unsafe { ffi::vaccel_sess_free(&mut self.inner) as u32 } {
+    pub fn release(&mut self) -> Result<()> {
+        match unsafe { ffi::vaccel_session_release(&mut self.inner) as u32 } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
         }
