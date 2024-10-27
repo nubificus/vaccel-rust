@@ -112,7 +112,7 @@ impl InferenceResult {
             return Err(Error::TensorFlow(tf::Code::InvalidArgument));
         }
 
-        Ok(unsafe { tf::Tensor::from_vaccel_tensor(t).unwrap() })
+        Ok(unsafe { tf::Tensor::from_ffi(t).unwrap() })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TFTensor> {

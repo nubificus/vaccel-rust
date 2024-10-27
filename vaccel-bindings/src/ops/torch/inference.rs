@@ -78,7 +78,7 @@ impl InferenceResult {
             return Err(Error::Torch(Code::InvalidArgument));
         }
 
-        Ok(unsafe { Tensor::from_vaccel_tensor(t).unwrap() })
+        Ok(unsafe { Tensor::from_ffi(t).unwrap() })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TorchTensor> {

@@ -25,7 +25,7 @@ impl GenopArg {
             argtype,
         }
     }
-    pub fn get_size(&self) -> u32 {
+    pub fn size(&self) -> u32 {
         self.inner.size
     }
 
@@ -34,11 +34,11 @@ impl GenopArg {
         self.inner.size = v as u32;
     }
 
-    pub fn get_buf(&self) -> *mut u8 {
+    pub fn buf(&self) -> *mut u8 {
         self.inner.buf as *mut u8
     }
 
-    pub fn get_argtype(&self) -> u32 {
+    pub fn argtype(&self) -> u32 {
         self.inner.argtype
     }
 
