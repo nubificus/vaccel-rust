@@ -17,7 +17,7 @@ use vaccel_rpc_proto::tensorflow::{
 };
 
 impl VaccelRpcClient {
-    pub fn tf_model_load(&self, model_id: i64, session_id: u32) -> Result<Vec<u8>> {
+    pub fn tf_model_load(&self, model_id: i64, session_id: i64) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
         let req = TensorflowModelLoadRequest {
             session_id,
@@ -33,7 +33,7 @@ impl VaccelRpcClient {
         Ok(resp.take_graph_def())
     }
 
-    pub fn tf_model_unload(&self, model_id: i64, session_id: u32) -> Result<()> {
+    pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let req = TensorflowModelUnloadRequest {
             session_id,
@@ -52,7 +52,7 @@ impl VaccelRpcClient {
     pub fn tf_model_run(
         &self,
         model_id: i64,
-        session_id: u32,
+        session_id: i64,
         run_options: Vec<u8>,
         in_nodes: Vec<TFNode>,
         in_tensors: Vec<TFTensor>,
@@ -110,7 +110,7 @@ impl VaccelRpcClient {
 pub unsafe extern "C" fn tf_session_load(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
@@ -132,7 +132,7 @@ pub unsafe extern "C" fn tf_session_load(
 pub unsafe extern "C" fn tf_session_delete(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
@@ -157,7 +157,7 @@ pub unsafe extern "C" fn tf_session_delete(
 pub unsafe extern "C" fn tf_session_run(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
     run_options_ptr: *const ffi::vaccel_tf_buffer,
     in_nodes_ptr: *const ffi::vaccel_tf_node,
     in_tensors_ptr: *const *mut ffi::vaccel_tf_tensor,

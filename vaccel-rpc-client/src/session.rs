@@ -17,7 +17,7 @@ use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
 //use tracing::{info, instrument, Instrument};
 
 impl VaccelRpcClient {
-    pub fn sess_init(&self, flags: u32) -> Result<u32> {
+    pub fn session_init(&self, flags: u32) -> Result<i64> {
         let ctx = ttrpc::context::Context::default();
         let req = CreateSessionRequest {
             flags,
@@ -29,7 +29,7 @@ impl VaccelRpcClient {
         Ok(resp.session_id)
     }
 
-    pub fn sess_update(&self, sess_id: u32, flags: u32) -> Result<()> {
+    pub fn session_update(&self, sess_id: i64, flags: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let req = UpdateSessionRequest {
             session_id: sess_id,
@@ -42,7 +42,7 @@ impl VaccelRpcClient {
         Ok(())
     }
 
-    pub fn sess_free(&self, sess_id: u32) -> Result<()> {
+    pub fn session_release(&self, sess_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let req = DestroySessionRequest {
             session_id: sess_id,
@@ -60,15 +60,18 @@ impl VaccelRpcClient {
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn sess_init(client_ptr: *mut VaccelRpcClient, flags: u32) -> i32 {
+pub unsafe extern "C" fn vaccel_rpc_client_session_init(
+    client_ptr: *mut VaccelRpcClient,
+    flags: u32,
+) -> ffi::vaccel_id_t {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as i32,
+        None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
 
-    match client.sess_init(flags) {
-        Ok(ret) => ret as i32,
-        Err(_) => -(ffi::VACCEL_EIO as i32),
+    match client.session_init(flags) {
+        Ok(id) => id,
+        Err(_) => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
     }
 }
 
@@ -77,9 +80,9 @@ pub unsafe extern "C" fn sess_init(client_ptr: *mut VaccelRpcClient, flags: u32)
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn sess_update(
+pub unsafe extern "C" fn vaccel_rpc_client_session_update(
     client_ptr: *const VaccelRpcClient,
-    sess_id: u32,
+    sess_id: ffi::vaccel_id_t,
     flags: u32,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
@@ -87,7 +90,7 @@ pub unsafe extern "C" fn sess_update(
         None => return ffi::VACCEL_EINVAL as i32,
     };
 
-    match client.sess_update(sess_id, flags) {
+    match client.session_update(sess_id, flags) {
         Ok(()) => ffi::VACCEL_OK as i32,
         Err(Error::ClientError(err)) => err as i32,
         Err(_) => ffi::VACCEL_EIO as i32,
@@ -99,13 +102,16 @@ pub unsafe extern "C" fn sess_update(
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn sess_free(client_ptr: *mut VaccelRpcClient, sess_id: u32) -> i32 {
+pub unsafe extern "C" fn vaccel_rpc_client_session_release(
+    client_ptr: *mut VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
+) -> i32 {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as i32,
     };
 
-    match client.sess_free(sess_id) {
+    match client.session_release(sess_id) {
         Ok(()) => {
             //#[cfg(feature = "async")]
             //let mut timers = client.timers.lock().unwrap();

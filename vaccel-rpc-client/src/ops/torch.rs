@@ -16,7 +16,7 @@ use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchTensor};
 impl VaccelRpcClient {
     pub fn torch_jitload_forward(
         &self,
-        session_id: u32,
+        session_id: i64,
         model_id: i64,
         run_options: Vec<u8>,
         in_tensors: Vec<TorchTensor>,
@@ -75,7 +75,7 @@ impl VaccelRpcClient {
 #[no_mangle]
 pub unsafe extern "C" fn torch_jitload_forward(
     client_ptr: *const VaccelRpcClient,
-    sess_id: u32,
+    sess_id: i64,
     model_id: ffi::vaccel_id_t,
     run_options_ptr: *const ffi::vaccel_torch_buffer,
     in_tensors_ptr: *const *mut ffi::vaccel_torch_tensor,

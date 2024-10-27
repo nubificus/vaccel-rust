@@ -17,7 +17,7 @@ use vaccel_rpc_proto::tensorflow::{
 };
 
 impl VaccelRpcClient {
-    pub fn tflite_model_load(&self, model_id: i64, session_id: u32) -> Result<()> {
+    pub fn tflite_model_load(&self, model_id: i64, session_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let req = TensorflowLiteModelLoadRequest {
             session_id,
@@ -33,7 +33,7 @@ impl VaccelRpcClient {
         Ok(())
     }
 
-    pub fn tflite_model_unload(&self, model_id: i64, session_id: u32) -> Result<()> {
+    pub fn tflite_model_unload(&self, model_id: i64, session_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let req = TensorflowLiteModelUnloadRequest {
             session_id,
@@ -52,7 +52,7 @@ impl VaccelRpcClient {
     pub fn tflite_model_run(
         &self,
         model_id: i64,
-        session_id: u32,
+        session_id: i64,
         in_tensors: Vec<TFLiteTensor>,
         nr_outputs: i32,
     ) -> Result<Vec<*mut ffi::vaccel_tflite_tensor>> {
@@ -106,7 +106,7 @@ impl VaccelRpcClient {
 pub unsafe extern "C" fn tflite_session_load(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
@@ -128,7 +128,7 @@ pub unsafe extern "C" fn tflite_session_load(
 pub unsafe extern "C" fn tflite_session_delete(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
@@ -152,7 +152,7 @@ pub unsafe extern "C" fn tflite_session_delete(
 pub unsafe extern "C" fn tflite_session_run(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: i64,
     in_tensors_ptr: *const *mut ffi::vaccel_tflite_tensor,
     nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_tflite_tensor,

@@ -20,7 +20,7 @@ impl VaccelRpcClient {
         paths: Vec<String>,
         files: Vec<File>,
         res_type: u32,
-        sess_id: u32,
+        sess_id: i64,
     ) -> Result<i64> {
         let ctx = ttrpc::context::Context::default();
         let mut req = RegisterResourceRequest::new();
@@ -37,7 +37,7 @@ impl VaccelRpcClient {
         }
     }
 
-    pub fn resource_unregister(&self, res_id: i64, sess_id: u32) -> Result<()> {
+    pub fn resource_unregister(&self, res_id: i64, sess_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
         let mut req = UnregisterResourceRequest::new();
         req.resource_id = res_id;
@@ -62,7 +62,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     files_ptr: *mut *mut ffi::vaccel_file,
     nr_elems: usize,
     type_: u32,
-    sess_id: u32,
+    sess_id: ffi::vaccel_id_t,
 ) -> ffi::vaccel_id_t {
     let client = match unsafe { client_ptr.as_mut() } {
         Some(client) => client,
@@ -135,7 +135,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
 pub unsafe extern "C" fn vaccel_rpc_client_resource_unregister(
     client_ptr: *const VaccelRpcClient,
     res_id: ffi::vaccel_id_t,
-    sess_id: u32,
+    sess_id: ffi::vaccel_id_t,
 ) -> i32 {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,

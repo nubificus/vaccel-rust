@@ -16,28 +16,28 @@ use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
 impl VaccelRpcClient {
     pub const TIMERS_PREFIX: &'static str = "vaccel-client";
 
-    pub fn timer_start(&mut self, sess_id: u32, name: &str) {
+    pub fn timer_start(&mut self, sess_id: i64, name: &str) {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .start(name);
     }
 
-    pub fn timer_stop(&mut self, sess_id: u32, name: &str) {
+    pub fn timer_stop(&mut self, sess_id: i64, name: &str) {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .stop(name);
     }
 
-    pub fn timers_extend(&mut self, sess_id: u32, extra: ProfRegions) {
+    pub fn timers_extend(&mut self, sess_id: i64, extra: ProfRegions) {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
             .extend(extra);
     }
 
-    pub fn timers_get_len(&self, sess_id: u32) -> usize {
+    pub fn timers_get_len(&self, sess_id: i64) -> usize {
         self.timers
             .entry(sess_id)
             .or_insert_with(|| ProfRegions::new(Self::TIMERS_PREFIX))
@@ -46,7 +46,7 @@ impl VaccelRpcClient {
 
     pub fn timers_get_ffi(
         &self,
-        sess_id: u32,
+        sess_id: i64,
     ) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
         self.timers
             .entry(sess_id)
@@ -54,7 +54,7 @@ impl VaccelRpcClient {
             .get_ffi()
     }
 
-    pub fn get_timers(&mut self, sess_id: u32) -> Result<ProfRegions> {
+    pub fn get_timers(&mut self, sess_id: i64) -> Result<ProfRegions> {
         let ctx = ttrpc::context::Context::default();
 
         let req = ProfilingRequest {
@@ -76,9 +76,9 @@ impl VaccelRpcClient {
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn get_timers(
+pub unsafe extern "C" fn vaccel_rpc_client_get_timers(
     client_ptr: *mut VaccelRpcClient,
-    sess_id: u32,
+    sess_id: ffi::vaccel_id_t,
     timers_ptr: *mut ffi::vaccel_prof_region,
     nr_timers: usize,
     max_timer_name: usize,

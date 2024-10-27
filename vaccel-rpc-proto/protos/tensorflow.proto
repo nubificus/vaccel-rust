@@ -19,7 +19,7 @@ package vaccel;
 import "error.proto";
 
 message TensorflowModelLoadRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 };
 
@@ -31,7 +31,7 @@ message TensorflowModelLoadResponse {
 };
 
 message TensorflowModelUnloadRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 };
 
@@ -89,7 +89,7 @@ message TFNode {
 };
 
 message TensorflowModelRunRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 
 	// Run options
@@ -118,7 +118,7 @@ message TensorflowModelRunResponse {
 /* TFLite */
 
 message TensorflowLiteModelLoadRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 };
 
@@ -129,7 +129,7 @@ message TensorflowLiteModelLoadResponse {
 };
 
 message TensorflowLiteModelUnloadRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 };
 
@@ -176,7 +176,7 @@ message TFLiteTensor {
 };
 
 message TensorflowLiteModelRunRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 
 	// Input tensors

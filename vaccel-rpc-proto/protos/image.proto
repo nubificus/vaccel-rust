@@ -17,7 +17,7 @@ syntax = "proto3";
 package vaccel;
 
 message ImageClassificationRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	bytes image = 2;
 }
 

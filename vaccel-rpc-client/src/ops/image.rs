@@ -14,7 +14,7 @@ use vaccel_rpc_proto::image::ImageClassificationRequest;
 use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
 
 impl VaccelRpcClient {
-    pub fn image_classify(&self, sess_id: u32, img: Vec<u8>) -> Result<Vec<u8>> {
+    pub fn image_classify(&self, sess_id: i64, img: Vec<u8>) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
         let req = ImageClassificationRequest {
             session_id: sess_id,
@@ -37,7 +37,7 @@ impl VaccelRpcClient {
 #[no_mangle]
 pub unsafe extern "C" fn image_classify(
     client_ptr: *const VaccelRpcClient,
-    sess_id: u32,
+    sess_id: i64,
     img: *const c_uchar,
     img_len: usize,
     tags: *mut c_uchar,

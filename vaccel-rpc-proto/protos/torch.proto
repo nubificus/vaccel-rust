@@ -87,7 +87,7 @@ message TorchTensor {
 
 // Jitload_forward
 message TorchJitloadForwardRequest {
-	uint32 session_id = 1;
+	int64 session_id = 1;
 	int64 model_id = 2;
 
 	// Run options
