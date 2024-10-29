@@ -120,10 +120,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_load(
 
     match client.tf_model_load(model_id, sess_id) {
         Ok(_) => ffi::VACCEL_OK as c_int,
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     }
 }
@@ -145,10 +147,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_delete(
 
     match client.tf_model_unload(model_id, sess_id) {
         Ok(_) => ffi::VACCEL_OK as c_int,
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     }
 }
@@ -223,10 +227,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_run(
             out_tensors.copy_from_slice(&result);
             ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     }
 }

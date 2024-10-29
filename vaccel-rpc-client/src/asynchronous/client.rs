@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    util::{create_ttrpc_client, get_env_address},
-    Error, Result,
-};
+use crate::Result;
 use dashmap::DashMap;
 use log::debug;
 use std::{future::Future, sync::Arc};
@@ -24,10 +21,10 @@ impl VaccelRpcClient {
         debug!("Client is async");
 
         let r = Runtime::new().unwrap();
-        let server_address = get_env_address();
+        let server_address = Self::get_env_address();
 
         let _guard = r.enter();
-        let ttrpc_client = create_ttrpc_client(&server_address).map_err(Error::ClientError)?;
+        let ttrpc_client = Self::create_ttrpc_client(&server_address)?;
 
         Ok(VaccelRpcClient {
             ttrpc_client: RpcAgentClient::new(ttrpc_client),

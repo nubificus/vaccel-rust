@@ -16,7 +16,6 @@ pub mod ops;
 pub mod profiling;
 pub mod resource;
 pub mod session;
-pub mod util;
 
 extern crate ttrpc;
 
@@ -24,7 +23,7 @@ extern crate ttrpc;
 pub enum Error {
     /// Client error
     #[error("Client error: {0}")]
-    ClientError(u32),
+    ClientError(String),
 
     /// Socket error
     #[error("ttprc error: {0}")]
