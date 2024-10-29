@@ -75,7 +75,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_init(
         Ok(id) => id,
         Err(e) => {
             error!("{}", e);
-            -(ffi::VACCEL_EIO as ffi::vaccel_id_t)
+            match e {
+                Error::ClientError(_) => -(ffi::VACCEL_EBACKEND as ffi::vaccel_id_t),
+                _ => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
+            }
         }
     }
 }
@@ -97,10 +100,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_update(
 
     match client.session_update(sess_id, flags) {
         Ok(()) => ffi::VACCEL_OK as c_int,
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     }
 }
@@ -130,10 +135,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
             }
             ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EIO as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     }
 }

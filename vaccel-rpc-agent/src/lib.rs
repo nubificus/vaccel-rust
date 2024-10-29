@@ -9,7 +9,8 @@ pub mod rpc_sync;
 pub mod session;
 
 use dashmap::DashMap;
-use std::{default::Default, error::Error, pin::Pin, sync::Arc};
+use std::{default::Default, net::ToSocketAddrs, pin::Pin, sync::Arc};
+use thiserror::Error;
 #[cfg(feature = "async")]
 use ttrpc::asynchronous::Server;
 #[cfg(not(feature = "async"))]
@@ -56,6 +57,27 @@ impl VaccelRpcAgent {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum Error {
+    /// Agent error
+    #[error("Agent error: {0}")]
+    AgentError(String),
+
+    /// Socket error
+    #[error("ttprc error: {0}")]
+    TtrpcError(ttrpc::Error),
+
+    /// Undefined error
+    #[error("Undefined error")]
+    Undefined,
+}
+
+impl From<ttrpc::Error> for Error {
+    fn from(err: ttrpc::Error) -> Self {
+        Error::TtrpcError(err)
+    }
+}
+
 pub(crate) fn ttrpc_error(code: ttrpc::Code, msg: String) -> ttrpc::Error {
     ttrpc::Error::RpcStatus(ttrpc::error::get_status(code, msg))
 }
@@ -77,26 +99,50 @@ pub(crate) fn vaccel_error(err: vaccel::Error) -> VaccelError {
     grpc_error
 }
 
-pub fn server_init(server_address: &str) -> Result<Server, Box<dyn Error>> {
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub(crate) fn resolve_uri(uri: &str) -> Result<String> {
+    let parts: Vec<&str> = uri.split("://").collect();
+    if parts.len() != 2 {
+        return Err(Error::AgentError("Invalid server address uri".into()));
+    }
+
+    let scheme = parts[0].to_lowercase();
+    match scheme.as_str() {
+        "vsock" | "unix" => Ok(uri.to_string()),
+        "tcp" => {
+            let address = parts[1].to_lowercase();
+            let mut resolved = match address.to_socket_addrs() {
+                Ok(a) => a,
+                Err(e) => return Err(Error::AgentError(e.to_string())),
+            };
+            let resolved_address = match resolved.next() {
+                Some(a) => a.to_string(),
+                None => {
+                    return Err(Error::AgentError(
+                        "Could not resolve TCP server address".into(),
+                    ))
+                }
+            };
+
+            Ok(format!("{}://{}", scheme, resolved_address.as_str()))
+        }
+        _ => Err(Error::AgentError("Unsupported protocol".into())),
+    }
+}
+
+pub fn server_init(server_address: &str) -> Result<Server> {
     let agent_worker = Arc::new(VaccelRpcAgent::new());
     let aservice = create_rpc_agent(agent_worker);
 
     if server_address.is_empty() {
-        return Err("Server address cannot be empty".into());
+        return Err(Error::AgentError("Server address cannot be empty".into()));
     }
 
-    let fields: Vec<&str> = server_address.split("://").collect();
-    if fields.len() != 2 {
-        return Err("Invalid address".into());
-    }
-
-    let scheme = fields[0].to_lowercase();
-    let server: Server = match scheme.as_str() {
-        "vsock" | "unix" | "tcp" => Server::new()
-            .bind(server_address)?
-            .register_service(aservice),
-        _ => return Err("Unsupported protocol".into()),
-    };
+    let resolved_uri = resolve_uri(server_address)?;
+    let server: Server = Server::new()
+        .bind(&resolved_uri)?
+        .register_service(aservice);
 
     Ok(server)
 }

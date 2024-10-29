@@ -130,10 +130,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
 
             ffi::VACCEL_OK as c_int
         }
-        Err(Error::ClientError(err)) => err as c_int,
         Err(e) => {
             error!("{}", e);
-            ffi::VACCEL_EINVAL as c_int
+            match e {
+                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
+                _ => ffi::VACCEL_EIO as c_int,
+            }
         }
     };
     client.timer_stop(sess_id, "genop > client.genop");
