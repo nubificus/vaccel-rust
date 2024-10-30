@@ -20,10 +20,10 @@ fn main() {
         }
     };
 
-    info!("New session {}", sess.id());
+    info!("Initialized session {}", sess.id());
 
-    info!("Closing session {}", sess.id());
-    match sess.close() {
+    info!("Releasing session {}", sess.id());
+    match sess.release() {
         Ok(()) => info!("Done"),
         Err(e) => info!("Error: {}", e),
     }
