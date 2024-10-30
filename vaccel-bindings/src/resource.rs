@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, Error, File, Result, Session, VaccelId};
+use log::warn;
 use std::{
     error::Error as StdError,
     ffi::{c_char, c_void, CString},
@@ -159,5 +160,18 @@ impl Resource {
 
     pub(crate) fn inner_mut(self: Pin<&mut Self>) -> &mut ffi::vaccel_resource {
         unsafe { &mut self.get_unchecked_mut().inner }
+    }
+}
+
+impl Drop for Resource {
+    fn drop(&mut self) {
+        // `new_unchecked` is okay because we know this value is never used
+        // again after being dropped.
+        inner_drop(unsafe { Pin::new_unchecked(self) });
+        fn inner_drop(this: Pin<&mut Resource>) {
+            if this.as_ref().initialized() && this.release().is_err() {
+                warn!("Could not release resource");
+            }
+        }
     }
 }
