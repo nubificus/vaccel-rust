@@ -67,7 +67,7 @@ pub struct VaccelId {
 }
 
 impl VaccelId {
-    fn has_id(&self) -> bool {
+    pub fn has_id(&self) -> bool {
         self.inner.is_some()
     }
 }

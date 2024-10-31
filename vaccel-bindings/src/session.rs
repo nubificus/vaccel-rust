@@ -22,7 +22,11 @@ impl Session {
     ///
     /// * `flags` - Flags for session creation.
     pub fn new(flags: u32) -> Result<Self> {
-        let mut inner = ffi::vaccel_session::default();
+        // Ensure id is always initialized
+        let mut inner = ffi::vaccel_session {
+            id: -1,
+            ..Default::default()
+        };
 
         match unsafe { ffi::vaccel_session_init(&mut inner, flags) as u32 } {
             ffi::VACCEL_OK => Ok(Session { inner }),

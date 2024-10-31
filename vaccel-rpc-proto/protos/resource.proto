@@ -15,10 +15,11 @@ message File {
 }
 
 message RegisterResourceRequest {
-	uint32 resource_type = 1;
-	repeated string paths = 2;
-	repeated File files = 3;
-	int64 session_id = 4;
+	repeated string paths = 1;
+	repeated File files = 2;
+	uint32 resource_type = 3;
+	int64 resource_id = 4;
+	int64 session_id = 5;
 }
 
 message RegisterResourceResponse {
