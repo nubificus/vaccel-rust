@@ -34,7 +34,11 @@ impl Resource {
         let mut p: Vec<*const c_char> = c_paths.iter().map(|p| p.as_c_str().as_ptr()).collect();
 
         let r = Resource {
-            inner: ffi::vaccel_resource::default(),
+            // Ensure id is always initialized
+            inner: ffi::vaccel_resource {
+                id: -1,
+                ..Default::default()
+            },
             _marker: PhantomPinned,
         };
         let mut boxed = Box::pin(r);
@@ -68,7 +72,11 @@ impl Resource {
             files.iter().map(|f| f.inner() as *const _).collect();
 
         let r = Resource {
-            inner: ffi::vaccel_resource::default(),
+            // Ensure id is always initialized
+            inner: ffi::vaccel_resource {
+                id: -1,
+                ..Default::default()
+            },
             _marker: PhantomPinned,
         };
         let mut boxed = Box::pin(r);
@@ -89,7 +97,11 @@ impl Resource {
     /// Create new resource from in-memory data
     pub fn from_buf(data: &[u8], res_type: u32, filename: Option<&str>) -> Result<Pin<Box<Self>>> {
         let r = Resource {
-            inner: ffi::vaccel_resource::default(),
+            // Ensure id is always initialized
+            inner: ffi::vaccel_resource {
+                id: -1,
+                ..Default::default()
+            },
             _marker: PhantomPinned,
         };
         let mut boxed = Box::pin(r);
@@ -117,7 +129,19 @@ impl Resource {
         }
     }
 
-    /// Register a resource to a session
+    /// Release resource data
+    pub fn release(self: Pin<&mut Self>) -> Result<()> {
+        if !self.as_ref().initialized() {
+            return Err(Error::Uninitialized);
+        }
+
+        match unsafe { ffi::vaccel_resource_release(self.inner_mut()) as u32 } {
+            ffi::VACCEL_OK => Ok(()),
+            err => Err(Error::Runtime(err)),
+        }
+    }
+
+    /// Register a resource with a session
     pub fn register(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         if !self.as_ref().initialized() {
             return Err(Error::Uninitialized);
@@ -142,15 +166,17 @@ impl Resource {
         }
     }
 
-    /// Release resource data
-    pub fn release(self: Pin<&mut Self>) -> Result<()> {
+    /// Get refcount atomically
+    /// Use a vaccel function here since bindgen does not support C atomics yet
+    /// (see: https://github.com/rust-lang/rust-bindgen/issues/2151)
+    pub fn refcount(self: Pin<&Self>) -> Result<u32> {
         if !self.as_ref().initialized() {
             return Err(Error::Uninitialized);
         }
 
-        match unsafe { ffi::vaccel_resource_release(self.inner_mut()) as u32 } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+        match unsafe { ffi::vaccel_resource_refcount(self.inner()) } {
+            rc if rc >= 0 => Ok(rc as u32),
+            err => Err(Error::Runtime(-err as u32)),
         }
     }
 

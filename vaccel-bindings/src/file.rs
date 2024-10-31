@@ -26,7 +26,11 @@ impl File {
                 name: n.as_c_str().as_ptr() as *mut c_char,
                 path: p.as_c_str().as_ptr() as *mut c_char,
                 path_owned,
-                data: d.as_mut_ptr(),
+                data: if !d.is_empty() {
+                    d.as_mut_ptr()
+                } else {
+                    std::ptr::null_mut()
+                },
                 size,
             },
             name: n,
