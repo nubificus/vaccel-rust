@@ -4,7 +4,7 @@ use super::client::VaccelRpcClient;
 use crate::Result;
 use protobuf::Message;
 use ttrpc::asynchronous::ClientStreamSender;
-use vaccel_rpc_proto::genop::{GenopArg, GenopRequest, GenopResponse};
+use vaccel_rpc_proto::genop::{Arg, GenopRequest, GenopResponse};
 
 impl VaccelRpcClient {
     const MAX_REQ_LEN: u64 = 4194304;
@@ -13,7 +13,7 @@ impl VaccelRpcClient {
         &mut self,
         sess_id: i64,
         stream: &ClientStreamSender<GenopRequest, GenopResponse>,
-        args: Vec<GenopArg>,
+        args: Vec<Arg>,
         is_read: bool,
     ) {
         let mut req = GenopRequest {
@@ -36,11 +36,11 @@ impl VaccelRpcClient {
 
                 let chunks = a
                     .buf
-                    .chunks(Self::MAX_REQ_LEN as usize - std::mem::size_of::<GenopArg>());
+                    .chunks(Self::MAX_REQ_LEN as usize - std::mem::size_of::<Arg>());
                 let parts = chunks.len();
                 for (no, c) in chunks.enumerate() {
                     self.timer_start(sess_id, "genop > client > ttrpc_client.genop > req create");
-                    let arg = GenopArg {
+                    let arg = Arg {
                         buf: c.to_vec(),
                         size: a.buf.len() as u32,
                         parts: parts as u32,
@@ -86,9 +86,9 @@ impl VaccelRpcClient {
     pub fn genop_stream(
         &mut self,
         sess_id: i64,
-        read_args: Vec<GenopArg>,
-        write_args: Vec<GenopArg>,
-    ) -> Result<Vec<GenopArg>> {
+        read_args: Vec<Arg>,
+        write_args: Vec<Arg>,
+    ) -> Result<Vec<Arg>> {
         let ctx = ttrpc::context::Context::default();
 
         self.timer_start(sess_id, "genop > client > ttrpc_client.genop");

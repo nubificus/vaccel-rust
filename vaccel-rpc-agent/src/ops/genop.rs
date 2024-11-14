@@ -2,7 +2,7 @@
 
 use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
 use log::info;
-use vaccel::{ops::genop, profiling::ProfRegions};
+use vaccel::{profiling::ProfRegions, Arg};
 use vaccel_rpc_proto::genop::{GenopRequest, GenopResponse, GenopResult};
 
 impl VaccelRpcAgent {
@@ -19,13 +19,11 @@ impl VaccelRpcAgent {
             .entry(req.session_id.into())
             .or_insert_with(|| ProfRegions::new("vaccel-agent"));
         timers.start("genop > read_args");
-        let mut read_args: Vec<genop::GenopArg> =
-            req.read_args.iter_mut().map(|e| e.into()).collect();
+        let mut read_args: Vec<Arg> = req.read_args.iter_mut().map(|e| e.into()).collect();
         timers.stop("genop > read_args");
 
         timers.start("genop > write_args");
-        let mut write_args: Vec<genop::GenopArg> =
-            req.write_args.iter_mut().map(|e| e.into()).collect();
+        let mut write_args: Vec<Arg> = req.write_args.iter_mut().map(|e| e.into()).collect();
         timers.stop("genop > write_args");
 
         info!("Genop session {}", sess.id());

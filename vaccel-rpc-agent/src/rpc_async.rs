@@ -13,7 +13,7 @@ use vaccel_rpc_proto::tensorflow::{
 };
 use vaccel_rpc_proto::{
     asynchronous::{agent::VaccelEmpty, agent_ttrpc::RpcAgent},
-    genop::{GenopArg, GenopRequest, GenopResponse},
+    genop::{Arg, GenopRequest, GenopResponse},
     image::{ImageClassificationRequest, ImageClassificationResponse},
     profiling::{ProfilingRequest, ProfilingResponse},
     resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
@@ -148,8 +148,8 @@ impl RpcAgent for VaccelRpcAgent {
         mut r: ::ttrpc::asynchronous::ServerStreamReceiver<GenopRequest>,
     ) -> ttrpc::Result<GenopResponse> {
         let mut req = GenopRequest::default();
-        let mut r_arg = vec![GenopArg::new()];
-        let mut w_arg = vec![GenopArg::new()];
+        let mut r_arg = vec![Arg::new()];
+        let mut w_arg = vec![Arg::new()];
         while let Some(mut data) = r.recv().await? {
             req.session_id = data.session_id;
             if data.read_args.len() == 1 && data.read_args[0].parts > 0 {
@@ -159,7 +159,7 @@ impl RpcAgent for VaccelRpcAgent {
                     r_arg[0].buf.append(&mut data.read_args[0].buf);
                     r_arg[0].size = data.read_args[0].size;
                     req.read_args.append(&mut r_arg);
-                    r_arg = vec![GenopArg::new()];
+                    r_arg = vec![Arg::new()];
                 }
             } else if data.write_args.len() == 1 && data.write_args[0].parts > 0 {
                 if data.write_args[0].part_no < data.write_args[0].parts {
@@ -168,7 +168,7 @@ impl RpcAgent for VaccelRpcAgent {
                     w_arg[0].buf.append(&mut data.write_args[0].buf);
                     w_arg[0].size = data.write_args[0].size;
                     req.write_args.append(&mut w_arg);
-                    w_arg = vec![GenopArg::new()];
+                    w_arg = vec![Arg::new()];
                 }
             } else {
                 req.read_args.append(&mut data.read_args);
