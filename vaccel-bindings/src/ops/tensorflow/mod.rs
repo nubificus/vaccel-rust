@@ -4,9 +4,9 @@ use crate::ffi;
 use std::{ffi::CStr, fmt};
 
 pub mod buffer;
-#[cfg(target_pointer_width = "64")]
-pub mod inference;
 pub mod lite;
+#[cfg(target_pointer_width = "64")]
+pub mod model;
 #[cfg(target_pointer_width = "64")]
 pub mod node;
 #[cfg(target_pointer_width = "64")]
@@ -14,7 +14,7 @@ pub mod tensor;
 
 pub use buffer::Buffer;
 #[cfg(target_pointer_width = "64")]
-pub use inference::{InferenceArgs, InferenceResult};
+pub use model::{InferenceArgs, InferenceResult, Model};
 #[cfg(target_pointer_width = "64")]
 pub use node::Node;
 #[cfg(target_pointer_width = "64")]

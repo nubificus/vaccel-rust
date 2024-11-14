@@ -3,11 +3,11 @@
 use crate::ffi;
 
 pub mod buffer;
-pub mod inference;
+pub mod model;
 pub mod tensor;
 
 pub use buffer::Buffer;
-pub use inference::{InferenceArgs, InferenceResult};
+pub use model::{InferenceArgs, InferenceResult, Model};
 pub use tensor::{Tensor, TensorAny, TensorType};
 
 #[derive(Debug)]

@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Buffer, Code, DataType, Tensor, TensorAny, TensorType};
-use crate::{ffi, ops::InferenceModel, Error, Resource, Result, Session};
+use crate::{
+    ffi,
+    ops::{ModelInitialize, ModelRun},
+    Error, Resource, Result, Session,
+};
 use protobuf::Enum;
-use std::pin::Pin;
+use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 pub struct InferenceArgs {
-    // Do we have const here?
     run_options: *const ffi::vaccel_torch_buffer,
     in_tensors: Vec<*const ffi::vaccel_torch_tensor>,
     nr_outputs: i32,
@@ -18,6 +21,7 @@ impl Default for InferenceArgs {
         Self::new()
     }
 }
+
 impl InferenceArgs {
     pub fn new() -> Self {
         InferenceArgs {
@@ -27,12 +31,10 @@ impl InferenceArgs {
         }
     }
 
-    // torch::Buffer -> Buffer
     pub fn set_run_options(&mut self, run_opts: &Buffer) {
         self.run_options = run_opts.inner();
     }
 
-    // torch::TensorAny -> TensorAny
     // TODO: &TorchTensor -> TensorAny
     pub fn add_input(&mut self, tensor: &dyn TensorAny) {
         self.in_tensors.push(tensor.inner());
@@ -45,7 +47,7 @@ impl InferenceArgs {
 
 pub struct InferenceResult {
     out_tensors: Vec<*mut ffi::vaccel_torch_tensor>,
-    // Do we need a torch::status here?
+    // TODO: Do we need a torch::status here?
 }
 
 impl InferenceResult {
@@ -61,7 +63,6 @@ impl InferenceResult {
         }
     }
 
-    // torch::TensorType -> TensorType
     pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
             return Err(Error::Torch(Code::OutOfRange));
@@ -69,7 +70,6 @@ impl InferenceResult {
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            // torch::Code -> Code
             return Err(Error::Torch(Code::Unavailable));
         }
 
@@ -105,8 +105,23 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
-    type LoadResult = ();
+pub struct Model<'a> {
+    inner: Pin<&'a mut Resource>,
+    _marker: PhantomPinned,
+}
+
+impl<'a> ModelInitialize<'a> for Model<'a> {
+    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
+        Box::pin(Self {
+            inner,
+            _marker: PhantomPinned,
+        })
+    }
+}
+
+impl<'a> ModelRun<'a> for Model<'a> {
+    type RunArgs = InferenceArgs;
+    type RunResult = InferenceResult;
 
     fn run(
         self: Pin<&mut Self>,
@@ -114,14 +129,11 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         args: &mut InferenceArgs,
     ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
-
         match unsafe {
-            // sess, model, run_options, in_tensor, nr_read, out_tensors, nr_write
             ffi::vaccel_torch_jitload_forward(
                 sess.inner_mut(),
-                self.inner_mut(),
-                args.run_options, //.as_ptr() as *mut ffi::vaccel_torch_buffer,
-                //args.in_tensors, //as *mut *mut ffi::vaccel_torch_tensor,
+                self.inner_mut().inner_mut(),
+                args.run_options,
                 args.in_tensors.as_ptr() as *mut *mut ffi::vaccel_torch_tensor,
                 args.in_tensors.len() as i32,
                 result.out_tensors.as_mut_ptr(),
@@ -133,11 +145,7 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         }
     }
 
-    fn load(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
-        Ok(())
-    }
-
-    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
-        Ok(())
+    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
+        unsafe { self.get_unchecked_mut().inner.as_mut() }
     }
 }

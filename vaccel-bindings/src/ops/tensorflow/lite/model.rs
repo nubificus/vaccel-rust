@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Code, Tensor, TensorAny, TensorType, Type};
-use crate::{ffi, ops::InferenceModel, Error, Resource, Result, Session};
+use crate::{
+    ffi,
+    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
+    Error, Resource, Result, Session,
+};
 use protobuf::Enum;
-use std::pin::Pin;
+use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType, TensorflowLiteModelRunRequest};
 
 pub struct InferenceArgs {
@@ -111,16 +115,23 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
-    type LoadResult = ();
+pub struct Model<'a> {
+    inner: Pin<&'a mut Resource>,
+    _marker: PhantomPinned,
+}
 
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
-        match unsafe { ffi::vaccel_tflite_session_load(sess.inner_mut(), self.inner_mut()) as u32 }
-        {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
-        }
+impl<'a> ModelInitialize<'a> for Model<'a> {
+    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
+        Box::pin(Self {
+            inner,
+            _marker: PhantomPinned,
+        })
     }
+}
+
+impl<'a> ModelRun<'a> for Model<'a> {
+    type RunArgs = InferenceArgs;
+    type RunResult = InferenceResult;
 
     fn run(
         self: Pin<&mut Self>,
@@ -128,11 +139,10 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         args: &mut InferenceArgs,
     ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
-
         match unsafe {
             ffi::vaccel_tflite_session_run(
                 sess.inner_mut(),
-                self.inner_mut(),
+                self.inner_mut().inner_mut(),
                 args.in_tensors.as_ptr() as *const *mut ffi::vaccel_tflite_tensor,
                 args.in_tensors.len() as i32,
                 result.out_tensors.as_mut_ptr(),
@@ -145,9 +155,26 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         }
     }
 
+    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
+        unsafe { self.get_unchecked_mut().inner.as_mut() }
+    }
+}
+
+impl<'a> ModelLoadUnload<'a> for Model<'a> {
+    type LoadResult = ();
+
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
+        match unsafe {
+            ffi::vaccel_tflite_session_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+        } {
+            ffi::VACCEL_OK => Ok(()),
+            err => Err(Error::Runtime(err)),
+        }
+    }
+
     fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tflite_session_delete(sess.inner_mut(), self.inner_mut()) as u32
+            ffi::vaccel_tflite_session_delete(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),

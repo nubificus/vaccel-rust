@@ -2,11 +2,11 @@
 
 use crate::{
     ffi,
-    ops::{tensorflow as tf, InferenceModel},
+    ops::{tensorflow as tf, ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
 use protobuf::Enum;
-use std::pin::Pin;
+use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
 
 pub struct InferenceArgs {
@@ -136,31 +136,23 @@ impl InferenceResult {
     }
 }
 
-impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
-    type LoadResult = tf::Status;
+pub struct Model<'a> {
+    inner: Pin<&'a mut Resource>,
+    _marker: PhantomPinned,
+}
 
-    /// Load a TensorFlow session from a TFSavedModel
-    ///
-    /// The TensorFlow model must have been created and registered to
-    /// a session. The operation will load the graph and keep the graph
-    /// TensorFlow representation in the model struct
-    ///
-    /// # Arguments
-    ///
-    /// * `session` - The session in the context of which we perform the operation. The model needs
-    ///   to be registered with this session.
-    ///
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<tf::Status> {
-        let mut status = tf::Status::new();
-
-        match unsafe {
-            ffi::vaccel_tf_session_load(sess.inner_mut(), self.inner_mut(), status.inner_mut())
-                as u32
-        } {
-            ffi::VACCEL_OK => Ok(status),
-            err => Err(Error::Runtime(err)),
-        }
+impl<'a> ModelInitialize<'a> for Model<'a> {
+    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
+        Box::pin(Self {
+            inner,
+            _marker: PhantomPinned,
+        })
     }
+}
+
+impl<'a> ModelRun<'a> for Model<'a> {
+    type RunArgs = InferenceArgs;
+    type RunResult = InferenceResult;
 
     /// Run a TensorFlow session
     ///
@@ -173,11 +165,10 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         args: &mut InferenceArgs,
     ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.out_nodes.len());
-
         match unsafe {
             ffi::vaccel_tf_session_run(
                 sess.inner_mut(),
-                self.inner_mut(),
+                self.inner_mut().inner_mut(),
                 args.run_options,
                 args.in_nodes.as_ptr(),
                 args.in_tensors.as_ptr() as *const *mut ffi::vaccel_tf_tensor,
@@ -193,16 +184,51 @@ impl InferenceModel<InferenceArgs, InferenceResult> for Resource {
         }
     }
 
+    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
+        unsafe { self.get_unchecked_mut().inner.as_mut() }
+    }
+}
+
+impl<'a> ModelLoadUnload<'a> for Model<'a> {
+    type LoadResult = tf::Status;
+
+    /// Load a TensorFlow session from a TFSavedModel
+    ///
+    /// The TensorFlow model must have been created and registered to
+    /// a session. The operation will load the graph and keep the graph
+    /// TensorFlow representation in the model struct
+    ///
+    /// # Arguments
+    ///
+    /// * `session` - The session in the context of which we perform the operation. The model needs
+    ///   to be registered with this session.
+    ///
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<tf::Status> {
+        let mut status = tf::Status::new();
+        match unsafe {
+            ffi::vaccel_tf_session_load(
+                sess.inner_mut(),
+                self.inner_mut().inner_mut(),
+                status.inner_mut(),
+            ) as u32
+        } {
+            ffi::VACCEL_OK => Ok(status),
+            err => Err(Error::Runtime(err)),
+        }
+    }
+
     /// Delete a TensorFlow session
     ///
     /// This will unload a TensorFlow session that was previously loaded in memory
     /// using `load()`.
     fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
         let mut status = tf::Status::new();
-
         match unsafe {
-            ffi::vaccel_tf_session_delete(sess.inner_mut(), self.inner_mut(), status.inner_mut())
-                as u32
+            ffi::vaccel_tf_session_delete(
+                sess.inner_mut(),
+                self.inner_mut().inner_mut(),
+                status.inner_mut(),
+            ) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Runtime(err)),
