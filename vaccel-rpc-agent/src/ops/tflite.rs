@@ -2,13 +2,7 @@
 
 use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
 use log::debug;
-use vaccel::{
-    ops::{
-        tensorflow::lite::{InferenceArgs, InferenceResult},
-        InferenceModel,
-    },
-    Resource,
-};
+use vaccel::ops::{tensorflow::lite as tflite, ModelInitialize, ModelLoadUnload, ModelRun};
 use vaccel_rpc_proto::tensorflow::{
     InferenceLiteResult, TFLiteTensor, TensorflowLiteModelLoadRequest,
     TensorflowLiteModelLoadResponse, TensorflowLiteModelRunRequest, TensorflowLiteModelRunResponse,
@@ -20,7 +14,7 @@ impl VaccelRpcAgent {
         &self,
         req: TensorflowLiteModelLoadRequest,
     ) -> ttrpc::Result<TensorflowLiteModelLoadResponse> {
-        let mut model = self
+        let mut res = self
             .resources
             .get_mut(&req.model_id.into())
             .ok_or_else(|| {
@@ -38,10 +32,8 @@ impl VaccelRpcAgent {
             })?;
 
         let mut resp = TensorflowLiteModelLoadResponse::new();
-        if let Err(e) = <Resource as InferenceModel<InferenceArgs, InferenceResult>>::load(
-            model.as_mut(),
-            &mut sess,
-        ) {
+        let mut model = tflite::Model::new(res.as_mut());
+        if let Err(e) = model.as_mut().load(&mut sess) {
             resp.set_error(vaccel_error(e));
         };
 
@@ -52,7 +44,7 @@ impl VaccelRpcAgent {
         &self,
         req: TensorflowLiteModelUnloadRequest,
     ) -> ttrpc::Result<TensorflowLiteModelUnloadResponse> {
-        let mut model = self
+        let mut res = self
             .resources
             .get_mut(&req.model_id.into())
             .ok_or_else(|| {
@@ -73,14 +65,8 @@ impl VaccelRpcAgent {
             })?;
 
         let mut resp = TensorflowLiteModelUnloadResponse::new();
-        //match model.unload(&mut sess) {
-        //    Ok(_) => resp.success = true,
-        //    Err(e) => resp.error = Some(vaccel_error(e)).into(),
-        //};
-        if let Err(e) = <Resource as InferenceModel<InferenceArgs, InferenceResult>>::unload(
-            model.as_mut(),
-            &mut sess,
-        ) {
+        let mut model = tflite::Model::new(res.as_mut());
+        if let Err(e) = model.as_mut().unload(&mut sess) {
             resp.set_error(vaccel_error(e));
         };
 
@@ -91,7 +77,7 @@ impl VaccelRpcAgent {
         &self,
         req: TensorflowLiteModelRunRequest,
     ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
-        let mut model = self
+        let mut res = self
             .resources
             .get_mut(&req.model_id.into())
             .ok_or_else(|| {
@@ -108,7 +94,7 @@ impl VaccelRpcAgent {
                 ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
             })?;
 
-        let mut sess_args = InferenceArgs::new();
+        let mut sess_args = tflite::InferenceArgs::new();
 
         let in_tensors = req.in_tensors;
         for tensor in in_tensors.iter() {
@@ -119,6 +105,7 @@ impl VaccelRpcAgent {
         sess_args.set_nr_outputs(req.nr_outputs);
         let num_outputs: usize = req.nr_outputs.try_into().unwrap();
 
+        let mut model = tflite::Model::new(res.as_mut());
         let response = match model.as_mut().run(&mut sess, &mut sess_args) {
             Ok(result) => {
                 let mut inference = InferenceLiteResult::new();

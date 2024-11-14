@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
-use vaccel::ops::{torch, torch::InferenceArgs, InferenceModel};
+use vaccel::ops::{torch, ModelInitialize, ModelRun};
 use vaccel_rpc_proto::torch::{
     TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchJitloadForwardResult, TorchTensor,
 };
@@ -11,7 +11,7 @@ impl VaccelRpcAgent {
         &self,
         req: TorchJitloadForwardRequest,
     ) -> ttrpc::Result<TorchJitloadForwardResponse> {
-        let mut model = self
+        let mut res = self
             .resources
             .get_mut(&req.model_id.into())
             .ok_or_else(|| {
@@ -28,7 +28,7 @@ impl VaccelRpcAgent {
                 ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
             })?;
 
-        let mut sess_args = InferenceArgs::new();
+        let mut sess_args = torch::InferenceArgs::new();
 
         let run_options = torch::Buffer::new(req.run_options.as_slice());
         sess_args.set_run_options(&run_options);
@@ -41,6 +41,7 @@ impl VaccelRpcAgent {
         sess_args.set_nr_outputs(req.nr_outputs);
         let num_outputs: usize = req.nr_outputs.try_into().unwrap();
 
+        let mut model = torch::Model::new(res.as_mut());
         let response = match model.as_mut().run(&mut sess, &mut sess_args) {
             Ok(result) => {
                 let mut jitload_forward = TorchJitloadForwardResult::new();

@@ -7,7 +7,7 @@ use log::info;
 use std::path::PathBuf;
 use vaccel::{
     ffi,
-    ops::{torch, torch::InferenceArgs, InferenceModel},
+    ops::{torch, ModelInitialize, ModelRun},
     Resource, Session,
 };
 
@@ -39,14 +39,15 @@ fn main() -> utilities::Result<()> {
     let in_tensor = torch::Tensor::<f32>::new(&[3 * 224 * 224]).with_data(&[1.0; 3 * 224 * 224])?;
     info!("in_tensor dim: {}", in_tensor.nr_dims());
 
-    let mut sess_args = InferenceArgs::new();
+    let mut sess_args = torch::InferenceArgs::new();
 
     sess_args.set_run_options(&run_options);
     sess_args.add_input(&in_tensor);
     sess_args.set_nr_outputs(1);
 
+    let mut torch_model = torch::Model::new(model.as_mut());
     // Run inference
-    let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+    let result = torch_model.as_mut().run(&mut sess, &mut sess_args)?;
     match result.get_output::<f32>(0) {
         Ok(out) => {
             println!("Success");

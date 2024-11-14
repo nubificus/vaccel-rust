@@ -7,11 +7,7 @@ use log::{error, info};
 use std::path::PathBuf;
 use vaccel::{
     ffi,
-    ops::{
-        tensorflow as tf,
-        tensorflow::{InferenceArgs, InferenceResult},
-        InferenceModel,
-    },
+    ops::{tensorflow as tf, ModelInitialize, ModelLoadUnload, ModelRun},
     Resource, Session,
 };
 
@@ -36,11 +32,9 @@ fn main() -> utilities::Result<()> {
         sess.id()
     );
 
-    // Load model
-    if let Err(e) = <Resource as InferenceModel<InferenceArgs, InferenceResult>>::load(
-        model.as_mut(),
-        &mut sess,
-    ) {
+    let mut tf_model = tf::Model::new(model.as_mut());
+    // Load tf model
+    if let Err(e) = tf_model.as_mut().load(&mut sess) {
         error!(
             "Could not load graph for model {}: {}",
             model.as_ref().id(),
@@ -60,13 +54,13 @@ fn main() -> utilities::Result<()> {
     let in_node = tf::Node::new("serving_default_input_1", 0);
     let out_node = tf::Node::new("StatefulPartitionedCall", 0);
 
-    let mut sess_args = InferenceArgs::new();
+    let mut sess_args = tf::InferenceArgs::new();
     sess_args.set_run_options(&run_options);
     sess_args.add_input(&in_node, &in_tensor);
     sess_args.request_output(&out_node);
 
     // Run inference
-    let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+    let result = tf_model.as_mut().run(&mut sess, &mut sess_args)?;
     match result.get_output::<f32>(0) {
         Ok(out) => {
             println!("Success!");
@@ -86,10 +80,7 @@ fn main() -> utilities::Result<()> {
         Err(e) => println!("Inference failed: '{}'", e),
     }
 
-    <Resource as InferenceModel<InferenceArgs, InferenceResult>>::unload(
-        model.as_mut(),
-        &mut sess,
-    )?;
+    tf_model.as_mut().unload(&mut sess)?;
 
     model.as_mut().unregister(&mut sess)?;
     info!(

@@ -7,10 +7,7 @@ use log::{error, info};
 use std::path::PathBuf;
 use vaccel::{
     ffi,
-    ops::{
-        tensorflow::lite::{InferenceArgs, InferenceResult, Tensor},
-        InferenceModel,
-    },
+    ops::{tensorflow::lite as tflite, ModelInitialize, ModelLoadUnload, ModelRun},
     Resource, Session,
 };
 
@@ -35,11 +32,9 @@ fn main() -> utilities::Result<()> {
         sess.id()
     );
 
+    let mut tflite_model = tflite::Model::new(model.as_mut());
     // Load model file
-    if let Err(e) = <Resource as InferenceModel<InferenceArgs, InferenceResult>>::load(
-        model.as_mut(),
-        &mut sess,
-    ) {
+    if let Err(e) = tflite_model.as_mut().load(&mut sess) {
         error!(
             "Could not load file for model {}: {}",
             model.as_ref().id(),
@@ -54,14 +49,14 @@ fn main() -> utilities::Result<()> {
     }
 
     // Prepare data for inference
-    let in_tensor = Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
+    let in_tensor = tflite::Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
 
-    let mut sess_args = InferenceArgs::new();
+    let mut sess_args = tflite::InferenceArgs::new();
     sess_args.add_input(&in_tensor);
     sess_args.set_nr_outputs(1);
 
     // Run inference
-    let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+    let result = tflite_model.as_mut().run(&mut sess, &mut sess_args)?;
     match result.get_output::<f32>(0) {
         Ok(out) => {
             println!("Success!");
@@ -81,10 +76,7 @@ fn main() -> utilities::Result<()> {
         Err(e) => println!("Inference failed: '{}'", e),
     }
 
-    <Resource as InferenceModel<InferenceArgs, InferenceResult>>::unload(
-        model.as_mut(),
-        &mut sess,
-    )?;
+    tflite_model.as_mut().unload(&mut sess)?;
 
     model.as_mut().unregister(&mut sess)?;
     info!(
