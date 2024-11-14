@@ -1,70 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, profiling::ProfRegions, Error, Result, Session};
-use vaccel_rpc_proto::genop::GenopArg as ProtGenopArg;
-
-#[derive(Debug)]
-pub struct GenopArg {
-    inner: ffi::vaccel_arg,
-    buf: Vec<u8>,
-    size: usize,
-    argtype: usize,
-}
-
-impl GenopArg {
-    pub fn new(buffer: &mut [u8], size: usize, argtype: usize) -> Self {
-        let mut b = buffer.to_owned();
-        GenopArg {
-            inner: ffi::vaccel_arg {
-                buf: b.as_mut_ptr() as *mut libc::c_void,
-                size: size as u32,
-                argtype: argtype as u32,
-            },
-            buf: b,
-            size,
-            argtype,
-        }
-    }
-    pub fn size(&self) -> u32 {
-        self.inner.size
-    }
-
-    pub fn set_size(&mut self, v: usize) {
-        self.size = v;
-        self.inner.size = v as u32;
-    }
-
-    pub fn buf(&self) -> *mut u8 {
-        self.inner.buf as *mut u8
-    }
-
-    pub fn argtype(&self) -> u32 {
-        self.inner.argtype
-    }
-
-    pub fn set_buf(&mut self, b: &mut [u8]) {
-        self.buf = b.to_owned();
-    }
-}
-
-impl From<&mut ProtGenopArg> for GenopArg {
-    fn from(arg: &mut ProtGenopArg) -> Self {
-        let argtype = arg.argtype;
-        let size = arg.size;
-        let buf = arg.buf.as_mut_slice();
-        GenopArg::new(buf, size as usize, argtype as usize)
-    }
-}
-
-impl From<&GenopArg> for ProtGenopArg {
-    fn from(arg: &GenopArg) -> Self {
-        ProtGenopArg {
-            buf: arg.buf.to_owned(),
-            size: arg.size as u32,
-            ..Default::default()
-        }
-    }
-}
+use crate::{ffi, profiling::ProfRegions, Arg, Error, Result, Session};
 
 impl Session {
     /// vAccel generic operation
@@ -80,13 +16,13 @@ impl Session {
     /// * `write` - A slice of `vaccel_arg` with the read-write arguments of the operation.
     pub fn genop(
         &mut self,
-        read: &mut [GenopArg],
-        write: &mut [GenopArg],
+        read: &mut [Arg],
+        write: &mut [Arg],
         timers: &mut ProfRegions,
     ) -> Result<()> {
         timers.start("genop > session > read_args");
-        let mut read_args: Vec<ffi::vaccel_arg> = read.iter().map(|e| e.inner).collect();
-        let mut write_args: Vec<ffi::vaccel_arg> = write.iter().map(|e| e.inner).collect();
+        let mut read_args: Vec<ffi::vaccel_arg> = read.iter().map(|e| *e.inner()).collect();
+        let mut write_args: Vec<ffi::vaccel_arg> = write.iter().map(|e| *e.inner()).collect();
         timers.stop("genop > session > read_args");
 
         match unsafe {

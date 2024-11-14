@@ -10,7 +10,7 @@ use std::{convert::TryInto, ffi::c_int, ptr};
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
-use vaccel_rpc_proto::genop::{GenopArg, GenopRequest};
+use vaccel_rpc_proto::genop::{Arg, GenopRequest};
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
 
@@ -18,9 +18,9 @@ impl VaccelRpcClient {
     pub fn genop(
         &mut self,
         sess_id: i64,
-        read_args: Vec<GenopArg>,
-        write_args: Vec<GenopArg>,
-    ) -> Result<Vec<GenopArg>> {
+        read_args: Vec<Arg>,
+        write_args: Vec<Arg>,
+    ) -> Result<Vec<Arg>> {
         let ctx = ttrpc::context::Context::default();
 
         self.timer_start(sess_id, "genop > client > req create");
@@ -64,7 +64,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
     };
 
     client.timer_start(sess_id, "genop > read_args");
-    let read_args: Vec<GenopArg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
+    let read_args: Vec<Arg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
         Some(slice) => slice
             .iter()
             .map(|e| {
@@ -75,7 +75,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
                         .unwrap_or(&[])
                         .to_vec()
                 };
-                GenopArg {
+                Arg {
                     buf,
                     size,
                     argtype,
@@ -90,7 +90,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
     client.timer_start(sess_id, "genop > write_args");
     let write_args_ref = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
 
-    let write_args: Vec<GenopArg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
+    let write_args: Vec<Arg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
         Some(slice) => slice
             .iter_mut()
             .map(|e| {
@@ -101,7 +101,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
                         .unwrap_or(&[])
                         .to_vec()
                 };
-                GenopArg {
+                Arg {
                     buf,
                     size,
                     argtype,

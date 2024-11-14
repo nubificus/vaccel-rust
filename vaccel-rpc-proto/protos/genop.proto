@@ -6,7 +6,7 @@ package vaccel;
 
 import "error.proto";
 
-message GenopArg {
+message Arg {
 	uint32 argtype = 1;
 	uint32 size = 2;
 	bytes buf = 3;
@@ -17,12 +17,12 @@ message GenopArg {
 message GenopRequest {
 	int64 session_id = 1;
 
-	repeated GenopArg read_args = 2;
-	repeated GenopArg write_args = 3;
+	repeated Arg read_args = 2;
+	repeated Arg write_args = 3;
 };
 
 message GenopResult {
-	repeated GenopArg write_args = 1;
+	repeated Arg write_args = 1;
 };
 
 message GenopResponse {

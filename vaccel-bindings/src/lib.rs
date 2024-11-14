@@ -8,6 +8,7 @@
 
 use std::{fmt, slice};
 
+pub mod arg;
 pub mod ffi;
 pub mod file;
 pub mod ops;
@@ -15,6 +16,7 @@ pub mod profiling;
 pub mod resource;
 pub mod session;
 
+pub use arg::Arg;
 pub use file::File;
 pub use resource::Resource;
 pub use session::Session;
