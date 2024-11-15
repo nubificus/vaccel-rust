@@ -11,7 +11,28 @@ cargo_bin = find_program('cargo', version : '>=1.64.0', required : true)
 cargo_meson_sh = files(meson.project_source_root() + '/scripts/common/cargo.sh')
 cargo_toml = files('Cargo.toml')
 
+glob = '''
+from pathlib import Path
+files = filter(lambda p: p.suffix in "@1@".split(","), Path('@0@').glob("**/*"))
+for f in files: print(f)
+'''
+pymod = import('python')
+python = pymod.find_installation()
+
 libvaccel_dep = dependency('vaccel')
+vaccel_sources = run_command(python, '-c',
+  glob.format(libvaccel_dep.get_variable('includedir'), '.h'),
+  check: true).stdout().strip().split('\n')
+
+workspace_sources = ['Cargo.toml']
+vaccel_bindings_sources = run_command(python, '-c',
+  glob.format(join_paths(meson.current_source_dir(), 'vaccel-bindings'), '.toml,.rs,.h'),
+  check: true).stdout().strip().split('\n')
+vaccel_rpc_proto_sources = run_command(python, '-c',
+  glob.format(join_paths(meson.current_source_dir(), 'vaccel-rpc-proto'), '.toml,.rs,.proto'),
+  check: true).stdout().strip().split('\n')
+common_sources = workspace_sources + vaccel_bindings_sources + vaccel_rpc_proto_sources
+common_sources += vaccel_sources
 
 opt_async = get_option('async')
 opt_async_stream = get_option('async-stream')
@@ -34,14 +55,17 @@ if opt_rpc_client.enabled()
     install_client = true
   endif
 
+  vaccel_rpc_client_sources = run_command(python, '-c',
+    glob.format(join_paths(meson.current_source_dir(), 'vaccel-rpc-client'), '.toml,.rs'),
+    check: true).stdout().strip().split('\n')
+
   vaccel_rpc_client = custom_target('vaccel-rpc-client',
     capture : false,
     console : true,
     build_by_default : true,
     install : install_client,
     install_dir : [get_option('libdir'), get_option('includedir')],
-    input : files('Cargo.toml'),
-    depfile : 'libvaccel_rpc_client.d',
+    input : files(vaccel_rpc_client_sources + common_sources),
     output : ['libvaccel_rpc_client.a', 'vaccel-rpc-client.h'],
     env : {
       'RUSTFLAGS': '-C panic=abort',
@@ -51,7 +75,7 @@ if opt_rpc_client.enabled()
         + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
-      files('Cargo.toml'), '*vaccel*client.*', '@OUTDIR@',
+      cargo_toml, '*vaccel*client.*', '@OUTDIR@',
       features, features_client, '-p', 'vaccel-rpc-client'])
 
   cc = meson.get_compiler('c')
@@ -73,14 +97,17 @@ if opt_rpc_client.enabled()
 endif
 
 if opt_rpc_agent.enabled()
+  vaccel_rpc_agent_sources = run_command(python, '-c',
+    glob.format(join_paths(meson.current_source_dir(), 'vaccel-rpc-agent'), '.toml,.rs'),
+    check: true).stdout().strip().split('\n')
+
   vaccel_rpc_agent = custom_target('vaccel-rpc-agent',
     capture : false,
     console : true,
     build_by_default : true,
     install : true,
     install_dir : get_option('bindir'),
-    input : files('Cargo.toml'),
-    depfile : 'vaccel-rpc-agent.d',
+    input : files(vaccel_rpc_agent_sources + common_sources),
     output : ['vaccel-rpc-agent'],
     env : {
       'RUSTFLAGS': '-C panic=abort',
@@ -90,7 +117,7 @@ if opt_rpc_agent.enabled()
         + ':$PKG_CONFIG_PATH',
       },
     command : [cargo_meson_sh, cargo_bin, get_option('buildtype'),
-      files('Cargo.toml'), 'vaccel-rpc-agent', '@OUTDIR@', features,
+      cargo_toml, 'vaccel-rpc-agent', '@OUTDIR@', features,
       '-p', 'vaccel-rpc-agent'])
 endif
 
