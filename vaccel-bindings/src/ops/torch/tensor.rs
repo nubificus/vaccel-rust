@@ -14,7 +14,7 @@ use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 // difference: owned - bool -> uint8_t,  dims - long long int -> int64_t
 pub struct Tensor<T: TensorType> {
     inner: *mut ffi::vaccel_torch_tensor,
-    dims: Vec<u32>,
+    dims: Vec<u64>,
     data_count: usize,
     data: Vec<T>,
 }
@@ -31,7 +31,7 @@ pub trait TensorType: Default + Clone {
 }
 
 // What should we do with the product func?
-fn product(values: &[u32]) -> u32 {
+fn product(values: &[u64]) -> u64 {
     values.iter().product()
 }
 
@@ -61,7 +61,7 @@ impl<T: TensorType> DerefMut for Tensor<T> {
 }
 
 impl<T: TensorType> Tensor<T> {
-    pub fn new(dims: &[u32]) -> Self {
+    pub fn new(dims: &[u64]) -> Self {
         let dims = Vec::from(dims);
         let data_count = product(&dims) as usize;
         let mut data = Vec::with_capacity(data_count);
@@ -142,7 +142,7 @@ impl<T: TensorType> Tensor<T> {
         self.dims.len() as i32
     }
 
-    pub fn dim(&self, idx: usize) -> Result<u32> {
+    pub fn dim(&self, idx: usize) -> Result<u64> {
         if idx >= self.dims.len() {
             return Err(Error::InvalidArgument);
         }
@@ -428,7 +428,7 @@ impl From<&ffi::vaccel_torch_tensor> for TorchTensor {
     fn from(tensor: &ffi::vaccel_torch_tensor) -> Self {
         unsafe {
             TorchTensor {
-                dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
+                dims: std::slice::from_raw_parts(tensor.dims as *mut u64, tensor.nr_dims as usize)
                     .to_owned(),
                 type_: TorchDataType::from_i32(tensor.data_type as i32)
                     .unwrap()

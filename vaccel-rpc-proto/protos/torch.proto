@@ -47,7 +47,7 @@ message TorchTensor {
 	bytes data = 1;
 
 	// Dimensions of the tensor
-	repeated uint32 dims = 2;
+	repeated uint64 dims = 2;
 
 	// Data type
 	TorchDataType type = 3;
