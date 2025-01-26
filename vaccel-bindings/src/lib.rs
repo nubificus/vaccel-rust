@@ -9,6 +9,7 @@
 use std::{fmt, slice};
 
 pub mod arg;
+pub mod config;
 pub mod ffi;
 pub mod file;
 pub mod ops;
@@ -17,6 +18,7 @@ pub mod resource;
 pub mod session;
 
 pub use arg::Arg;
+pub use config::Config;
 pub use file::File;
 pub use resource::Resource;
 pub use session::Session;
@@ -150,4 +152,29 @@ pub unsafe fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&
     } else {
         Some(unsafe { slice::from_raw_parts_mut(buf, len) })
     }
+}
+
+pub fn bootstrap_with_config(config: &mut Config) -> Result<()> {
+    match unsafe { ffi::vaccel_bootstrap_with_config(config.inner_mut()) as u32 } {
+        ffi::VACCEL_OK => Ok(()),
+        err => Err(Error::Runtime(err)),
+    }
+}
+
+pub fn bootstrap() -> Result<()> {
+    match unsafe { ffi::vaccel_bootstrap() as u32 } {
+        ffi::VACCEL_OK => Ok(()),
+        err => Err(Error::Runtime(err)),
+    }
+}
+
+pub fn cleanup() -> Result<()> {
+    match unsafe { ffi::vaccel_cleanup() as u32 } {
+        ffi::VACCEL_OK => Ok(()),
+        err => Err(Error::Runtime(err)),
+    }
+}
+
+pub fn is_initialized() -> bool {
+    unsafe { ffi::vaccel_is_initialized() }
 }
