@@ -10,12 +10,12 @@ use log::error;
 use std::ffi::c_int;
 use vaccel::ffi;
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::session::{
     CreateSessionRequest, DestroySessionRequest, UpdateSessionRequest,
 };
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 //use tracing::{info, instrument, Instrument};
 
 impl VaccelRpcClient {
@@ -26,7 +26,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let resp = self.execute(RpcAgentClient::create_session, ctx, &req)?;
+        let resp = self.execute(AgentServiceClient::create_session, ctx, &req)?;
 
         Ok(resp.session_id)
     }
@@ -39,7 +39,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let _resp = self.execute(RpcAgentClient::update_session, ctx, &req)?;
+        let _resp = self.execute(AgentServiceClient::update_session, ctx, &req)?;
 
         Ok(())
     }
@@ -51,7 +51,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let _resp = self.execute(RpcAgentClient::destroy_session, ctx, &req)?;
+        let _resp = self.execute(AgentServiceClient::destroy_session, ctx, &req)?;
 
         Ok(())
     }

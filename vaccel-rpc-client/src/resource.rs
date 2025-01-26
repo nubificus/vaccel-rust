@@ -9,10 +9,10 @@ use log::error;
 use std::ffi::{c_char, c_int, CStr};
 use vaccel::{c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{File, RegisterResourceRequest, UnregisterResourceRequest};
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
 impl VaccelRpcClient {
     pub fn resource_register(
@@ -31,7 +31,7 @@ impl VaccelRpcClient {
         req.resource_id = id;
         req.session_id = sess_id;
 
-        let mut resp = self.execute(RpcAgentClient::register_resource, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::register_resource, ctx, &req)?;
 
         match resp.has_error() {
             false => Ok(resp.resource_id()),
@@ -45,7 +45,7 @@ impl VaccelRpcClient {
         req.resource_id = res_id;
         req.session_id = sess_id;
 
-        let _resp = self.execute(RpcAgentClient::unregister_resource, ctx, &req)?;
+        let _resp = self.execute(AgentServiceClient::unregister_resource, ctx, &req)?;
 
         Ok(())
     }

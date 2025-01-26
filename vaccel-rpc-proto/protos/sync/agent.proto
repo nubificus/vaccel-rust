@@ -12,15 +12,15 @@ import "profiling.proto";
 
 package vaccel;
 
-service RpcAgent {
+service AgentService {
 	// Session handling
 	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
-	rpc UpdateSession(UpdateSessionRequest) returns (VaccelEmpty);
-	rpc DestroySession(DestroySessionRequest) returns (VaccelEmpty);
+	rpc UpdateSession(UpdateSessionRequest) returns (EmptyResponse);
+	rpc DestroySession(DestroySessionRequest) returns (EmptyResponse);
 
 	// vAccel resource handling
 	rpc RegisterResource(RegisterResourceRequest) returns (RegisterResourceResponse);
-	rpc UnregisterResource(UnregisterResourceRequest) returns (VaccelEmpty);
+	rpc UnregisterResource(UnregisterResourceRequest) returns (EmptyResponse);
 
 	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
@@ -47,4 +47,4 @@ service RpcAgent {
 	rpc GetTimers(ProfilingRequest) returns (ProfilingResponse);
 }
 
-message VaccelEmpty {}
+message EmptyResponse {}

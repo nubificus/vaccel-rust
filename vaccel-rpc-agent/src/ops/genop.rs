@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
+use crate::{ttrpc_error, vaccel_error, AgentService};
 use log::info;
 use vaccel::{profiling::ProfRegions, Arg};
 use vaccel_rpc_proto::genop::{GenopRequest, GenopResponse, GenopResult};
 
-impl VaccelRpcAgent {
+impl AgentService {
     pub(crate) fn do_genop(&self, mut req: GenopRequest) -> ttrpc::Result<GenopResponse> {
         let mut sess = self
             .sessions

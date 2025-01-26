@@ -9,10 +9,10 @@ use log::error;
 use std::{convert::TryInto, ffi::c_int, ptr};
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::genop::{Arg, GenopRequest};
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
 impl VaccelRpcClient {
     pub fn genop(
@@ -33,7 +33,7 @@ impl VaccelRpcClient {
         self.timer_stop(sess_id, "genop > client > req create");
 
         self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
-        let mut resp = self.execute(RpcAgentClient::genop, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::genop, ctx, &req)?;
         self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
         if resp.has_error() {
             return Err(resp.take_error().into());

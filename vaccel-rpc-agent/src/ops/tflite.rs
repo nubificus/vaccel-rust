@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
+use crate::{ttrpc_error, vaccel_error, AgentService};
 use log::debug;
 use vaccel::ops::{tensorflow::lite as tflite, ModelInitialize, ModelLoadUnload, ModelRun};
 use vaccel_rpc_proto::tensorflow::{
@@ -9,7 +9,7 @@ use vaccel_rpc_proto::tensorflow::{
     TensorflowLiteModelUnloadRequest, TensorflowLiteModelUnloadResponse,
 };
 
-impl VaccelRpcAgent {
+impl AgentService {
     pub(crate) fn do_tflite_model_load(
         &self,
         req: TensorflowLiteModelLoadRequest,

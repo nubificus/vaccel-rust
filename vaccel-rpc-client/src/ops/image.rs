@@ -12,10 +12,10 @@ use std::{
 };
 use vaccel::ffi;
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::image::ImageClassificationRequest;
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
 impl VaccelRpcClient {
     pub fn image_classify(&self, sess_id: i64, img: Vec<u8>) -> Result<Vec<u8>> {
@@ -26,7 +26,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let resp = self.execute(RpcAgentClient::image_classification, ctx, &req)?;
+        let resp = self.execute(AgentServiceClient::image_classification, ctx, &req)?;
 
         Ok(resp.tags)
     }

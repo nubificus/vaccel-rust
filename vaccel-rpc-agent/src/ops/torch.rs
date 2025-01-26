@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
+use crate::{ttrpc_error, vaccel_error, AgentService};
 use vaccel::ops::{torch, ModelInitialize, ModelRun};
 use vaccel_rpc_proto::torch::{
     TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchJitloadForwardResult, TorchTensor,
 };
 
-impl VaccelRpcAgent {
+impl AgentService {
     pub(crate) fn do_torch_jitload_forward(
         &self,
         req: TorchJitloadForwardRequest,

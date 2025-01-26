@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::VaccelRpcAgent;
+use crate::AgentService;
 use async_trait::async_trait;
 use std::default::Default;
 #[allow(unused_imports)]
@@ -12,7 +12,7 @@ use vaccel_rpc_proto::tensorflow::{
     TensorflowModelUnloadResponse,
 };
 use vaccel_rpc_proto::{
-    asynchronous::{agent::VaccelEmpty, agent_ttrpc::RpcAgent},
+    asynchronous::{agent::EmptyResponse, agent_ttrpc},
     genop::{Arg, GenopRequest, GenopResponse},
     image::{ImageClassificationRequest, ImageClassificationResponse},
     profiling::{ProfilingRequest, ProfilingResponse},
@@ -26,7 +26,7 @@ use vaccel_rpc_proto::{
 use log::debug;
 
 #[async_trait]
-impl RpcAgent for VaccelRpcAgent {
+impl agent_ttrpc::AgentService for AgentService {
     async fn create_session(
         &self,
         _ctx: &::ttrpc::asynchronous::TtrpcContext,
@@ -39,7 +39,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::asynchronous::TtrpcContext,
         req: UpdateSessionRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_update_session(req)
     }
 
@@ -47,7 +47,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::asynchronous::TtrpcContext,
         req: DestroySessionRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_destroy_session(req)
     }
 
@@ -71,7 +71,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::asynchronous::TtrpcContext,
         req: UnregisterResourceRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_unregister_resource(req)
     }
 

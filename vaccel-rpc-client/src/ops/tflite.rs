@@ -9,9 +9,9 @@ use log::error;
 use std::ffi::c_int;
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::tensorflow::{
     TFLiteTensor, TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest,
     TensorflowLiteModelUnloadRequest,
@@ -26,7 +26,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(RpcAgentClient::tensorflow_lite_model_load, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::tensorflow_lite_model_load, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }
@@ -42,7 +42,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(RpcAgentClient::tensorflow_lite_model_unload, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::tensorflow_lite_model_unload, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }
@@ -67,7 +67,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(RpcAgentClient::tensorflow_lite_model_run, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::tensorflow_lite_model_run, ctx, &req)?;
         if resp.has_error() {
             return Err(resp.take_error().into());
         }

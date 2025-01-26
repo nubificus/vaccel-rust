@@ -7,11 +7,11 @@ use std::{future::Future, sync::Arc};
 use tokio::runtime::Runtime;
 use ttrpc::context::Context;
 use vaccel::profiling::ProfRegions;
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 
 #[repr(C)]
 pub struct VaccelRpcClient {
-    pub ttrpc_client: RpcAgentClient,
+    pub ttrpc_client: AgentServiceClient,
     pub timers: Arc<DashMap<i64, ProfRegions>>,
     pub runtime: Arc<Runtime>,
 }
@@ -27,7 +27,7 @@ impl VaccelRpcClient {
         let ttrpc_client = Self::create_ttrpc_client(&server_address)?;
 
         Ok(VaccelRpcClient {
-            ttrpc_client: RpcAgentClient::new(ttrpc_client),
+            ttrpc_client: AgentServiceClient::new(ttrpc_client),
             timers: Arc::new(DashMap::new()),
             runtime: Arc::new(r),
         })
@@ -35,7 +35,7 @@ impl VaccelRpcClient {
 
     pub fn execute<'a, 'b, F, A, R>(&'a self, func: F, ctx: Context, req: &'b A) -> R::Output
     where
-        F: Fn(&'a RpcAgentClient, Context, &'b A) -> R,
+        F: Fn(&'a AgentServiceClient, Context, &'b A) -> R,
         R: Future,
     {
         self.runtime
