@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, vaccel_error, VaccelRpcAgent};
+use crate::{ttrpc_error, vaccel_error, AgentService};
 use log::info;
 use vaccel::{File, Resource, VaccelId};
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent::VaccelEmpty;
+use vaccel_rpc_proto::asynchronous::agent::EmptyResponse;
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent::VaccelEmpty;
+use vaccel_rpc_proto::sync::agent::EmptyResponse;
 #[allow(unused_imports)]
 use vaccel_rpc_proto::{
     error::VaccelError,
     resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
 };
 
-impl VaccelRpcAgent {
+impl AgentService {
     pub(crate) fn do_register_resource(
         &self,
         req: RegisterResourceRequest,
@@ -108,7 +108,7 @@ impl VaccelRpcAgent {
     pub(crate) fn do_unregister_resource(
         &self,
         req: UnregisterResourceRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         let mut res = self
             .resources
             .get_mut(&req.resource_id.into())
@@ -145,7 +145,7 @@ impl VaccelRpcAgent {
             .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))?
             > 0
         {
-            return Ok(VaccelEmpty::new());
+            return Ok(EmptyResponse::new());
         }
 
         info!("Destroying resource {}", res.as_ref().id());
@@ -161,7 +161,7 @@ impl VaccelRpcAgent {
                         )
                     })?;
 
-                Ok(VaccelEmpty::new())
+                Ok(EmptyResponse::new())
             }
             Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
         }

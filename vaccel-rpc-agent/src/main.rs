@@ -7,8 +7,7 @@ use std::sync::mpsc::{self};
 use std::thread;
 #[cfg(feature = "async")]
 use tokio::signal::unix::{signal, SignalKind};
-#[cfg(feature = "async")]
-use tokio::time::sleep;
+use vaccel_rpc_agent::{Agent as VaccelRpcAgent, Cli};
 //#[cfg(feature = "async")]
 //use log::levelfilter;
 //#[cfg(feature = "async")]
@@ -18,42 +17,38 @@ use env_logger::Env;
 #[allow(unused_imports)]
 use log::{debug, info};
 
-#[derive(Debug, Default, Parser)]
-#[command(name = "vAccel RPC Agent")]
-#[command(about = "A vAccel RPC agent that can respond to acceleration requests")]
-pub struct Cli {
-    #[arg(short = 'a')]
-    #[arg(long = "server-address")]
-    #[arg(help = "The server address in the format <socket-type>://<host>:<port>")]
-    #[arg(default_value = "tcp://127.0.0.1:65500")]
-    pub server_address: String,
-}
-
 #[cfg(not(feature = "async"))]
 fn main() {
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
     let cli = Cli::parse();
-    let mut server = vaccel_rpc_agent::server_init(&cli.server_address).unwrap();
 
-    server.start().unwrap();
+    let mut agent = VaccelRpcAgent::new(&cli.server_address);
+    if let Some(vaccel_config) = cli.vaccel_config {
+        agent
+            .set_vaccel_config(vaccel_config.try_into().unwrap())
+            .unwrap();
+    }
 
-    info!(
-        "vaccel sync ttRPC server started. address: {}",
-        &cli.server_address
-    );
+    agent.start().unwrap();
 
-    // Hold the main thread until receiving signal SIGTERM
+    info!("vAccel RPC agent started");
+
+    // Hold the main thread until receiving SIGINT, SIGTERM or SIGHUP
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {
         ctrlc::set_handler(move || {
             tx.send(()).unwrap();
         })
         .expect("Error setting Ctrl-C handler");
-        info!("Server is running, press Ctrl + C to exit");
+        info!(
+            "Listening on '{}', press Ctrl+C to exit",
+            &cli.server_address
+        );
     });
 
     rx.recv().unwrap();
+    agent.shutdown().unwrap();
 }
 
 #[cfg(feature = "async")]
@@ -68,32 +63,32 @@ async fn main() {
     */
 
     let cli = Cli::parse();
-    let mut server = vaccel_rpc_agent::server_init(&cli.server_address).unwrap();
 
-    let mut hangup = signal(SignalKind::hangup()).unwrap();
-    let mut interrupt = signal(SignalKind::interrupt()).unwrap();
-    server.start().await.unwrap();
+    let mut agent = VaccelRpcAgent::new(&cli.server_address);
+    if let Some(vaccel_config) = cli.vaccel_config {
+        agent
+            .set_vaccel_config(vaccel_config.try_into().unwrap())
+            .unwrap();
+    }
+
+    agent.start().await.unwrap();
 
     info!(
-        "vaccel async ttRPC server started. address: {}",
+        "vAccel async ttrpc server started. Address: {}",
         &cli.server_address
     );
 
-    tokio::select! {
-        _ = hangup.recv() => {
-            // test stop_listen -> start
-            debug!("stop listen");
-            server.stop_listen().await;
-            debug!("start listen");
-            server.start().await.unwrap();
+    let mut sigint = signal(SignalKind::interrupt()).unwrap();
+    let mut sigterm = signal(SignalKind::terminate()).unwrap();
+    let mut sighup = signal(SignalKind::hangup()).unwrap();
 
-            // hold some time for the new test connection.
-            sleep(std::time::Duration::from_secs(100)).await;
-        }
-        _ = interrupt.recv() => {
-            // test graceful shutdown
-            debug!("graceful shutdown");
-            server.shutdown().await.unwrap();
-        }
+    // Hold the main thread until receiving SIGINT, SIGTERM or SIGHUP
+    info!("vAccel RPC agent is running, press Ctrl+C to exit");
+    tokio::select! {
+        _ = sigint.recv() => {}
+        _ = sigterm.recv() => {}
+        _ = sighup.recv() => {}
     };
+
+    agent.shutdown().await.unwrap();
 }

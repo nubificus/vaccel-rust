@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, VaccelRpcAgent};
+use crate::{ttrpc_error, AgentService};
 use log::{error, info};
 use vaccel_rpc_proto::image::{ImageClassificationRequest, ImageClassificationResponse};
 
-impl VaccelRpcAgent {
+impl AgentService {
     pub(crate) fn do_image_classification(
         &self,
         req: ImageClassificationRequest,

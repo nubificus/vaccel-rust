@@ -8,10 +8,10 @@ use crate::{Error, Result};
 use std::{collections::BTreeMap, ptr};
 use vaccel::{c_pointer_to_mut_slice, ffi, profiling::ProfRegions};
 #[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::profiling::ProfilingRequest;
 #[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::RpcAgentClient;
+use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
 impl VaccelRpcClient {
     pub const TIMERS_PREFIX: &'static str = "vaccel-client";
@@ -62,7 +62,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(RpcAgentClient::get_timers, ctx, &req)?;
+        let mut resp = self.execute(AgentServiceClient::get_timers, ctx, &req)?;
 
         match resp.result.take() {
             Some(r) => Ok(r.into()),

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::VaccelRpcAgent;
+use crate::AgentService;
 #[allow(unused_imports)]
 use vaccel_rpc_proto::tensorflow::{
     TensorflowLiteModelLoadRequest, TensorflowLiteModelLoadResponse, TensorflowLiteModelRunRequest,
@@ -17,11 +17,11 @@ use vaccel_rpc_proto::{
     session::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
-    sync::{agent::VaccelEmpty, agent_ttrpc::RpcAgent},
+    sync::{agent::EmptyResponse, agent_ttrpc},
     torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
 };
 
-impl RpcAgent for VaccelRpcAgent {
+impl agent_ttrpc::AgentService for AgentService {
     fn create_session(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
@@ -34,7 +34,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::TtrpcContext,
         req: UpdateSessionRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_update_session(req)
     }
 
@@ -42,7 +42,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
         req: DestroySessionRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_destroy_session(req)
     }
 
@@ -66,7 +66,7 @@ impl RpcAgent for VaccelRpcAgent {
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
         req: UnregisterResourceRequest,
-    ) -> ttrpc::Result<VaccelEmpty> {
+    ) -> ttrpc::Result<EmptyResponse> {
         self.do_unregister_resource(req)
     }
 

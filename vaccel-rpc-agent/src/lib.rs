@@ -1,75 +1,50 @@
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod ops;
-pub mod resource;
+pub mod agent;
+mod agent_service;
 #[cfg(feature = "async")]
-pub mod rpc_async;
+mod asynchronous;
+pub mod cli;
+mod ops;
+mod resource;
+mod session;
 #[cfg(not(feature = "async"))]
-pub mod rpc_sync;
-pub mod session;
+mod sync;
 
-use dashmap::DashMap;
-use std::{default::Default, net::ToSocketAddrs, pin::Pin, sync::Arc};
-use thiserror::Error;
-#[cfg(feature = "async")]
-use ttrpc::asynchronous::Server;
-#[cfg(not(feature = "async"))]
-use ttrpc::sync::Server;
-use vaccel::{profiling::ProfRegions, Resource, Session, VaccelId};
-#[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent_ttrpc::create_rpc_agent;
-#[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent_ttrpc::create_rpc_agent;
-use vaccel_rpc_proto::{
-    error::VaccelError,
-    profiling::{ProfilingRequest, ProfilingResponse},
-};
+pub use agent::Agent;
+use agent_service::AgentService;
+pub use cli::Cli;
 
-#[derive(Clone)]
-pub struct VaccelRpcAgent {
-    pub sessions: Arc<DashMap<VaccelId, Box<Session>>>,
-    pub resources: Arc<DashMap<VaccelId, Pin<Box<Resource>>>>,
-    pub timers: Arc<DashMap<VaccelId, ProfRegions>>,
-}
+use thiserror::Error as ThisError;
+use vaccel_rpc_proto::error::VaccelError;
 
-unsafe impl Sync for VaccelRpcAgent {}
-unsafe impl Send for VaccelRpcAgent {}
-
-impl VaccelRpcAgent {
-    pub(crate) fn new() -> VaccelRpcAgent {
-        VaccelRpcAgent {
-            sessions: Arc::new(DashMap::new()),
-            resources: Arc::new(DashMap::new()),
-            timers: Arc::new(DashMap::new()),
-        }
-    }
-
-    pub(crate) fn do_get_timers(&self, req: ProfilingRequest) -> ttrpc::Result<ProfilingResponse> {
-        let timers = self
-            .timers
-            .entry(req.session_id.into())
-            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
-
-        Ok(ProfilingResponse {
-            result: Some(timers.clone().into()).into(),
-            ..Default::default()
-        })
-    }
-}
-
-#[derive(Error, Debug)]
+#[derive(ThisError, Debug)]
 pub enum Error {
     /// Agent error
     #[error("Agent error: {0}")]
     AgentError(String),
 
+    /// vAccel runtime error
+    #[error("vAccel error: {0}")]
+    RuntimeError(String),
+
     /// Socket error
-    #[error("ttprc error: {0}")]
+    #[error("ttrpc error: {0}")]
     TtrpcError(ttrpc::Error),
+
+    /// CLI error
+    #[error("CLI error: {0}")]
+    CliError(String),
 
     /// Undefined error
     #[error("Undefined error")]
     Undefined,
+}
+
+impl From<vaccel::Error> for Error {
+    fn from(err: vaccel::Error) -> Self {
+        Error::RuntimeError(format!("{}", err))
+    }
 }
 
 impl From<ttrpc::Error> for Error {
@@ -100,49 +75,3 @@ pub(crate) fn vaccel_error(err: vaccel::Error) -> VaccelError {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-
-pub(crate) fn resolve_uri(uri: &str) -> Result<String> {
-    let parts: Vec<&str> = uri.split("://").collect();
-    if parts.len() != 2 {
-        return Err(Error::AgentError("Invalid server address uri".into()));
-    }
-
-    let scheme = parts[0].to_lowercase();
-    match scheme.as_str() {
-        "vsock" | "unix" => Ok(uri.to_string()),
-        "tcp" => {
-            let address = parts[1].to_lowercase();
-            let mut resolved = match address.to_socket_addrs() {
-                Ok(a) => a,
-                Err(e) => return Err(Error::AgentError(e.to_string())),
-            };
-            let resolved_address = match resolved.next() {
-                Some(a) => a.to_string(),
-                None => {
-                    return Err(Error::AgentError(
-                        "Could not resolve TCP server address".into(),
-                    ))
-                }
-            };
-
-            Ok(format!("{}://{}", scheme, resolved_address.as_str()))
-        }
-        _ => Err(Error::AgentError("Unsupported protocol".into())),
-    }
-}
-
-pub fn server_init(server_address: &str) -> Result<Server> {
-    let agent_worker = Arc::new(VaccelRpcAgent::new());
-    let aservice = create_rpc_agent(agent_worker);
-
-    if server_address.is_empty() {
-        return Err(Error::AgentError("Server address cannot be empty".into()));
-    }
-
-    let resolved_uri = resolve_uri(server_address)?;
-    let server: Server = Server::new()
-        .bind(&resolved_uri)?
-        .register_service(aservice);
-
-    Ok(server)
-}
