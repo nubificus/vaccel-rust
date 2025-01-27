@@ -7,6 +7,7 @@
 #![allow(improper_ctypes)]
 
 use std::{fmt, slice};
+use thiserror::Error as ThisError;
 
 pub mod arg;
 pub mod config;
@@ -23,44 +24,36 @@ pub use file::File;
 pub use resource::Resource;
 pub use session::Session;
 
-#[derive(Debug)]
+#[derive(ThisError, Debug)]
 pub enum Error {
-    // Error returned to us by vAccel runtime library
+    /// Error returned by the vAccel runtime library
+    #[error("vAccel runtime error: {0}")]
     Runtime(u32),
 
-    // We received an invalid argument
+    /// Invalid argument
+    #[error("Invalid argument")]
     InvalidArgument,
 
-    // Uninitialized vAccel object
+    /// Uninitialized vAccel object
+    #[error("Invalid argument")]
     Uninitialized,
 
-    // A TensorFlow error
+    /// TensorFlow error
     #[cfg(target_pointer_width = "64")]
+    #[error("TensorFlow error: {0:?}")]
     TensorFlow(ops::tensorflow::Code),
 
-    // A TensorFlow Lite error
+    /// TensorFlow Lite error
+    #[error("TensorFlow Lite error: {0:?}")]
     TensorFlowLite(ops::tensorflow::lite::Code),
 
-    // A PyTorch error
+    /// LibTorch error
+    #[error("Torch error: {0:?}")]
     Torch(ops::torch::Code),
 
-    // Other error types
+    /// Other error types
+    #[error("Error: {0}")]
     Others(String),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Error::Runtime(e) => write!(f, "vAccel runtime error: {}", e),
-            Error::InvalidArgument => write!(f, "Invalid argument"),
-            Error::Uninitialized => write!(f, "Uninitialized vAccel object"),
-            #[cfg(target_pointer_width = "64")]
-            Error::TensorFlow(e) => write!(f, "TensorFlow error: {:?}", e),
-            Error::TensorFlowLite(e) => write!(f, "TensorFlow Lite error: {:?}", e),
-            Error::Torch(e) => write!(f, "Torch error: {:?}", e),
-            Error::Others(e) => write!(f, "Error: {}", e),
-        }
-    }
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
