@@ -11,8 +11,8 @@ Crates implementing Rust interfaces for the vAccel C library:
 
 Install vAccel with:
 ```bash
-wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/x86_64/release/vaccel_latest_x86_64.deb
-sudo dpkg -i vaccel_latest_x86_64.deb
+wget https://s3.nbfc.io/nbfc-assets/github/vaccel/rev/main/x86_64/release/vaccel_latest_amd64.deb
+sudo dpkg -i vaccel_latest_amd64.deb
 ```
 
 ## Build the components
