@@ -18,6 +18,9 @@ on:
       runner-arch-map:
         type: string
         default: '[{"amd64":"x86_64", "arm64":"aarch64", "arm":"armv7l"}]'
+      clippy-features:
+        type: string
+        default: 'async,async-stream'
     secrets:
       GIT_CLONE_PAT:
         required: false
@@ -59,6 +62,13 @@ jobs:
           remote-actions-repo: ${{ inputs.actions-repo }}
           token: ${{ secrets.GIT_CLONE_PAT || github.token }}
 
+      # FIXME: Temp
+      - name: Install libcurl & stb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libstb-dev
+        shell: bash
+
       - name: Download artifacts from s3
         id: download-artifacts
         if: ${{ inputs.actions-repo != github.repository }}
@@ -73,7 +83,14 @@ jobs:
           install: 'true'
 
       - name: Run rust-clippy
-        run: cargo clippy --workspace --all-targets --all-features
+        run: |
+          cargo clippy --workspace --all-targets
+          cargo clippy --workspace --all-targets --all-features
+          IFS=','
+          features=${{ inputs.clippy-features }}
+          for f in $features; do
+            cargo clippy --workspace --all-targets --features "$f"
+          done
         shell: bash
 
       - name: Clean-up
