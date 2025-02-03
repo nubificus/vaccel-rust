@@ -17,29 +17,6 @@ enum TorchDataType {
 	Int64 = 5;
 	Half = 6;
 	FLOAT = 7;
-
-	// DOUBLE = 2;
-	//INT32 = 3;  // Int32 tensors are always in 'host' memory.
-	// UINT8 = 4;
-	// INT16 = 5;
-	// INT8 = 6;
-	// STRING = 7;
-	// COMPLEX = 8;    // Old identifier kept for API backwards compatibility
-	// INT64 = 9;
-	// BOOL = 10;
-	// QINT8 = 11;     // Quantized int8
-	// QUINT8 = 12;    // Quantized uint8
-	// QINT32 = 13;    // Quantized int32
-	// BFLOAT16 = 14;  // Float32 truncated to 16 bits.  Only for cast ops.
-	// QINT16 = 15;    // Quantized int16
-	// QUINT16 = 16;   // Quantized uint16
-	// UINT16 = 17;
-	// COMPLEX128 = 18;  // Double-precision complex
-	// HALF = 19;
-	// RESOURCE = 20;
-	// VARIANT = 21;
-	// UINT32 = 22;
-	// UINT64 = 23;
 };
 
 message TorchTensor {
@@ -47,30 +24,10 @@ message TorchTensor {
 	bytes data = 1;
 
 	// Dimensions of the tensor
-	repeated uint32 dims = 2;
+	repeated int64 dims = 2;
 
 	// Data type
 	TorchDataType type = 3;
-
-	/*
-	// Data of the tensor
-	bytes data = 1;
-
-	// Size
-	uint64 size = 2;
-
-	// if we owned the data
-	uint32 owned = 3;
-	
-	// out_torch element size
-	int32 nr_dims = 4;
-
-	// Dimensions of the tensor
-	repeated uint64 dims = 5;
-
-	// Data type
-	TorchDataType type = 6;
-	*/
 };
 
 // Jitload_forward

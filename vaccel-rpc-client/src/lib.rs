@@ -34,7 +34,11 @@ pub enum Error {
     #[error("Async error: {0}")]
     AsyncError(tokio::task::JoinError),
 
-    /// Host error
+    /// vAccel error
+    #[error("vAccel error: {0}")]
+    VaccelError(vaccel::Error),
+
+    /// Host vAccel runtime error
     #[error("Host vAccel error: {0}")]
     HostRuntimeError(u32),
 
@@ -49,6 +53,12 @@ pub enum Error {
     /// Undefined error
     #[error("Undefined error")]
     Undefined,
+}
+
+impl From<vaccel::Error> for Error {
+    fn from(err: vaccel::Error) -> Self {
+        Error::VaccelError(err)
+    }
 }
 
 impl From<ttrpc::Error> for Error {
