@@ -47,7 +47,7 @@ impl VaccelRpcClient {
                 let data_type = e.type_.value();
                 let data = e.data;
                 let tensor = ffi::vaccel_torch_tensor_new(
-                    dims.len() as i32,
+                    dims.len() as i64,
                     dims.as_ptr() as *mut i64,
                     data_type as u32,
                 );
@@ -92,10 +92,29 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
 
     let in_tensors: Vec<TorchTensor> =
         match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
-            Some(slice) => slice
-                .iter()
-                .map(|e| unsafe { e.as_ref().unwrap().into() })
-                .collect(),
+            Some(slice) => {
+                let res = slice
+                    .iter()
+                    .map(|e| unsafe {
+                        e.as_ref()
+                            .ok_or(Error::InvalidArgument)?
+                            .try_into()
+                            .map_err(|e: vaccel::Error| e.into())
+                    })
+                    .collect();
+                match res {
+                    Ok(s) => s,
+                    Err(e) => {
+                        return match e {
+                            Error::InvalidArgument => ffi::VACCEL_EINVAL,
+                            _ => {
+                                error!("{}", e);
+                                ffi::VACCEL_EBACKEND
+                            }
+                        } as c_int
+                    }
+                }
+            }
             None => return ffi::VACCEL_EINVAL as c_int,
         };
 

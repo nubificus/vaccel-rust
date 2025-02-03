@@ -93,7 +93,7 @@ impl InferenceResult {
 
         unsafe {
             Ok(TorchTensor {
-                dims: std::slice::from_raw_parts((*t).dims as *mut u32, (*t).nr_dims as usize)
+                dims: std::slice::from_raw_parts((*t).dims as *mut _, (*t).nr_dims as usize)
                     .to_owned(),
                 type_: TorchDataType::from_i32((*t).data_type as i32)
                     .unwrap()

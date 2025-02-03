@@ -7,32 +7,22 @@ use std::ops::{Deref, DerefMut};
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 #[derive(Debug, PartialEq)]
-/*****************/
-/*  TorchTensor  */
-/*****************/
-// This Tensor should be same as the vaccel tensorflow Tensor
-// difference: owned - bool -> uint8_t,  dims - long long int -> int64_t
 pub struct Tensor<T: TensorType> {
     inner: *mut ffi::vaccel_torch_tensor,
-    dims: Vec<u32>,
+    dims: Vec<i64>,
     data_count: usize,
     data: Vec<T>,
 }
 
 pub trait TensorType: Default + Clone {
-    // DataType - should we one to one map to the vaccelrt/src/ops/torch.c?
+    /// Data type
     fn data_type() -> DataType;
 
-    // Unit value of type
+    /// Unit value
     fn one() -> Self;
 
-    // Zero value of type
+    /// Zero value
     fn zero() -> Self;
-}
-
-// What should we do with the product func?
-fn product(values: &[u32]) -> u32 {
-    values.iter().product()
 }
 
 // TensorType, refers to TorchTensor
@@ -61,15 +51,15 @@ impl<T: TensorType> DerefMut for Tensor<T> {
 }
 
 impl<T: TensorType> Tensor<T> {
-    pub fn new(dims: &[u32]) -> Self {
+    pub fn new(dims: &[i64]) -> Result<Self> {
         let dims = Vec::from(dims);
-        let data_count = product(&dims) as usize;
+        let data_count = Self::calculate_data_count(&dims)?;
         let mut data = Vec::with_capacity(data_count);
         data.resize(data_count, T::zero());
 
         let inner = unsafe {
             ffi::vaccel_torch_tensor_new(
-                dims.len() as i32,
+                dims.len() as i64,
                 dims.as_ptr() as *mut _,
                 T::data_type().to_int(),
             )
@@ -83,12 +73,12 @@ impl<T: TensorType> Tensor<T> {
             )
         };
 
-        Tensor {
+        Ok(Tensor {
             inner,
             dims,
             data_count,
             data,
-        }
+        })
     }
 
     /// # Safety
@@ -104,9 +94,13 @@ impl<T: TensorType> Tensor<T> {
             return Err(Error::InvalidArgument);
         }
 
-        let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, (*tensor).nr_dims as usize);
+        let nr_dims = (*tensor)
+            .nr_dims
+            .try_into()
+            .map_err(|_| Error::Others("Cannot convert tensor.nr_dims to usize".to_string()))?;
+        let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, nr_dims);
 
-        let data_count = product(dims) as usize;
+        let data_count = Self::calculate_data_count(dims)?;
 
         let ptr = ffi::vaccel_torch_tensor_get_data(tensor);
         let data = if ptr.is_null() {
@@ -138,11 +132,11 @@ impl<T: TensorType> Tensor<T> {
         Ok(self)
     }
 
-    pub fn nr_dims(&self) -> i32 {
-        self.dims.len() as i32
+    pub fn nr_dims(&self) -> i64 {
+        self.dims.len() as i64
     }
 
-    pub fn dim(&self, idx: usize) -> Result<u32> {
+    pub fn dim(&self, idx: usize) -> Result<i64> {
         if idx >= self.dims.len() {
             return Err(Error::InvalidArgument);
         }
@@ -167,6 +161,13 @@ impl<T: TensorType> Tensor<T> {
                 .into(),
             ..Default::default()
         }
+    }
+
+    fn calculate_data_count(dims: &[i64]) -> Result<usize> {
+        dims.iter()
+            .product::<i64>()
+            .try_into()
+            .map_err(|_| Error::Others("Cannot convert tensor.data_count to usize".to_string()))
     }
 }
 
@@ -207,7 +208,7 @@ impl TensorAny for TorchTensor {
     fn inner(&self) -> *const ffi::vaccel_torch_tensor {
         let inner = unsafe {
             ffi::vaccel_torch_tensor_new(
-                self.dims.len() as i32,
+                self.dims.len() as i64,
                 self.dims.as_ptr() as *mut _,
                 self.type_.value() as u32,
             )
@@ -228,7 +229,7 @@ impl TensorAny for TorchTensor {
     fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor {
         let inner = unsafe {
             ffi::vaccel_torch_tensor_new(
-                self.dims.len() as i32,
+                self.dims.len() as i64,
                 self.dims.as_ptr() as *mut _,
                 self.type_.value() as u32,
             )
@@ -424,18 +425,23 @@ impl TensorType for bool {
 }
 */
 
-impl From<&ffi::vaccel_torch_tensor> for TorchTensor {
-    fn from(tensor: &ffi::vaccel_torch_tensor) -> Self {
+impl TryFrom<&ffi::vaccel_torch_tensor> for TorchTensor {
+    type Error = Error;
+
+    fn try_from(tensor: &ffi::vaccel_torch_tensor) -> Result<Self> {
+        let nr_dims = tensor
+            .nr_dims
+            .try_into()
+            .map_err(|_| Error::Others("Cannot convert tensor.nr_dims to usize".to_string()))?;
         unsafe {
-            TorchTensor {
-                dims: std::slice::from_raw_parts(tensor.dims as *mut u32, tensor.nr_dims as usize)
-                    .to_owned(),
+            Ok(TorchTensor {
+                dims: std::slice::from_raw_parts(tensor.dims as *mut _, nr_dims).to_owned(),
                 type_: TorchDataType::from_i32(tensor.data_type as i32)
                     .unwrap()
                     .into(),
                 data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size).to_owned(),
                 ..Default::default()
-            }
+            })
         }
     }
 }
