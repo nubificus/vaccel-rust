@@ -130,7 +130,7 @@ fn main() {
         })
         .rust_protobuf_customize(protobuf_customized.clone())
         .run()
-        .expect("Async protocol generation failed.");
+        .expect("Common protocol generation failed.");
 
     Codegen::new()
         .out_dir(format!("{}/asynchronous", out_dir))

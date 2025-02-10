@@ -4,7 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
+use crate::Result;
 use log::error;
 use std::{
     ffi::{c_int, c_uchar},
@@ -55,17 +55,14 @@ pub unsafe extern "C" fn vaccel_rpc_client_image_classify(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.image_classify(sess_id, img.to_vec()) {
+    (match client.image_classify(sess_id, img.to_vec()) {
         Ok(ret) => {
             tags_slice.copy_from_slice(&ret[..tags_slice.len()]);
-            ffi::VACCEL_OK as c_int
+            ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
+            e.to_ffi()
         }
-    }
+    }) as c_int
 }

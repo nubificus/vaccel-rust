@@ -4,7 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
+use crate::{IntoFfiResult, Result};
 use log::error;
 use std::ffi::c_int;
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
@@ -26,12 +26,9 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(AgentServiceClient::tensorflow_model_load, ctx, &req)?;
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
+        let resp = self.execute(AgentServiceClient::tensorflow_model_load, ctx, &req)?;
 
-        Ok(resp.take_graph_def())
+        Ok(resp.graph_def)
     }
 
     pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<()> {
@@ -42,12 +39,9 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(AgentServiceClient::tensorflow_model_unload, ctx, &req)?;
+        self.execute(AgentServiceClient::tensorflow_model_unload, ctx, &req)?;
 
-        match resp.error.take() {
-            None => Ok(()),
-            Some(e) => Err(e.into()),
-        }
+        Ok(())
     }
 
     pub fn tf_model_run(
@@ -71,13 +65,9 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(AgentServiceClient::tensorflow_model_run, ctx, &req)?;
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
+        let resp = self.execute(AgentServiceClient::tensorflow_model_run, ctx, &req)?;
 
-        let tf_tensors = resp.take_result().out_tensors;
-        tf_tensors
+        resp.out_tensors
             .into_iter()
             .map(|e| unsafe {
                 let dims = e.dims;
@@ -129,16 +119,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_load(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.tf_model_load(model_id, sess_id) {
-        Ok(_) => ffi::VACCEL_OK as c_int,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
-        }
-    }
+    client.tf_model_load(model_id, sess_id).into_ffi()
 }
 
 /// # Safety
@@ -156,16 +137,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_delete(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.tf_model_unload(model_id, sess_id) {
-        Ok(_) => ffi::VACCEL_OK as c_int,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
-        }
-    }
+    client.tf_model_unload(model_id, sess_id).into_ffi()
 }
 
 /// # Safety
@@ -226,7 +198,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_run(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.tf_model_run(
+    (match client.tf_model_run(
         model_id,
         sess_id,
         run_options,
@@ -236,14 +208,11 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_run(
     ) {
         Ok(result) => {
             out_tensors.copy_from_slice(&result);
-            ffi::VACCEL_OK as c_int
+            ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
+            e.to_ffi()
         }
-    }
+    }) as c_int
 }

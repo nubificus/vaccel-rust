@@ -9,7 +9,6 @@ use std::{
 };
 use vaccel_rpc_proto::profiling::{
     prof_region::Sample as ProtoSample, ProfRegion as ProtoProfRegion,
-    ProfRegions as ProtoProfRegions,
 };
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;
@@ -315,11 +314,11 @@ impl From<&ProtoSample> for Sample {
     }
 }
 
-impl From<ProtoProfRegions> for ProfRegions {
-    fn from(arg: ProtoProfRegions) -> Self {
-        let mut t = ProfRegions::new("test");
+impl From<Vec<ProtoProfRegion>> for ProfRegions {
+    fn from(arg: Vec<ProtoProfRegion>) -> Self {
+        let mut t = ProfRegions::new("");
 
-        for pt in arg.timer.into_iter() {
+        for pt in arg.into_iter() {
             let s: Vec<Sample> = pt.samples.into_iter().map(|x| (&x).into()).collect();
             t.insert(&pt.name, s);
         }
@@ -336,7 +335,7 @@ impl From<&Sample> for ProtoSample {
     }
 }
 
-impl From<ProfRegions> for ProtoProfRegions {
+impl From<ProfRegions> for Vec<ProtoProfRegion> {
     fn from(arg: ProfRegions) -> Self {
         let mut pt: Vec<ProtoProfRegion> = Vec::new();
         for (n, t) in arg.iter() {
@@ -345,9 +344,7 @@ impl From<ProfRegions> for ProtoProfRegions {
             p.samples = t.iter().map(|x| x.into()).collect();
             pt.push(p);
         }
-        let mut t = ProtoProfRegions::new();
-        t.timer = pt;
-        t
+        pt
     }
 }
 

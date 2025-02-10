@@ -35,7 +35,7 @@ pub enum Error {
     InvalidArgument,
 
     /// Uninitialized vAccel object
-    #[error("Invalid argument")]
+    #[error("Uninitialized")]
     Uninitialized,
 
     /// TensorFlow error
