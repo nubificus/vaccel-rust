@@ -12,22 +12,15 @@ message Arg {
 	bytes buf = 3;
 	uint32 parts = 4;
 	uint32 part_no = 5;
-};
+}
 
 message GenopRequest {
 	int64 session_id = 1;
 
 	repeated Arg read_args = 2;
 	repeated Arg write_args = 3;
-};
-
-message GenopResult {
-	repeated Arg write_args = 1;
-};
+}
 
 message GenopResponse {
-	oneof result {
-		VaccelError error = 1;
-		GenopResult result = 2;
-	}
-};
+	repeated Arg write_args = 1;
+}

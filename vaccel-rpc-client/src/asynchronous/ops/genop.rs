@@ -94,7 +94,7 @@ impl VaccelRpcClient {
         self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
         let tc = self.ttrpc_client.clone();
         let runtime = self.runtime.clone();
-        let mut resp = runtime.block_on(async {
+        let resp = runtime.block_on(async {
             self.timer_start(sess_id, "genop > client > ttrpc_client.genop > stream");
             let mut stream = tc.genop_stream(ctx).await.unwrap();
             self.timer_stop(sess_id, "genop > client > ttrpc_client.genop > stream");
@@ -111,10 +111,7 @@ impl VaccelRpcClient {
             res
         })?;
         self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
 
-        Ok(resp.take_result().write_args)
+        Ok(resp.write_args)
     }
 }

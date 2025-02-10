@@ -2,42 +2,41 @@
 
 syntax = "proto3";
 
-import "session.proto";
-import "resource.proto";
+import "empty.proto";
+import "genop.proto";
 import "image.proto";
+import "profiling.proto";
+import "resource.proto";
+import "session.proto";
 import "tensorflow.proto";
 import "torch.proto";
-import "genop.proto";
-import "profiling.proto";
 
 package vaccel;
 
 service AgentService {
 	// Session handling
 	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
-	rpc UpdateSession(UpdateSessionRequest) returns (EmptyResponse);
-	rpc DestroySession(DestroySessionRequest) returns (EmptyResponse);
+	rpc UpdateSession(UpdateSessionRequest) returns (Empty);
+	rpc DestroySession(DestroySessionRequest) returns (Empty);
 
 	// vAccel resource handling
 	rpc RegisterResource(RegisterResourceRequest) returns (RegisterResourceResponse);
-	rpc UnregisterResource(UnregisterResourceRequest) returns (EmptyResponse);
+	rpc UnregisterResource(UnregisterResourceRequest) returns (Empty);
 
 	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
 
 	// TensorFlow inference API
 	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
-	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
+	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (Empty);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 
 	// TensorFlow Lite inference API
-	rpc TensorflowLiteModelLoad(TensorflowLiteModelLoadRequest) returns (TensorflowLiteModelLoadResponse);
-	rpc TensorflowLiteModelUnload(TensorflowLiteModelUnloadRequest) returns (TensorflowLiteModelUnloadResponse);
+	rpc TensorflowLiteModelLoad(TensorflowLiteModelLoadRequest) returns (Empty);
+	rpc TensorflowLiteModelUnload(TensorflowLiteModelUnloadRequest) returns (Empty);
 	rpc TensorflowLiteModelRun(TensorflowLiteModelRunRequest) returns (TensorflowLiteModelRunResponse);
 
 	// PyTorch inference API
-	//rpc TorchModelLoad(TorchModelLoadRequest) returns (TorchModelLoadResponse);
-	//rpc TorchModelUnload(TorchModelUnloadRequest) returns (TorchModelUnloadResponse);
 	rpc TorchJitloadForward(TorchJitloadForwardRequest) returns (TorchJitloadForwardResponse);
 
 	// Generic Operation API
@@ -47,5 +46,3 @@ service AgentService {
 	// Profiling Operation API
 	rpc GetTimers(ProfilingRequest) returns (ProfilingResponse);
 }
-
-message EmptyResponse {}

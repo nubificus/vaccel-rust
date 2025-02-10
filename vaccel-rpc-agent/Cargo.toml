@@ -9,19 +9,21 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
-vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
-vaccel = { path = "../vaccel-bindings" }
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
+async-trait = { version = "0.1", optional = true }
+clap = { version = "4.5", features = ["derive"] }
+ctrlc = { version = "3.4", features = ["termination"] }
+dashmap = { version = "6.0" }
 env_logger = "0.11"
 log = "0.4"
-ctrlc = { version = "3.4", features = ["termination"] }
-clap = { version = "4.5", features = ["derive"] }
-dashmap = { version = "6.0" }
-tokio = { version = "1.38", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }
-async-trait = { version = "0.1", optional = true }
+protobuf = "3.1"
 thiserror = "1.0"
+tokio = { version = "1.38", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
 #tracing = "0.1"
 #tracing-subscriber = "0.3"
+
+vaccel = { path = "../vaccel-bindings" }
+vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
 
 [features]
 async = ["dep:async-trait", "dep:tokio"]

@@ -9,24 +9,16 @@ import "error.proto";
 message TensorflowModelLoadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
-};
+}
 
 message TensorflowModelLoadResponse {
-	oneof result {
-		bytes graph_def = 1;
-		VaccelError error = 2;
-	}
-};
+	bytes graph_def = 1;
+}
 
 message TensorflowModelUnloadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
-};
-
-message TensorflowModelUnloadResponse {
-	bool success = 1;
-	VaccelError error = 2;
-};
+}
 
 enum TFDataType {
 	// Add unused value here so that we are compatible
@@ -55,7 +47,7 @@ enum TFDataType {
 	VARIANT = 21;
 	UINT32 = 22;
 	UINT64 = 23;
-};
+}
 
 message TFTensor {
 	// Data of the tensor
@@ -66,7 +58,7 @@ message TFTensor {
 
 	// Data type
 	TFDataType type = 3;
-};
+}
 
 message TFNode {
 	// Name of the node
@@ -74,7 +66,7 @@ message TFNode {
 
 	// Id of the node
 	int32 id = 2;
-};
+}
 
 message TensorflowModelRunRequest {
 	int64 session_id = 1;
@@ -89,43 +81,24 @@ message TensorflowModelRunRequest {
 
 	// Output nodes
 	repeated TFNode out_nodes = 6;
-};
-
-message InferenceResult {
-	// An inference result is a number of output tensors
-	repeated TFTensor out_tensors = 1;
-};
+}
 
 message TensorflowModelRunResponse {
-	oneof result {
-		VaccelError error = 1;
-		InferenceResult result = 2;
-	}
-};
+	// An inference result is a number of output tensors
+	repeated TFTensor out_tensors = 1;
+}
 
 /* TFLite */
 
 message TensorflowLiteModelLoadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
-};
-
-message TensorflowLiteModelLoadResponse {
-	oneof result {
-		VaccelError error = 1;
-	}
-};
+}
 
 message TensorflowLiteModelUnloadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
-};
-
-message TensorflowLiteModelUnloadResponse {
-	oneof result {
-		VaccelError error = 1;
-	}
-};
+}
 
 enum TFLiteType {
 	// Add unused value here so that we are compatible
@@ -150,7 +123,7 @@ enum TFLiteType {
 	UINT32 = 17;
 	UINT16 = 18;
 	INT4 = 19;
-};
+}
 
 message TFLiteTensor {
 	// Data of the tensor
@@ -161,7 +134,7 @@ message TFLiteTensor {
 
 	// Data type
 	TFLiteType type = 3;
-};
+}
 
 message TensorflowLiteModelRunRequest {
 	int64 session_id = 1;
@@ -171,16 +144,9 @@ message TensorflowLiteModelRunRequest {
 	repeated TFLiteTensor in_tensors = 3;
 	// Number of output tensors
 	int32 nr_outputs = 4;
-};
-
-message InferenceLiteResult {
-	// An inference result is a number of output tensors
-	repeated TFLiteTensor out_tensors = 1;
-};
+}
 
 message TensorflowLiteModelRunResponse {
-	oneof result {
-		VaccelError error = 1;
-		InferenceLiteResult result = 2;
-	}
-};
+	// An inference result is a number of output tensors
+	repeated TFLiteTensor out_tensors = 1;
+}

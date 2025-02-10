@@ -4,7 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
+use crate::Result;
 use log::error;
 use std::{convert::TryInto, ffi::c_int, ptr};
 use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
@@ -33,13 +33,10 @@ impl VaccelRpcClient {
         self.timer_stop(sess_id, "genop > client > req create");
 
         self.timer_start(sess_id, "genop > client > ttrpc_client.genop");
-        let mut resp = self.execute(AgentServiceClient::genop, ctx, &req)?;
+        let resp = self.execute(AgentServiceClient::genop, ctx, &req)?;
         self.timer_stop(sess_id, "genop > client > ttrpc_client.genop");
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
 
-        Ok(resp.take_result().write_args)
+        Ok(resp.write_args)
     }
 }
 
@@ -128,16 +125,13 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
             }
             client.timer_stop(sess_id, "genop > write_args copy");
 
-            ffi::VACCEL_OK as c_int
+            ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
+            e.to_ffi()
         }
-    };
+    } as c_int;
     client.timer_stop(sess_id, "genop > client.genop");
 
     ret

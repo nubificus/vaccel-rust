@@ -4,7 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
+use crate::{IntoFfiResult, Result};
 use dashmap::mapref::entry::Entry;
 use log::error;
 use std::ffi::c_int;
@@ -39,7 +39,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let _resp = self.execute(AgentServiceClient::update_session, ctx, &req)?;
+        self.execute(AgentServiceClient::update_session, ctx, &req)?;
 
         Ok(())
     }
@@ -51,7 +51,7 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let _resp = self.execute(AgentServiceClient::destroy_session, ctx, &req)?;
+        self.execute(AgentServiceClient::destroy_session, ctx, &req)?;
 
         Ok(())
     }
@@ -71,16 +71,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_init(
         None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
 
-    match client.session_init(flags) {
-        Ok(id) => id,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => -(ffi::VACCEL_EBACKEND as ffi::vaccel_id_t),
-                _ => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
-            }
-        }
-    }
+    client.session_init(flags).into_ffi()
 }
 
 /// # Safety
@@ -98,16 +89,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_update(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.session_update(sess_id, flags) {
-        Ok(()) => ffi::VACCEL_OK as c_int,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
-        }
-    }
+    client.session_update(sess_id, flags).into_ffi()
 }
 
 /// # Safety
@@ -124,7 +106,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.session_release(sess_id) {
+    (match client.session_release(sess_id) {
         Ok(()) => {
             //#[cfg(feature = "async")]
             //let mut timers = client.timers.lock().unwrap();
@@ -133,14 +115,11 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
             if let Entry::Occupied(t) = timers.entry(sess_id) {
                 t.remove_entry();
             }
-            ffi::VACCEL_OK as c_int
+            ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
+            e.to_ffi()
         }
-    }
+    }) as c_int
 }
