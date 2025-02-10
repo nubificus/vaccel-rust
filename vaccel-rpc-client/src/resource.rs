@@ -4,8 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
-use log::error;
+use crate::{Error, IntoFfiResult, Result};
 use std::ffi::{c_char, c_int, CStr};
 use vaccel::{c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
@@ -31,12 +30,9 @@ impl VaccelRpcClient {
         req.resource_id = id;
         req.session_id = sess_id;
 
-        let mut resp = self.execute(AgentServiceClient::register_resource, ctx, &req)?;
+        let resp = self.execute(AgentServiceClient::register_resource, ctx, &req)?;
 
-        match resp.has_error() {
-            false => Ok(resp.resource_id()),
-            true => Err(resp.take_error().into()),
-        }
+        Ok(resp.resource_id)
     }
 
     pub fn resource_unregister(&self, res_id: i64, sess_id: i64) -> Result<()> {
@@ -45,7 +41,7 @@ impl VaccelRpcClient {
         req.resource_id = res_id;
         req.session_id = sess_id;
 
-        let _resp = self.execute(AgentServiceClient::unregister_resource, ctx, &req)?;
+        self.execute(AgentServiceClient::unregister_resource, ctx, &req)?;
 
         Ok(())
     }
@@ -122,16 +118,9 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
         }
     }
 
-    match client.resource_register(paths, files, type_, id, sess_id) {
-        Ok(id) => id,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => -(ffi::VACCEL_EBACKEND as ffi::vaccel_id_t),
-                _ => -(ffi::VACCEL_EIO as ffi::vaccel_id_t),
-            }
-        }
-    }
+    client
+        .resource_register(paths, files, type_, id, sess_id)
+        .into_ffi()
 }
 
 /// # Safety
@@ -149,14 +138,5 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_unregister(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.resource_unregister(res_id, sess_id) {
-        Ok(()) => ffi::VACCEL_OK as c_int,
-        Err(e) => {
-            error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
-        }
-    }
+    client.resource_unregister(res_id, sess_id).into_ffi()
 }

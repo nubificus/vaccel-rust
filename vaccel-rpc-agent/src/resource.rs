@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ttrpc_error, vaccel_error, AgentService};
+use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use vaccel::{File, Resource, VaccelId};
-#[cfg(feature = "async")]
-use vaccel_rpc_proto::asynchronous::agent::EmptyResponse;
-#[cfg(not(feature = "async"))]
-use vaccel_rpc_proto::sync::agent::EmptyResponse;
 #[allow(unused_imports)]
 use vaccel_rpc_proto::{
+    empty::Empty,
     error::VaccelError,
     resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
 };
@@ -17,13 +14,12 @@ impl AgentService {
     pub(crate) fn do_register_resource(
         &self,
         req: RegisterResourceRequest,
-    ) -> ttrpc::Result<RegisterResourceResponse> {
+    ) -> Result<RegisterResourceResponse> {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.into())
             .ok_or_else(|| {
-                ttrpc_error(
-                    ttrpc::Code::INVALID_ARGUMENT,
+                AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
@@ -37,29 +33,16 @@ impl AgentService {
                 false => {
                     let files: Vec<File> = req.files.iter().map(|f| f.into()).collect();
 
-                    match Resource::from_files(&files, req.resource_type) {
-                        Ok(r) => r,
-                        Err(e) => {
-                            resp.set_error(vaccel_error(e));
-                            return Ok(resp);
-                        }
-                    }
+                    Resource::from_files(&files, req.resource_type)?
                 }
                 true => {
                     if req.paths.is_empty() {
-                        return Err(ttrpc_error(
-                            ttrpc::Code::INVALID_ARGUMENT,
+                        return Err(AgentServiceError::InvalidArgument(
                             "No paths or files provided".to_string(),
                         ));
                     }
 
-                    match Resource::new(&req.paths, req.resource_type) {
-                        Ok(r) => r,
-                        Err(e) => {
-                            resp.set_error(vaccel_error(e));
-                            return Ok(resp);
-                        }
-                    }
+                    Resource::new(&req.paths, req.resource_type)?
                 }
             };
 
@@ -68,23 +51,16 @@ impl AgentService {
                 res.as_ref().id(),
                 req.session_id
             );
-            match res.as_mut().register(&mut sess) {
-                Ok(_) => {
-                    resp.set_resource_id(res.as_ref().id().into());
-                    let e = self.resources.insert(res.as_ref().id(), res);
-                    assert!(e.is_none());
-                }
-                Err(e) => {
-                    resp.set_error(vaccel_error(e));
-                }
-            }
+            res.as_mut().register(&mut sess)?;
+
+            resp.resource_id = res.as_ref().id().into();
+
+            let e = self.resources.insert(res.as_ref().id(), res);
+            assert!(e.is_none());
         } else {
             // If we got resource id > 0 simply register the resource
             let mut res = self.resources.get_mut(&res_id).ok_or_else(|| {
-                ttrpc_error(
-                    ttrpc::Code::INVALID_ARGUMENT,
-                    format!("Unknown resource {}", &res_id).to_string(),
-                )
+                AgentServiceError::NotFound(format!("Unknown resource {}", &res_id).to_string())
             })?;
 
             info!(
@@ -92,29 +68,20 @@ impl AgentService {
                 res.as_ref().id(),
                 req.session_id
             );
-            match res.as_mut().register(&mut sess) {
-                Ok(_) => {
-                    resp.set_resource_id(res.as_ref().id().into());
-                }
-                Err(e) => {
-                    resp.set_error(vaccel_error(e));
-                }
-            }
+            res.as_mut().register(&mut sess)?;
+
+            resp.resource_id = res.as_ref().id().into();
         }
 
         Ok(resp)
     }
 
-    pub(crate) fn do_unregister_resource(
-        &self,
-        req: UnregisterResourceRequest,
-    ) -> ttrpc::Result<EmptyResponse> {
+    pub(crate) fn do_unregister_resource(&self, req: UnregisterResourceRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.resource_id.into())
             .ok_or_else(|| {
-                ttrpc_error(
-                    ttrpc::Code::INVALID_ARGUMENT,
+                AgentServiceError::NotFound(
                     format!("Unknown resource {}", &req.resource_id).to_string(),
                 )
             })?;
@@ -123,8 +90,7 @@ impl AgentService {
             .sessions
             .get_mut(&req.session_id.into())
             .ok_or_else(|| {
-                ttrpc_error(
-                    ttrpc::Code::INVALID_ARGUMENT,
+                AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
@@ -134,36 +100,26 @@ impl AgentService {
             res.as_ref().id(),
             req.session_id
         );
-        res.as_mut()
-            .unregister(&mut sess)
-            .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))?;
+        res.as_mut().unregister(&mut sess)?;
 
         // If resource in registered to other sessions do not destroy
-        if res
-            .as_ref()
-            .refcount()
-            .map_err(|e| ttrpc_error(ttrpc::Code::INTERNAL, e.to_string()))?
-            > 0
-        {
-            return Ok(EmptyResponse::new());
+        let refcount = res.as_ref().refcount()?;
+        if refcount > 0 {
+            return Ok(Empty::new());
         }
 
         info!("Destroying resource {}", res.as_ref().id());
-        match res.as_mut().release() {
-            Ok(()) => {
-                drop(res);
-                self.resources
-                    .remove(&req.resource_id.into())
-                    .ok_or_else(|| {
-                        ttrpc_error(
-                            ttrpc::Code::INVALID_ARGUMENT,
-                            format!("Unknown resource {}", &req.resource_id).to_string(),
-                        )
-                    })?;
+        res.as_mut().release()?;
 
-                Ok(EmptyResponse::new())
-            }
-            Err(e) => Err(ttrpc_error(ttrpc::Code::INTERNAL, e.to_string())),
-        }
+        drop(res);
+        self.resources
+            .remove(&req.resource_id.into())
+            .ok_or_else(|| {
+                AgentServiceError::NotFound(
+                    format!("Unknown resource {}", &req.resource_id).to_string(),
+                )
+            })?;
+
+        Ok(Empty::new())
     }
 }

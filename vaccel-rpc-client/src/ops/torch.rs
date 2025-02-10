@@ -34,13 +34,9 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(AgentServiceClient::torch_jitload_forward, ctx, &req)?;
-        if resp.has_error() {
-            return Err(resp.take_error().into());
-        }
+        let resp = self.execute(AgentServiceClient::torch_jitload_forward, ctx, &req)?;
 
-        let torch_tensors = resp.take_result().out_tensors;
-        torch_tensors
+        resp.out_tensors
             .into_iter()
             .map(|e| unsafe {
                 let dims = e.dims;
@@ -140,17 +136,14 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors, nr_outputs) {
+    (match client.torch_jitload_forward(sess_id, model_id, run_options, in_tensors, nr_outputs) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
-            ffi::VACCEL_OK as c_int
+            ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
-            match e {
-                Error::ClientError(_) => ffi::VACCEL_EBACKEND as c_int,
-                _ => ffi::VACCEL_EIO as c_int,
-            }
+            e.to_ffi()
         }
-    }
+    }) as c_int
 }

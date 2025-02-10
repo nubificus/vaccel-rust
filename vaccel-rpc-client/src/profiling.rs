@@ -4,7 +4,7 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{Error, Result};
+use crate::Result;
 use std::{collections::BTreeMap, ptr};
 use vaccel::{c_pointer_to_mut_slice, ffi, profiling::ProfRegions};
 #[cfg(feature = "async")]
@@ -62,12 +62,9 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let mut resp = self.execute(AgentServiceClient::get_timers, ctx, &req)?;
+        let resp = self.execute(AgentServiceClient::get_timers, ctx, &req)?;
 
-        match resp.result.take() {
-            Some(r) => Ok(r.into()),
-            None => Err(Error::Undefined),
-        }
+        Ok(resp.timers.into())
     }
 }
 

@@ -6,10 +6,6 @@ package vaccel;
 
 import "error.proto";
 
-message ProfilingRequest {
-	int64 session_id = 1;
-};
-
 message ProfRegion {
 	message Sample {
 		uint64 start = 1;
@@ -17,12 +13,12 @@ message ProfRegion {
 	}
 	string name = 1;
 	repeated Sample samples = 2;
-};
+}
 
-message ProfRegions {
-	repeated ProfRegion timer = 1;
-};
+message ProfilingRequest {
+	int64 session_id = 1;
+}
 
 message ProfilingResponse {
-	ProfRegions result = 1;
-};
+	repeated ProfRegion timers = 1;
+}
