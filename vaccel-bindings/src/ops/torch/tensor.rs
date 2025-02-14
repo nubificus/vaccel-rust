@@ -52,26 +52,35 @@ impl<T: TensorType> DerefMut for Tensor<T> {
 
 impl<T: TensorType> Tensor<T> {
     pub fn new(dims: &[i64]) -> Result<Self> {
-        let dims = Vec::from(dims);
+        let mut dims = Vec::from(dims);
         let data_count = Self::calculate_data_count(&dims)?;
         let mut data = Vec::with_capacity(data_count);
         data.resize(data_count, T::zero());
 
-        let inner = unsafe {
+        let mut inner: *mut ffi::vaccel_torch_tensor = std::ptr::null_mut();
+        match unsafe {
             ffi::vaccel_torch_tensor_new(
+                &mut inner,
                 dims.len() as i64,
-                dims.as_ptr() as *mut _,
+                dims.as_mut_ptr() as *mut _,
                 T::data_type().to_int(),
-            )
-        };
+            ) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
+        assert!(!inner.is_null());
 
-        unsafe {
+        match unsafe {
             ffi::vaccel_torch_tensor_set_data(
                 inner,
                 data.as_ptr() as *mut _,
                 data.len() * std::mem::size_of::<T>(),
-            )
-        };
+            ) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
 
         Ok(Tensor {
             inner,
@@ -102,13 +111,12 @@ impl<T: TensorType> Tensor<T> {
 
         let data_count = Self::calculate_data_count(dims)?;
 
-        let ptr = ffi::vaccel_torch_tensor_get_data(tensor);
-        let data = if ptr.is_null() {
+        let data = if (*tensor).data.is_null() {
             let mut data = Vec::with_capacity(data_count);
             data.resize(data_count, T::zero());
             data
         } else {
-            let data = std::slice::from_raw_parts(ptr as *mut T, data_count);
+            let data = std::slice::from_raw_parts((*tensor).data as *mut T, data_count);
             Vec::from(data)
         };
 
@@ -177,26 +185,26 @@ impl<T: TensorType> Drop for Tensor<T> {
             return;
         }
 
-        unsafe { ffi::vaccel_torch_tensor_destroy(self.inner) };
+        unsafe { ffi::vaccel_torch_tensor_delete(self.inner) };
         self.inner = std::ptr::null_mut();
     }
 }
 
 pub trait TensorAny {
-    fn inner(&self) -> *const ffi::vaccel_torch_tensor;
+    fn inner(&self) -> Result<*const ffi::vaccel_torch_tensor>;
 
-    fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor;
+    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_torch_tensor>;
 
     fn data_type(&self) -> DataType;
 }
 
 impl<T: TensorType> TensorAny for Tensor<T> {
-    fn inner(&self) -> *const ffi::vaccel_torch_tensor {
-        self.inner
+    fn inner(&self) -> Result<*const ffi::vaccel_torch_tensor> {
+        Ok(self.inner)
     }
 
-    fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor {
-        self.inner
+    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_torch_tensor> {
+        Ok(self.inner)
     }
 
     fn data_type(&self) -> DataType {
@@ -205,46 +213,66 @@ impl<T: TensorType> TensorAny for Tensor<T> {
 }
 
 impl TensorAny for TorchTensor {
-    fn inner(&self) -> *const ffi::vaccel_torch_tensor {
-        let inner = unsafe {
+    fn inner(&self) -> Result<*const ffi::vaccel_torch_tensor> {
+        let mut inner: *mut ffi::vaccel_torch_tensor = std::ptr::null_mut();
+        match unsafe {
             ffi::vaccel_torch_tensor_new(
+                &mut inner,
                 self.dims.len() as i64,
                 self.dims.as_ptr() as *mut _,
                 self.type_.value() as u32,
-            )
-        };
+            ) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
+        assert!(!inner.is_null());
 
         let size = self.data.len();
         let data = self.data.to_owned();
 
-        unsafe {
+        match unsafe {
             ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
-        };
+                as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
 
         std::mem::forget(data);
 
-        inner
+        Ok(inner)
     }
 
-    fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor {
-        let inner = unsafe {
+    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_torch_tensor> {
+        let mut inner: *mut ffi::vaccel_torch_tensor = std::ptr::null_mut();
+        match unsafe {
             ffi::vaccel_torch_tensor_new(
+                &mut inner,
                 self.dims.len() as i64,
-                self.dims.as_ptr() as *mut _,
+                self.dims.as_mut_ptr() as *mut _,
                 self.type_.value() as u32,
-            )
-        };
+            ) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
+        assert!(!inner.is_null());
 
         let size = self.data.len();
         let data = self.data.to_owned();
 
-        unsafe {
+        match unsafe {
             ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
-        };
+                as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
 
         std::mem::forget(data);
 
-        inner
+        Ok(inner)
     }
 
     fn data_type(&self) -> DataType {
@@ -253,12 +281,12 @@ impl TensorAny for TorchTensor {
 }
 
 impl TensorAny for *mut ffi::vaccel_torch_tensor {
-    fn inner(&self) -> *const ffi::vaccel_torch_tensor {
-        *self
+    fn inner(&self) -> Result<*const ffi::vaccel_torch_tensor> {
+        Ok(*self)
     }
 
-    fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_tensor {
-        *self
+    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_torch_tensor> {
+        Ok(*self)
     }
 
     fn data_type(&self) -> DataType {

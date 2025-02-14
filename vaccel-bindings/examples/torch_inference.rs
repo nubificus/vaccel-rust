@@ -33,9 +33,9 @@ fn main() -> utilities::Result<()> {
     );
 
     // Prepare data
-    let run_options = torch::Buffer::new(&[]); // vaccel torch buffer with data and size
-                                               // TODO: in_tensor setting, use random inputs here,
-                                               // but should be images instead
+    let run_options = torch::Buffer::new(&[])?; // vaccel torch buffer with data and size
+                                                // TODO: in_tensor setting, use random inputs here,
+                                                // but should be images instead
     let in_tensor =
         torch::Tensor::<f32>::new(&[3 * 224 * 224])?.with_data(&[1.0; 3 * 224 * 224])?;
     info!("in_tensor dim: {}", in_tensor.nr_dims());
@@ -43,7 +43,7 @@ fn main() -> utilities::Result<()> {
     let mut sess_args = torch::InferenceArgs::new();
 
     sess_args.set_run_options(&run_options);
-    sess_args.add_input(&in_tensor);
+    sess_args.add_input(&in_tensor)?;
     sess_args.set_nr_outputs(1);
 
     let mut torch_model = torch::Model::new(model.as_mut());

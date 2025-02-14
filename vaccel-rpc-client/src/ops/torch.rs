@@ -40,29 +40,40 @@ impl VaccelRpcClient {
         }
 
         let torch_tensors = resp.take_result().out_tensors;
-        Ok(torch_tensors
+        torch_tensors
             .into_iter()
             .map(|e| unsafe {
                 let dims = e.dims;
                 let data_type = e.type_.value();
                 let data = e.data;
-                let tensor = ffi::vaccel_torch_tensor_new(
+
+                let mut tensor = std::ptr::null_mut();
+                match ffi::vaccel_torch_tensor_new(
+                    &mut tensor,
                     dims.len() as i64,
                     dims.as_ptr() as *mut i64,
                     data_type as u32,
-                );
+                ) as u32
+                {
+                    ffi::VACCEL_OK => (),
+                    err => return Err(vaccel::Error::Runtime(err).into()),
+                }
 
-                ffi::vaccel_torch_tensor_set_data(
+                match ffi::vaccel_torch_tensor_set_data(
                     tensor,
                     data.as_ptr() as *mut std::ffi::c_void,
                     data.len(),
-                );
+                ) as u32
+                {
+                    ffi::VACCEL_OK => (),
+                    err => return Err(vaccel::Error::Runtime(err).into()),
+                }
 
                 std::mem::forget(data);
 
-                tensor
+                Ok(tensor)
             })
-            .collect())
+            .collect()
     }
 }
 

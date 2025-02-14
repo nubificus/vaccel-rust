@@ -49,10 +49,10 @@ fn main() -> utilities::Result<()> {
     }
 
     // Prepare data for inference
-    let in_tensor = tflite::Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
+    let in_tensor = tflite::Tensor::<f32>::new(&[1, 30])?.with_data(&[1.0; 30])?;
 
     let mut sess_args = tflite::InferenceArgs::new();
-    sess_args.add_input(&in_tensor);
+    sess_args.add_input(&in_tensor)?;
     sess_args.set_nr_outputs(1);
 
     // Run inference

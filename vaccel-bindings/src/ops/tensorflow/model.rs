@@ -38,9 +38,10 @@ impl InferenceArgs {
         self.run_options = run_opts.inner();
     }
 
-    pub fn add_input(&mut self, node: &tf::Node, tensor: &dyn tf::TensorAny) {
+    pub fn add_input(&mut self, node: &tf::Node, tensor: &dyn tf::TensorAny) -> Result<()> {
         self.in_nodes.push(unsafe { *node.inner() });
-        self.in_tensors.push(tensor.inner());
+        self.in_tensors.push(tensor.inner()?);
+        Ok(())
     }
 
     pub fn request_output(&mut self, node: &tf::Node) {
