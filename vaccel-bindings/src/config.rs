@@ -31,7 +31,12 @@ impl Config {
         let plugins_ptr: *const c_char;
         match plugins {
             Some(p) => {
-                plugins_cstr = CString::new(p).map_err(|_| Error::InvalidArgument)?;
+                plugins_cstr = CString::new(p).map_err(|e| {
+                    Error::ConversionFailed(format!(
+                        "Could not convert `plugins` to `CString` [{}]",
+                        e
+                    ))
+                })?;
                 plugins_ptr = plugins_cstr.as_c_str().as_ptr();
             }
             None => {
@@ -43,7 +48,12 @@ impl Config {
         let log_file_ptr: *const c_char;
         match log_file {
             Some(l) => {
-                log_file_cstr = CString::new(l).map_err(|_| Error::InvalidArgument)?;
+                log_file_cstr = CString::new(l).map_err(|e| {
+                    Error::ConversionFailed(format!(
+                        "Could not convert `log_file` to `CString` [{}]",
+                        e
+                    ))
+                })?;
                 log_file_ptr = log_file_cstr.as_c_str().as_ptr();
             }
             None => {
@@ -66,7 +76,7 @@ impl Config {
                 inner,
                 initialized: true,
             }),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -78,7 +88,7 @@ impl Config {
                 inner,
                 initialized: true,
             }),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -98,7 +108,7 @@ impl Config {
                 self.initialized = false;
                 Ok(())
             }
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 

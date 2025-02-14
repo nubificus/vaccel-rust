@@ -10,51 +10,6 @@ pub use buffer::Buffer;
 pub use model::{InferenceArgs, InferenceResult, Model};
 pub use tensor::{Tensor, TensorAny, TensorType};
 
-#[derive(Debug)]
-pub enum Code {
-    Ok = 0,
-    Cancelled,
-    Unknown,
-    InvalidArgument,
-    DeadlineExceeded,
-    NotFound,
-    AlreadyExists,
-    PermissionDenied,
-    ResourceExhausted,
-    FailedPrecondition,
-    Aborted,
-    OutOfRange,
-    Unimplemented,
-    Internal,
-    Unavailable,
-    DataLoss,
-    Unauthenticated,
-}
-
-impl Code {
-    pub(crate) fn to_u8(&self) -> u8 {
-        match self {
-            Code::Ok => 0,
-            Code::Cancelled => 1,
-            Code::Unknown => 2,
-            Code::InvalidArgument => 3,
-            Code::DeadlineExceeded => 4,
-            Code::NotFound => 5,
-            Code::AlreadyExists => 6,
-            Code::PermissionDenied => 7,
-            Code::ResourceExhausted => 8,
-            Code::FailedPrecondition => 9,
-            Code::Aborted => 10,
-            Code::OutOfRange => 11,
-            Code::Unimplemented => 12,
-            Code::Internal => 13,
-            Code::Unavailable => 14,
-            Code::DataLoss => 15,
-            Code::Unauthenticated => 16,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Default)]
 pub enum DataType {
     UInt8,

@@ -3,11 +3,9 @@
 use crate::{ffi, Error, File, Result, Session, VaccelId};
 use log::warn;
 use std::{
-    error::Error as StdError,
     ffi::{c_char, c_void, CString},
     marker::PhantomPinned,
     pin::Pin,
-    result::Result as StdResult,
 };
 
 #[derive(Debug)]
@@ -23,13 +21,14 @@ impl Resource {
 
     /// Create a new resource object
     pub fn new(paths: &[String], res_type: u32) -> Result<Pin<Box<Self>>> {
-        let c_paths = match paths
-            .iter()
-            .map(|s| Ok(CString::new(s.as_str())?))
-            .collect::<StdResult<Vec<CString>, Box<dyn StdError>>>()
-        {
+        let c_paths: Vec<CString> = match paths.iter().map(|s| CString::new(s.as_str())).collect() {
             Ok(p) => p,
-            Err(_) => return Err(Error::InvalidArgument),
+            Err(e) => {
+                return Err(Error::ConversionFailed(format!(
+                    "Could not convert `paths` to `CString`s [{}]",
+                    e
+                )))
+            }
         };
         let mut p: Vec<*const c_char> = c_paths.iter().map(|p| p.as_c_str().as_ptr()).collect();
 
@@ -52,7 +51,7 @@ impl Resource {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(boxed),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -90,7 +89,7 @@ impl Resource {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(boxed),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -109,7 +108,12 @@ impl Resource {
         let c_fname = match filename {
             Some(f) => match CString::new(f) {
                 Ok(f) => f,
-                Err(_) => return Err(Error::InvalidArgument),
+                Err(e) => {
+                    return Err(Error::ConversionFailed(format!(
+                        "Could not convert `filename` to `CString` [{}]",
+                        e
+                    )))
+                }
             },
             None => CString::new("file").unwrap(),
         };
@@ -125,7 +129,7 @@ impl Resource {
         } as u32
         {
             ffi::VACCEL_OK => Ok(boxed),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -137,7 +141,7 @@ impl Resource {
 
         match unsafe { ffi::vaccel_resource_release(self.inner_mut()) as u32 } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -149,7 +153,7 @@ impl Resource {
 
         match unsafe { ffi::vaccel_resource_register(self.inner_mut(), sess.inner_mut()) as u32 } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -162,7 +166,7 @@ impl Resource {
         match unsafe { ffi::vaccel_resource_unregister(self.inner_mut(), sess.inner_mut()) as u32 }
         {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -176,7 +180,7 @@ impl Resource {
 
         match unsafe { ffi::vaccel_resource_refcount(self.inner()) } {
             rc if rc >= 0 => Ok(rc as u32),
-            err => Err(Error::Runtime(-err as u32)),
+            err => Err(Error::Ffi(-err as u32)),
         }
     }
 

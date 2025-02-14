@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Buffer, Code, DataType, Tensor, TensorAny, TensorType};
+use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
     ops::{ModelInitialize, ModelRun},
@@ -66,30 +66,29 @@ impl InferenceResult {
 
     pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
-            return Err(Error::Torch(Code::OutOfRange));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::Torch(Code::Unavailable));
+            return Err(Error::EmptyValue);
         }
 
-        let inner_data_type = unsafe { DataType::from_int((*t).data_type) };
-        if inner_data_type != T::data_type() {
-            return Err(Error::Torch(Code::InvalidArgument));
+        if unsafe { DataType::from_int((*t).data_type) } != T::data_type() {
+            return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
-        Ok(unsafe { Tensor::from_ffi(t).unwrap() })
+        Ok(unsafe { Tensor::from_ffi(t)? })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TorchTensor> {
         if id >= self.out_tensors.len() {
-            return Err(Error::Torch(Code::OutOfRange));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::Torch(Code::Unavailable));
+            return Err(Error::EmptyValue);
         }
 
         unsafe {
@@ -142,7 +141,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(result),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
