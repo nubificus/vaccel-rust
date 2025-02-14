@@ -25,7 +25,7 @@ pub enum Error {
 
     /// vAccel runtime error
     #[error("vAccel error: {0}")]
-    RuntimeError(String),
+    VaccelError(vaccel::Error),
 
     /// Socket error
     #[error("ttrpc error: {0}")]
@@ -42,7 +42,7 @@ pub enum Error {
 
 impl From<vaccel::Error> for Error {
     fn from(err: vaccel::Error) -> Self {
-        Error::RuntimeError(format!("{}", err))
+        Error::VaccelError(err)
     }
 }
 

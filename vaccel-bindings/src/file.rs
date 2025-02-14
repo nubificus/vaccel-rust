@@ -19,8 +19,13 @@ pub struct File {
 impl File {
     pub fn new(name: &str, path: &str, path_owned: bool, data: &[u8], size: usize) -> Result<Self> {
         let mut d = data.to_owned();
-        let n = CString::new(name).map_err(|_| Error::InvalidArgument)?;
-        let p = CString::new(path).map_err(|_| Error::InvalidArgument)?;
+        let n = CString::new(name).map_err(|e| {
+            Error::ConversionFailed(format!("Could not convert `name` to `CString` [{}]", e))
+        })?;
+        let p = CString::new(path).map_err(|e| {
+            Error::ConversionFailed(format!("Could not convert `path` to `CString` [{}]", e))
+        })?;
+
         Ok(File {
             inner: ffi::vaccel_file {
                 name: n.as_c_str().as_ptr() as *mut c_char,
@@ -48,18 +53,28 @@ impl File {
     pub unsafe fn from_ffi(file_ptr: *mut ffi::vaccel_file) -> Result<Self> {
         let file = match unsafe { file_ptr.as_ref() } {
             Some(f) => f,
-            None => return Err(Error::InvalidArgument),
+            None => {
+                return Err(Error::InvalidArgument(
+                    "`file` cannot be `null`".to_string(),
+                ))
+            }
         };
 
         let name = unsafe {
-            CStr::from_ptr(file.name)
-                .to_str()
-                .map_err(|_| Error::InvalidArgument)?
+            CStr::from_ptr(file.name).to_str().map_err(|e| {
+                Error::ConversionFailed(format!(
+                    "Could not convert `file.name` to `CString` [{}]",
+                    e
+                ))
+            })?
         };
         let path = unsafe {
-            CStr::from_ptr(file.path)
-                .to_str()
-                .map_err(|_| Error::InvalidArgument)?
+            CStr::from_ptr(file.path).to_str().map_err(|e| {
+                Error::ConversionFailed(format!(
+                    "Could not convert `file.path` to `CString` [{}]",
+                    e
+                ))
+            })?
         };
         let data = c_pointer_to_mut_slice(file.data, file.size).unwrap_or(&mut []);
         Self::new(name, path, file.path_owned, data, file.size)
@@ -110,14 +125,20 @@ impl TryFrom<&ffi::vaccel_file> for ProtoFile {
 
     fn try_from(file: &ffi::vaccel_file) -> Result<Self> {
         let name = unsafe {
-            CStr::from_ptr(file.name)
-                .to_str()
-                .map_err(|_| Error::InvalidArgument)?
+            CStr::from_ptr(file.name).to_str().map_err(|e| {
+                Error::ConversionFailed(format!(
+                    "Could not convert `file.name` to `CString` [{}]",
+                    e
+                ))
+            })?
         };
         let path = unsafe {
-            CStr::from_ptr(file.path)
-                .to_str()
-                .map_err(|_| Error::InvalidArgument)?
+            CStr::from_ptr(file.path).to_str().map_err(|e| {
+                Error::ConversionFailed(format!(
+                    "Could not convert `file.path` to `CString` [{}]",
+                    e
+                ))
+            })?
         };
         let data = unsafe { c_pointer_to_mut_slice(file.data, file.size).unwrap_or(&mut []) };
         Ok(ProtoFile {

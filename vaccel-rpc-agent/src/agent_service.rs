@@ -6,7 +6,7 @@ use std::{pin::Pin, sync::Arc};
 use thiserror::Error as ThisError;
 use vaccel::{self, profiling::ProfRegions, Resource, Session, VaccelId};
 use vaccel_rpc_proto::{
-    error::{VaccelError, VaccelErrorType},
+    error::VaccelError,
     profiling::{ProfilingRequest, ProfilingResponse},
 };
 
@@ -38,21 +38,18 @@ impl From<AgentServiceError> for ttrpc::Error {
                 ttrpc::error::get_rpc_status(ttrpc::Code::INTERNAL, s.clone())
             }
             AgentServiceError::Vaccel(e) => {
-                let mut status = ttrpc::error::get_status(ttrpc::Code::INTERNAL, e.to_string());
+                let mut ttrpc_status =
+                    ttrpc::error::get_status(ttrpc::Code::INTERNAL, e.to_string());
+                let vaccel_error = VaccelError::from(e);
 
-                if let vaccel::Error::Runtime(ffi_error) = e {
-                    let mut err = VaccelError::new();
-                    err.type_ = VaccelErrorType::RUNTIME.into();
-                    err.ffi_error = ffi_error;
+                let details = vaccel_error.write_to_bytes().unwrap();
+                let mut any = ttrpc::proto::Any::new();
+                any.set_type_url("type.googleapis.com/vaccel.VaccelError".to_string());
+                any.set_value(details);
 
-                    let details = err.write_to_bytes().unwrap();
-                    let mut any = ttrpc::proto::Any::new();
-                    any.set_type_url("type.googleapis.com/vaccel.VaccelError".to_string());
-                    any.set_value(details);
-                    status.set_details(vec![any]);
-                }
+                ttrpc_status.set_details(vec![any]);
 
-                ttrpc::Error::RpcStatus(status)
+                ttrpc::Error::RpcStatus(ttrpc_status)
             }
         }
     }

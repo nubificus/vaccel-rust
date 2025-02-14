@@ -52,7 +52,7 @@ impl VaccelRpcClient {
                 ) as u32
                 {
                     ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Runtime(err).into()),
+                    err => return Err(vaccel::Error::Ffi(err).into()),
                 }
 
                 match ffi::vaccel_torch_tensor_set_data(
@@ -62,7 +62,7 @@ impl VaccelRpcClient {
                 ) as u32
                 {
                     ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Runtime(err).into()),
+                    err => return Err(vaccel::Error::Ffi(err).into()),
                 }
 
                 std::mem::forget(data);

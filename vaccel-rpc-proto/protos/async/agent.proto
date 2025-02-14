@@ -28,7 +28,7 @@ service AgentService {
 
 	// TensorFlow inference API
 	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
-	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (Empty);
+	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
 	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
 
 	// TensorFlow Lite inference API

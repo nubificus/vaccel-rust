@@ -18,12 +18,14 @@ default = ["profiling"]
 profiling = []
 
 [dependencies]
-vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
-protobuf = "3.1"
 env_logger = "0.11"
 log = "0.4"
 libc = "0.2"
+protobuf = "3.1"
+derive_more = { version = "2.0", features = ["display", "from", "into"] }
 thiserror = "1.0"
+
+vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
 
 [build-dependencies]
 libc = "0.2"

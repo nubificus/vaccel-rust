@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Code, Tensor, TensorAny, TensorType, Type};
+use super::{DataType, Status, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
     ops::{ModelInitialize, ModelLoadUnload, ModelRun},
@@ -57,7 +57,7 @@ impl From<InferenceArgs> for TensorflowLiteModelRunRequest {
 
 pub struct InferenceResult {
     out_tensors: Vec<*mut ffi::vaccel_tflite_tensor>,
-    status: u8,
+    pub status: Status,
 }
 
 impl InferenceResult {
@@ -66,30 +66,29 @@ impl InferenceResult {
 
         InferenceResult {
             out_tensors,
-            status: 0,
+            status: Status(0),
         }
     }
 
     pub fn from_vec(tensors: Vec<*mut ffi::vaccel_tflite_tensor>) -> Self {
         InferenceResult {
             out_tensors: tensors,
-            status: 0,
+            status: Status(0),
         }
     }
 
     pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
-            return Err(Error::TensorFlowLite(Code::Error));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::TensorFlowLite(Code::Error));
+            return Err(Error::EmptyValue);
         }
 
-        let inner_data_type = unsafe { Type::from_int((*t).data_type) };
-        if inner_data_type != T::data_type() {
-            return Err(Error::TensorFlowLite(Code::Error));
+        if unsafe { DataType::from_int((*t).data_type) } != T::data_type() {
+            return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
         Ok(unsafe { Tensor::from_ffi(t).unwrap() })
@@ -97,12 +96,12 @@ impl InferenceResult {
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TFLiteTensor> {
         if id >= self.out_tensors.len() {
-            return Err(Error::TensorFlowLite(Code::Error));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::TensorFlowLite(Code::Error));
+            return Err(Error::EmptyValue);
         }
 
         unsafe {
@@ -137,8 +136,8 @@ impl<'a> ModelRun<'a> for Model<'a> {
     fn run(
         self: Pin<&mut Self>,
         sess: &mut Session,
-        args: &mut InferenceArgs,
-    ) -> Result<InferenceResult> {
+        args: &mut Self::RunArgs,
+    ) -> Result<Self::RunResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
         match unsafe {
             ffi::vaccel_tflite_session_run(
@@ -148,11 +147,14 @@ impl<'a> ModelRun<'a> for Model<'a> {
                 args.in_tensors.len() as i32,
                 result.out_tensors.as_mut_ptr(),
                 args.nr_outputs,
-                &mut result.status as *mut _,
+                &mut result.status.0 as *mut _,
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(result),
-            err => Err(Error::Runtime(err)),
+            error => Err(Error::FfiWithStatus {
+                error,
+                status: result.status.into(),
+            }),
         }
     }
 
@@ -162,23 +164,23 @@ impl<'a> ModelRun<'a> for Model<'a> {
 }
 
 impl<'a> ModelLoadUnload<'a> for Model<'a> {
-    type LoadResult = ();
+    type LoadUnloadResult = ();
 
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
             ffi::vaccel_tflite_session_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
-    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
             ffi::vaccel_tflite_session_delete(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 }

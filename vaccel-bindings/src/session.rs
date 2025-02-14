@@ -30,7 +30,7 @@ impl Session {
 
         match unsafe { ffi::vaccel_session_init(&mut inner, flags) as u32 } {
             ffi::VACCEL_OK => Ok(Session { inner }),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -59,7 +59,7 @@ impl Session {
 
         match unsafe { ffi::vaccel_session_release(&mut self.inner) as u32 } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 

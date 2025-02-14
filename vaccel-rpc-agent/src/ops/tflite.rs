@@ -119,6 +119,7 @@ impl AgentService {
 
         let mut resp = TensorflowLiteModelRunResponse::new();
         resp.out_tensors = out_tensors;
+        resp.status = Some(result.status.into()).into();
 
         Ok(resp)
     }

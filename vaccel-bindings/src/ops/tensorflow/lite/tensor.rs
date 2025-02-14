@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Code, Type as DataType};
+use super::DataType;
 use crate::{ffi, Error, Result};
 use protobuf::Enum;
 use std::ops::{Deref, DerefMut};
@@ -69,7 +69,7 @@ impl<T: TensorType> Tensor<T> {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -81,7 +81,7 @@ impl<T: TensorType> Tensor<T> {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         Ok(Tensor {
@@ -98,18 +98,22 @@ impl<T: TensorType> Tensor<T> {
     /// manually or by the respective vAccel function.
     pub unsafe fn from_ffi(tensor: *mut ffi::vaccel_tflite_tensor) -> Result<Tensor<T>> {
         if tensor.is_null() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "`tensor` cannot be `null`".to_string(),
+            ));
         }
 
         if DataType::from_int((*tensor).data_type) != T::data_type() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "Invalid `tensor.data_type`".to_string(),
+            ));
         }
 
         let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, (*tensor).nr_dims as usize);
 
-        let data_count = product(dims)
-            .try_into()
-            .map_err(|e| Error::Others(format!("{e}")))?;
+        let data_count = product(dims).try_into().map_err(|e| {
+            Error::ConversionFailed(format!("Could not convert `data_count` to `usize` [{}]", e))
+        })?;
 
         let data = if (*tensor).data.is_null() {
             let mut data = Vec::with_capacity(data_count);
@@ -129,7 +133,10 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn with_data(mut self, data: &[T]) -> Result<Self> {
         if data.len() != self.data_count {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(format!(
+                "'data` length must be {}",
+                self.data_count
+            )));
         }
 
         for (e, v) in self.iter_mut().zip(data) {
@@ -145,7 +152,7 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn dim(&self, idx: usize) -> Result<i32> {
         if idx >= self.dims.len() {
-            return Err(Error::TensorFlowLite(Code::Error));
+            return Err(Error::OutOfBounds);
         }
 
         Ok(self.dims[idx])
@@ -216,7 +223,7 @@ impl TensorAny for TFLiteTensor {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -228,7 +235,7 @@ impl TensorAny for TFLiteTensor {
                 as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         std::mem::forget(data);
@@ -247,7 +254,7 @@ impl TensorAny for TFLiteTensor {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -259,7 +266,7 @@ impl TensorAny for TFLiteTensor {
                 as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         std::mem::forget(data);

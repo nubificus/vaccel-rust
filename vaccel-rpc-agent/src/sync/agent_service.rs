@@ -6,6 +6,7 @@ use vaccel_rpc_proto::tensorflow::{
     TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest, TensorflowLiteModelRunResponse,
     TensorflowLiteModelUnloadRequest, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
     TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
+    TensorflowModelUnloadResponse,
 };
 use vaccel_rpc_proto::{
     empty::Empty,
@@ -83,7 +84,7 @@ impl agent_ttrpc::AgentService for AgentService {
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
         req: TensorflowModelUnloadRequest,
-    ) -> ttrpc::Result<Empty> {
+    ) -> ttrpc::Result<TensorflowModelUnloadResponse> {
         self.do_tensorflow_model_unload(req).into_ttrpc()
     }
 

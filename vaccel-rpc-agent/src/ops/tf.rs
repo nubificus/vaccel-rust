@@ -3,12 +3,9 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::{debug, info};
 use vaccel::ops::{tensorflow as tf, ModelInitialize, ModelLoadUnload, ModelRun};
-use vaccel_rpc_proto::{
-    empty::Empty,
-    tensorflow::{
-        TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
-        TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
-    },
+use vaccel_rpc_proto::tensorflow::{
+    TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
+    TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
 };
 
 impl AgentService {
@@ -36,11 +33,12 @@ impl AgentService {
 
         info!("session:{} TensorFlow model load", sess.id());
         let mut model = tf::Model::new(res.as_mut());
-        model.as_mut().load(&mut sess)?;
+        let status = model.as_mut().load(&mut sess)?;
 
         let mut resp = TensorflowModelLoadResponse::new();
         // FIXME: Either remove this or properly return graph_def
         resp.graph_def = Vec::new();
+        resp.status = Some(status.into()).into();
 
         Ok(resp)
     }
@@ -48,7 +46,7 @@ impl AgentService {
     pub(crate) fn do_tensorflow_model_unload(
         &self,
         req: TensorflowModelUnloadRequest,
-    ) -> Result<Empty> {
+    ) -> Result<TensorflowModelUnloadResponse> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.into())
@@ -69,9 +67,12 @@ impl AgentService {
 
         info!("session:{} TensorFlow model unload", sess.id());
         let mut model = tf::Model::new(res.as_mut());
-        model.as_mut().unload(&mut sess)?;
+        let status = model.as_mut().unload(&mut sess)?;
 
-        Ok(Empty::new())
+        let mut resp = TensorflowModelUnloadResponse::new();
+        resp.status = Some(status.into()).into();
+
+        Ok(resp)
     }
 
     pub(crate) fn do_tensorflow_model_run(
@@ -134,6 +135,7 @@ impl AgentService {
 
         let mut resp = TensorflowModelRunResponse::new();
         resp.out_tensors = out_tensors;
+        resp.status = Some(result.status.into()).into();
 
         Ok(resp)
     }

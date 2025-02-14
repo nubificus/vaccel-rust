@@ -28,10 +28,10 @@ pub trait ModelRun<'a>: ModelInitialize<'a> {
 }
 
 pub trait ModelLoadUnload<'a>: ModelRun<'a> {
-    type LoadResult;
+    type LoadUnloadResult;
 
     /// Load an inference session for model
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadResult>;
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult>;
     /// Unload an inference session for model
-    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()>;
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult>;
 }

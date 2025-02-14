@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, Error, Result};
-use std::{
-    ffi::{CStr, CString},
-    fmt,
-};
+use derive_more::Display;
+use std::ffi::{CStr, CString};
 use vaccel_rpc_proto::tensorflow::TFNode;
 
+#[derive(Debug, Display)]
+#[display("{}:{}", self.name(), self.id())]
 pub struct Node {
     inner: *mut ffi::vaccel_tf_node,
 }
@@ -15,13 +15,18 @@ impl Node {
     pub fn new(name: &str, id: i32) -> Result<Self> {
         let name = match CString::new(name) {
             Ok(n) => n.into_raw(),
-            Err(_) => return Err(Error::InvalidArgument),
+            Err(e) => {
+                return Err(Error::ConversionFailed(format!(
+                    "Could not convert `name` to `CString` [{}]",
+                    e
+                )))?
+            }
         };
 
         let mut inner: *mut ffi::vaccel_tf_node = std::ptr::null_mut();
         match unsafe { ffi::vaccel_tf_node_new(&mut inner, name, id) as u32 } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
         unsafe { assert!(!(*inner).name.is_null()) };
@@ -35,7 +40,9 @@ impl Node {
     /// manually or by the respective vAccel function.
     pub unsafe fn from_vaccel_node(node: *mut ffi::vaccel_tf_node) -> Result<Self> {
         if node.is_null() || (*node).name.is_null() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "`node` and `node.name` cannot be `null`".to_string(),
+            ));
         }
 
         Ok(Node { inner: node })
@@ -62,12 +69,6 @@ impl Node {
 impl Drop for Node {
     fn drop(&mut self) {
         unsafe { ffi::vaccel_tf_node_delete(self.inner) };
-    }
-}
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}:{}", self.name(), self.id())
     }
 }
 
