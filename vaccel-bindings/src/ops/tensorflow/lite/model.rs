@@ -29,8 +29,9 @@ impl InferenceArgs {
         }
     }
 
-    pub fn add_input(&mut self, tensor: &dyn TensorAny) {
-        self.in_tensors.push(tensor.inner());
+    pub fn add_input(&mut self, tensor: &dyn TensorAny) -> Result<()> {
+        self.in_tensors.push(tensor.inner()?);
+        Ok(())
     }
 
     pub fn set_nr_outputs(&mut self, nr_outputs: i32) {

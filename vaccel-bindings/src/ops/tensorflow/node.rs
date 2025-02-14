@@ -12,15 +12,21 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new(name: &str, id: i32) -> Self {
-        let name = CString::new(name)
-            .expect("Invalid TensorFlow node name")
-            .into_raw();
+    pub fn new(name: &str, id: i32) -> Result<Self> {
+        let name = match CString::new(name) {
+            Ok(n) => n.into_raw(),
+            Err(_) => return Err(Error::InvalidArgument),
+        };
 
-        let inner = unsafe { ffi::vaccel_tf_node_new(name, id) };
-        assert!(!inner.is_null(), "Memory allocation failure");
+        let mut inner: *mut ffi::vaccel_tf_node = std::ptr::null_mut();
+        match unsafe { ffi::vaccel_tf_node_new(&mut inner, name, id) as u32 } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
+        assert!(!inner.is_null());
+        unsafe { assert!(!(*inner).name.is_null()) };
 
-        Node { inner }
+        Ok(Node { inner })
     }
 
     /// # Safety
@@ -28,8 +34,7 @@ impl Node {
     /// `node` is expected to be a valid pointer to an object allocated
     /// manually or by the respective vAccel function.
     pub unsafe fn from_vaccel_node(node: *mut ffi::vaccel_tf_node) -> Result<Self> {
-        let name = ffi::vaccel_tf_node_get_name(node);
-        if name.is_null() {
+        if node.is_null() || (*node).name.is_null() {
             return Err(Error::InvalidArgument);
         }
 
@@ -37,11 +42,11 @@ impl Node {
     }
 
     pub fn id(&self) -> i32 {
-        unsafe { ffi::vaccel_tf_node_get_id(self.inner) }
+        unsafe { (*self.inner).id }
     }
 
     pub fn name(&self) -> String {
-        let cmsg = unsafe { CStr::from_ptr(ffi::vaccel_tf_node_get_name(self.inner)) };
+        let cmsg = unsafe { CStr::from_ptr((*self.inner).name) };
         cmsg.to_str().unwrap_or("").to_owned()
     }
 
@@ -56,7 +61,7 @@ impl Node {
 
 impl Drop for Node {
     fn drop(&mut self) {
-        unsafe { ffi::vaccel_tf_node_destroy(self.inner) }
+        unsafe { ffi::vaccel_tf_node_delete(self.inner) };
     }
 }
 
@@ -71,8 +76,10 @@ impl fmt::Display for Node {
 /// This can fail if the creating the underlying node
 /// fails.
 ///
-impl From<&TFNode> for Node {
-    fn from(node: &TFNode) -> Self {
+impl TryFrom<&TFNode> for Node {
+    type Error = Error;
+
+    fn try_from(node: &TFNode) -> Result<Self> {
         Node::new(&node.name, node.id)
     }
 }
@@ -91,8 +98,10 @@ impl From<&Node> for TFNode {
     }
 }
 
-impl From<&ffi::vaccel_tf_node> for Node {
-    fn from(node: &ffi::vaccel_tf_node) -> Self {
+impl TryFrom<&ffi::vaccel_tf_node> for Node {
+    type Error = Error;
+
+    fn try_from(node: &ffi::vaccel_tf_node) -> Result<Self> {
         let name = unsafe { CStr::from_ptr(node.name) };
 
         Node::new(name.as_ref().to_str().unwrap(), node.id)

@@ -9,14 +9,22 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(data: &[u8]) -> Self {
-        let inner = unsafe { ffi::vaccel_tf_buffer_new(data.as_ptr() as *mut _, data.len()) };
-        assert!(!inner.is_null(), "Memory allocation failure");
+    pub fn new(data: &[u8]) -> Result<Self> {
+        let mut inner: *mut ffi::vaccel_tf_buffer = std::ptr::null_mut();
+        match unsafe {
+            ffi::vaccel_tf_buffer_new(&mut inner, data.as_ptr() as *mut _, data.len()) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Runtime(err)),
+        }
+        assert!(!inner.is_null());
+        unsafe { assert!(!(*inner).data.is_null()) };
+        unsafe { assert!(!(*inner).size > 0) };
 
-        Buffer {
+        Ok(Buffer {
             inner,
             vaccel_owned: false,
-        }
+        })
     }
 
     /// # Safety
@@ -24,9 +32,7 @@ impl Buffer {
     /// `buffer` is expected to be a valid pointer to an object allocated
     /// manually or by the respective vAccel function.
     pub unsafe fn from_ffi(buffer: *mut ffi::vaccel_tf_buffer) -> Result<Self> {
-        let mut size = Default::default();
-        let data = ffi::vaccel_tf_buffer_get_data(buffer, &mut size);
-        if data.is_null() || size == 0 {
+        if buffer.is_null() || (*buffer).data.is_null() || (*buffer).size == 0 {
             return Err(Error::InvalidArgument);
         }
 
@@ -37,19 +43,11 @@ impl Buffer {
     }
 
     pub fn as_slice(&self) -> &[u8] {
-        unsafe {
-            let mut size = Default::default();
-            let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *const u8;
-            std::slice::from_raw_parts(ptr, size)
-        }
+        unsafe { std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size) }
     }
 
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        unsafe {
-            let mut size = Default::default();
-            let ptr = ffi::vaccel_tf_buffer_get_data(self.inner, &mut size) as *mut u8;
-            std::slice::from_raw_parts_mut(ptr, size)
-        }
+        unsafe { std::slice::from_raw_parts_mut((*self.inner).data as *mut u8, (*self.inner).size) }
     }
 
     pub(crate) fn inner(&self) -> *const ffi::vaccel_tf_buffer {
@@ -66,11 +64,12 @@ impl Drop for Buffer {
         if !self.vaccel_owned {
             // Data is not owned from vaccel runtime. Unset it from
             // the buffer so we avoid double free.
+            let mut data = std::ptr::null_mut();
             let mut size = Default::default();
-            unsafe { ffi::vaccel_tf_buffer_take_data(self.inner, &mut size) };
+            unsafe { ffi::vaccel_tf_buffer_take_data(self.inner, &mut data, &mut size) };
         }
 
-        unsafe { ffi::vaccel_tf_buffer_destroy(self.inner) }
+        unsafe { ffi::vaccel_tf_buffer_delete(self.inner) };
     }
 }
 

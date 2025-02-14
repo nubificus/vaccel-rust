@@ -49,14 +49,14 @@ fn main() -> utilities::Result<()> {
     }
 
     // Prepare data for inference
-    let run_options = tf::Buffer::new(&[]);
-    let in_tensor = tf::Tensor::<f32>::new(&[1, 30]).with_data(&[1.0; 30])?;
-    let in_node = tf::Node::new("serving_default_input_1", 0);
-    let out_node = tf::Node::new("StatefulPartitionedCall", 0);
+    let run_options = tf::Buffer::new(&[])?;
+    let in_tensor = tf::Tensor::<f32>::new(&[1, 30])?.with_data(&[1.0; 30])?;
+    let in_node = tf::Node::new("serving_default_input_1", 0)?;
+    let out_node = tf::Node::new("StatefulPartitionedCall", 0)?;
 
     let mut sess_args = tf::InferenceArgs::new();
     sess_args.set_run_options(&run_options);
-    sess_args.add_input(&in_node, &in_tensor);
+    sess_args.add_input(&in_node, &in_tensor)?;
     sess_args.request_output(&out_node);
 
     // Run inference

@@ -96,27 +96,50 @@ impl AgentService {
                 ttrpc_error(ttrpc::Code::INVALID_ARGUMENT, "Unknown session".to_string())
             })?;
 
+        let mut resp = TensorflowModelRunResponse::new();
+
         let mut sess_args = tf::InferenceArgs::new();
 
-        let run_options = tf::Buffer::new(req.run_options.as_slice());
+        let run_options = match tf::Buffer::new(req.run_options.as_slice()) {
+            Ok(b) => b,
+            Err(e) => {
+                resp.set_error(vaccel_error(e));
+                return Ok(resp);
+            }
+        };
         sess_args.set_run_options(&run_options);
 
-        let in_nodes: Vec<tf::Node> = req.in_nodes.iter().map(|e| e.into()).collect();
+        let in_nodes: Vec<tf::Node> = match req.in_nodes.iter().map(|e| e.try_into()).collect() {
+            Ok(n) => n,
+            Err(e) => {
+                resp.set_error(vaccel_error(e));
+                return Ok(resp);
+            }
+        };
         let in_tensors = req.in_tensors;
         for it in in_nodes.iter().zip(in_tensors.iter()) {
             let (node, tensor) = it;
             debug!("tensor.dim: {:?}", tensor.dims);
-            sess_args.add_input(node, tensor);
+            if let Err(e) = sess_args.add_input(node, tensor) {
+                resp.set_error(vaccel_error(e));
+                return Ok(resp);
+            };
         }
 
-        let out_nodes: Vec<tf::Node> = req.out_nodes.iter().map(|e| e.into()).collect();
+        let out_nodes: Vec<tf::Node> = match req.out_nodes.iter().map(|e| e.try_into()).collect() {
+            Ok(n) => n,
+            Err(e) => {
+                resp.set_error(vaccel_error(e));
+                return Ok(resp);
+            }
+        };
         let num_outputs = out_nodes.len();
         for output in out_nodes.iter() {
             sess_args.request_output(output);
         }
 
         let mut model = tf::Model::new(res.as_mut());
-        let response = match model.as_mut().run(&mut sess, &mut sess_args) {
+        match model.as_mut().run(&mut sess, &mut sess_args) {
             Ok(result) => {
                 let mut inference = ProtoInferenceResult::new();
                 let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
@@ -124,17 +147,11 @@ impl AgentService {
                     out_tensors.push(result.get_grpc_output(i).unwrap());
                 }
                 inference.out_tensors = out_tensors;
-                let mut resp = TensorflowModelRunResponse::new();
                 resp.set_result(inference);
-                resp
             }
-            Err(e) => {
-                let mut resp = TensorflowModelRunResponse::new();
-                resp.set_error(vaccel_error(e));
-                resp
-            }
+            Err(e) => resp.set_error(vaccel_error(e)),
         };
 
-        Ok(response)
+        Ok(resp)
     }
 }
