@@ -4,21 +4,23 @@ syntax = "proto3";
 
 package vaccel;
 
+message VaccelStatus {
+	uint32 code = 3;
+	string message = 4;
+}
+
 enum VaccelErrorType {
-	RUNTIME = 0;
-	VACCEL_WITH_STATUS = 1;
+	FFI = 0;
+	FFI_WITH_STATUS = 1;
 	INVALID_ARGUMENT = 2;
 	UNINITIALIZED = 3;
-	TENSORFLOW = 4;
-	TENSORFLOW_LITE = 5;
-	TORCH = 6;
-	OTHERS = 7;
+	OUT_OF_BOUNDS = 4;
+	EMPTY_VALUE = 5;
+	CONVERSION_FAILED = 6;
 }
 
 message VaccelError {
 	VaccelErrorType type = 1;
-	uint32 ffi_error = 2;
-
-	optional uint32 code = 3;
-	optional string message = 4;
+	optional uint32 ffi_error = 2;
+	optional VaccelStatus status = 3;
 }

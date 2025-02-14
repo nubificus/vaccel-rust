@@ -15,7 +15,7 @@ impl Buffer {
             ffi::vaccel_tf_buffer_new(&mut inner, data.as_ptr() as *mut _, data.len()) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
         unsafe { assert!(!(*inner).data.is_null()) };
@@ -33,7 +33,9 @@ impl Buffer {
     /// manually or by the respective vAccel function.
     pub unsafe fn from_ffi(buffer: *mut ffi::vaccel_tf_buffer) -> Result<Self> {
         if buffer.is_null() || (*buffer).data.is_null() || (*buffer).size == 0 {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "`buffer`, `buffer.data` and `buffer.size` cannot be `null`".to_string(),
+            ));
         }
 
         Ok(Buffer {

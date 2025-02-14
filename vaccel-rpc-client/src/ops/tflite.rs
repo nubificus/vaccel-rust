@@ -4,17 +4,22 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{IntoFfiResult, Result};
+use crate::{Error, IntoFfiResult, Result};
 use log::error;
 use std::ffi::c_int;
-use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
+use vaccel::{
+    c_pointer_to_mut_slice, c_pointer_to_slice, ffi, ops::tensorflow::lite::Status as TfliteStatus,
+};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::tensorflow::{
-    TFLiteTensor, TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest,
-    TensorflowLiteModelUnloadRequest,
+use vaccel_rpc_proto::{
+    error::VaccelStatus,
+    tensorflow::{
+        TFLiteTensor, TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest,
+        TensorflowLiteModelUnloadRequest,
+    },
 };
 
 impl VaccelRpcClient {
@@ -50,7 +55,7 @@ impl VaccelRpcClient {
         session_id: i64,
         in_tensors: Vec<TFLiteTensor>,
         nr_outputs: i32,
-    ) -> Result<Vec<*mut ffi::vaccel_tflite_tensor>> {
+    ) -> Result<(Vec<*mut ffi::vaccel_tflite_tensor>, TfliteStatus)> {
         let ctx = ttrpc::context::Context::default();
 
         let req = TensorflowLiteModelRunRequest {
@@ -63,7 +68,8 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_lite_model_run, ctx, &req)?;
 
-        resp.out_tensors
+        let out_tensors: Vec<*mut ffi::vaccel_tflite_tensor> = resp
+            .out_tensors
             .into_iter()
             .map(|e| unsafe {
                 let dims = e.dims;
@@ -79,7 +85,7 @@ impl VaccelRpcClient {
                 ) as u32
                 {
                     ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Runtime(err).into()),
+                    err => return Err(vaccel::Error::Ffi(err)),
                 }
 
                 match ffi::vaccel_tflite_tensor_set_data(
@@ -89,14 +95,29 @@ impl VaccelRpcClient {
                 ) as u32
                 {
                     ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Runtime(err).into()),
+                    err => return Err(vaccel::Error::Ffi(err)),
                 }
 
                 std::mem::forget(data);
 
                 Ok(tensor)
             })
-            .collect()
+            .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tflite_tensor>>>()?;
+        let status = resp.status.unwrap_or(VaccelStatus::default());
+
+        Ok((out_tensors, status.try_into()?))
+    }
+}
+
+impl Error {
+    fn to_tflite_status(&self) -> TfliteStatus {
+        match self {
+            Error::HostVaccelError(ref e) => match e.get_status() {
+                Some(status) => TfliteStatus::from(status),
+                None => TfliteStatus(u8::MAX),
+            },
+            _ => TfliteStatus(u8::MAX),
+        }
     }
 }
 
@@ -151,6 +172,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_run(
     nr_inputs: c_int,
     out_tensors_ptr: *mut *mut ffi::vaccel_tflite_tensor,
     nr_outputs: c_int,
+    status_ptr: *mut u8,
 ) -> c_int {
     let in_tensors: Vec<TFLiteTensor> =
         match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
@@ -173,12 +195,14 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_run(
     };
 
     (match client.tflite_model_run(model_id, sess_id, in_tensors, nr_outputs) {
-        Ok(result) => {
-            out_tensors.copy_from_slice(&result);
+        Ok((tensors, status)) => {
+            out_tensors.copy_from_slice(&tensors);
+            status.populate_ffi(status_ptr);
             ffi::VACCEL_OK
         }
         Err(e) => {
             error!("{}", e);
+            e.to_tflite_status().populate_ffi(status_ptr);
             e.to_ffi()
         }
     }) as c_int

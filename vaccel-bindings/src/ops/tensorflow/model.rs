@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Buffer, DataType, Node, Status, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
-    ops::{tensorflow as tf, ModelInitialize, ModelLoadUnload, ModelRun},
+    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
 use protobuf::Enum;
@@ -34,17 +35,17 @@ impl InferenceArgs {
         }
     }
 
-    pub fn set_run_options(&mut self, run_opts: &tf::Buffer) {
+    pub fn set_run_options(&mut self, run_opts: &Buffer) {
         self.run_options = run_opts.inner();
     }
 
-    pub fn add_input(&mut self, node: &tf::Node, tensor: &dyn tf::TensorAny) -> Result<()> {
+    pub fn add_input(&mut self, node: &Node, tensor: &dyn TensorAny) -> Result<()> {
         self.in_nodes.push(unsafe { *node.inner() });
         self.in_tensors.push(tensor.inner()?);
         Ok(())
     }
 
-    pub fn request_output(&mut self, node: &tf::Node) {
+    pub fn request_output(&mut self, node: &Node) {
         self.out_nodes.push(unsafe { *node.inner() });
     }
 }
@@ -78,7 +79,7 @@ impl From<InferenceArgs> for TensorflowModelRunRequest {
 
 pub struct InferenceResult {
     out_tensors: Vec<*mut ffi::vaccel_tf_tensor>,
-    status: tf::Status,
+    pub status: Status,
 }
 
 impl InferenceResult {
@@ -87,43 +88,42 @@ impl InferenceResult {
 
         InferenceResult {
             out_tensors,
-            status: tf::Status::new(),
+            status: Status::default(),
         }
     }
 
     pub fn from_vec(tensors: Vec<*mut ffi::vaccel_tf_tensor>) -> Self {
         InferenceResult {
             out_tensors: tensors,
-            status: tf::Status::new(),
+            status: Status::default(),
         }
     }
 
-    pub fn get_output<T: tf::TensorType>(&self, id: usize) -> Result<tf::Tensor<T>> {
+    pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
-            return Err(Error::TensorFlow(tf::Code::OutOfRange));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::TensorFlow(tf::Code::Unavailable));
+            return Err(Error::EmptyValue);
         }
 
-        let inner_data_type = unsafe { tf::DataType::from_int((*t).data_type) };
-        if inner_data_type != T::data_type() {
-            return Err(Error::TensorFlow(tf::Code::InvalidArgument));
+        if unsafe { DataType::from_int((*t).data_type) } != T::data_type() {
+            return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
-        Ok(unsafe { tf::Tensor::from_ffi(t).unwrap() })
+        Ok(unsafe { Tensor::from_ffi(t)? })
     }
 
     pub fn get_grpc_output(&self, id: usize) -> Result<TFTensor> {
         if id >= self.out_tensors.len() {
-            return Err(Error::TensorFlow(tf::Code::OutOfRange));
+            return Err(Error::OutOfBounds);
         }
 
         let t = self.out_tensors[id];
         if t.is_null() {
-            return Err(Error::TensorFlow(tf::Code::Unavailable));
+            return Err(Error::EmptyValue);
         }
 
         unsafe {
@@ -163,8 +163,8 @@ impl<'a> ModelRun<'a> for Model<'a> {
     fn run(
         self: Pin<&mut Self>,
         sess: &mut Session,
-        args: &mut InferenceArgs,
-    ) -> Result<InferenceResult> {
+        args: &mut Self::RunArgs,
+    ) -> Result<Self::RunResult> {
         let mut result = InferenceResult::new(args.out_nodes.len());
         match unsafe {
             ffi::vaccel_tf_session_run(
@@ -181,7 +181,10 @@ impl<'a> ModelRun<'a> for Model<'a> {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(result),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::FfiWithStatus {
+                error: err,
+                status: result.status.into(),
+            }),
         }
     }
 
@@ -191,7 +194,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
 }
 
 impl<'a> ModelLoadUnload<'a> for Model<'a> {
-    type LoadResult = tf::Status;
+    type LoadUnloadResult = Status;
 
     /// Load a TensorFlow session from a TFSavedModel
     ///
@@ -204,8 +207,8 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     /// * `session` - The session in the context of which we perform the operation. The model needs
     ///   to be registered with this session.
     ///
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<tf::Status> {
-        let mut status = tf::Status::new();
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
+        let mut status = Status::default();
         match unsafe {
             ffi::vaccel_tf_session_load(
                 sess.inner_mut(),
@@ -214,7 +217,10 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(status),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::FfiWithStatus {
+                error: err,
+                status: status.into(),
+            }),
         }
     }
 
@@ -222,8 +228,8 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     ///
     /// This will unload a TensorFlow session that was previously loaded in memory
     /// using `load()`.
-    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
-        let mut status = tf::Status::new();
+    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
+        let mut status = Status::default();
         match unsafe {
             ffi::vaccel_tf_session_delete(
                 sess.inner_mut(),
@@ -231,8 +237,11 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
                 status.inner_mut(),
             ) as u32
         } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            ffi::VACCEL_OK => Ok(status),
+            err => Err(Error::FfiWithStatus {
+                error: err,
+                status: status.into(),
+            }),
         }
     }
 }

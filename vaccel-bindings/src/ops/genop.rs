@@ -38,7 +38,7 @@ impl Session {
             res as u32
         } {
             ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 }

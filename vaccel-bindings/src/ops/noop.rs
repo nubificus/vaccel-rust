@@ -10,7 +10,7 @@ impl vaccel_session {
     pub fn noop(&mut self) -> Result<()> {
         match unsafe { vaccel_noop(self) as u32 } {
             VACCEL_OK => Ok(()),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 }

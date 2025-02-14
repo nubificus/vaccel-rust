@@ -67,7 +67,7 @@ impl<T: TensorType> Tensor<T> {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -79,7 +79,7 @@ impl<T: TensorType> Tensor<T> {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         Ok(Tensor {
@@ -96,17 +96,24 @@ impl<T: TensorType> Tensor<T> {
     /// manually or by the respective vAccel function.
     pub unsafe fn from_ffi(tensor: *mut ffi::vaccel_torch_tensor) -> Result<Tensor<T>> {
         if tensor.is_null() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "`tensor` cannot be `null`".to_string(),
+            ));
         }
 
         if DataType::from_int((*tensor).data_type) != T::data_type() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(
+                "Invalid `tensor.data_type`".to_string(),
+            ));
         }
 
-        let nr_dims = (*tensor)
-            .nr_dims
-            .try_into()
-            .map_err(|_| Error::Others("Cannot convert tensor.nr_dims to usize".to_string()))?;
+        let nr_dims = (*tensor).nr_dims.try_into().map_err(|e| {
+            Error::ConversionFailed(format!(
+                "Could not convert `tensor.nr_dims` to `usize` [{}]",
+                e
+            ))
+        })?;
+
         let dims = std::slice::from_raw_parts((*tensor).dims as *mut _, nr_dims);
 
         let data_count = Self::calculate_data_count(dims)?;
@@ -130,7 +137,10 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn with_data(mut self, data: &[T]) -> Result<Self> {
         if data.len() != self.data_count {
-            return Err(Error::InvalidArgument);
+            return Err(Error::InvalidArgument(format!(
+                "'data` length must be {}",
+                self.data_count
+            )));
         }
 
         for (e, v) in self.iter_mut().zip(data) {
@@ -146,7 +156,7 @@ impl<T: TensorType> Tensor<T> {
 
     pub fn dim(&self, idx: usize) -> Result<i64> {
         if idx >= self.dims.len() {
-            return Err(Error::InvalidArgument);
+            return Err(Error::OutOfBounds);
         }
 
         Ok(self.dims[idx])
@@ -175,7 +185,7 @@ impl<T: TensorType> Tensor<T> {
         dims.iter()
             .product::<i64>()
             .try_into()
-            .map_err(|_| Error::Others("Cannot convert tensor.data_count to usize".to_string()))
+            .map_err(|e| Error::ConversionFailed(format!("{}", e)))
     }
 }
 
@@ -224,7 +234,7 @@ impl TensorAny for TorchTensor {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -236,7 +246,7 @@ impl TensorAny for TorchTensor {
                 as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         std::mem::forget(data);
@@ -255,7 +265,7 @@ impl TensorAny for TorchTensor {
             ) as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
         assert!(!inner.is_null());
 
@@ -267,7 +277,7 @@ impl TensorAny for TorchTensor {
                 as u32
         } {
             ffi::VACCEL_OK => (),
-            err => return Err(Error::Runtime(err)),
+            err => return Err(Error::Ffi(err)),
         }
 
         std::mem::forget(data);
@@ -457,10 +467,9 @@ impl TryFrom<&ffi::vaccel_torch_tensor> for TorchTensor {
     type Error = Error;
 
     fn try_from(tensor: &ffi::vaccel_torch_tensor) -> Result<Self> {
-        let nr_dims = tensor
-            .nr_dims
-            .try_into()
-            .map_err(|_| Error::Others("Cannot convert tensor.nr_dims to usize".to_string()))?;
+        let nr_dims = tensor.nr_dims.try_into().map_err(|e| {
+            Error::ConversionFailed(format!("Could not convert `nr_dims` to `usize` [{}]", e))
+        })?;
         unsafe {
             Ok(TorchTensor {
                 dims: std::slice::from_raw_parts(tensor.dims as *mut _, nr_dims).to_owned(),

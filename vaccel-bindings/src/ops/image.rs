@@ -27,7 +27,7 @@ impl Session {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok((tags, out_img)),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -44,7 +44,7 @@ impl Session {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(out_img),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -61,7 +61,7 @@ impl Session {
             ) as u32
         } {
             ffi::VACCEL_OK => Ok(out_img),
-            err => Err(Error::Runtime(err)),
+            err => Err(Error::Ffi(err)),
         }
     }
 }

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ffi;
-use std::{ffi::CStr, fmt};
 
 pub mod buffer;
 pub mod lite;
@@ -9,6 +8,7 @@ pub mod lite;
 pub mod model;
 #[cfg(target_pointer_width = "64")]
 pub mod node;
+pub mod status;
 #[cfg(target_pointer_width = "64")]
 pub mod tensor;
 
@@ -17,95 +17,9 @@ pub use buffer::Buffer;
 pub use model::{InferenceArgs, InferenceResult, Model};
 #[cfg(target_pointer_width = "64")]
 pub use node::Node;
+pub use status::Status;
 #[cfg(target_pointer_width = "64")]
 pub use tensor::{Tensor, TensorAny, TensorType};
-
-#[derive(Debug)]
-pub enum Code {
-    Ok = 0,
-    Cancelled,
-    Unknown,
-    InvalidArgument,
-    DeadlineExceeded,
-    NotFound,
-    AlreadyExists,
-    PermissionDenied,
-    ResourceExhausted,
-    FailedPrecondition,
-    Aborted,
-    OutOfRange,
-    Unimplemented,
-    Internal,
-    Unavailable,
-    DataLoss,
-    Unauthenticated,
-}
-
-impl Code {
-    pub(crate) fn to_u8(&self) -> u8 {
-        match self {
-            Code::Ok => 0,
-            Code::Cancelled => 1,
-            Code::Unknown => 2,
-            Code::InvalidArgument => 3,
-            Code::DeadlineExceeded => 4,
-            Code::NotFound => 5,
-            Code::AlreadyExists => 6,
-            Code::PermissionDenied => 7,
-            Code::ResourceExhausted => 8,
-            Code::FailedPrecondition => 9,
-            Code::Aborted => 10,
-            Code::OutOfRange => 11,
-            Code::Unimplemented => 12,
-            Code::Internal => 13,
-            Code::Unavailable => 14,
-            Code::DataLoss => 15,
-            Code::Unauthenticated => 16,
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct Status {
-    inner: ffi::vaccel_tf_status,
-}
-
-impl Status {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn error_code(&self) -> u8 {
-        self.inner.error_code
-    }
-
-    pub fn message(&self) -> String {
-        if self.inner.message.is_null() {
-            return String::new();
-        }
-
-        let cmsg = unsafe { CStr::from_ptr(self.inner.message) };
-        cmsg.to_str().unwrap_or("").to_owned()
-    }
-
-    pub fn is_ok(&self) -> bool {
-        self.error_code() == Code::Ok.to_u8()
-    }
-
-    pub(crate) fn inner(&self) -> &ffi::vaccel_tf_status {
-        &self.inner
-    }
-
-    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_tf_status {
-        &mut self.inner
-    }
-}
-
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} (id:{})", self.message(), self.error_code())
-    }
-}
 
 #[derive(Debug, PartialEq, Default)]
 pub enum DataType {

@@ -13,11 +13,17 @@ message TensorflowModelLoadRequest {
 
 message TensorflowModelLoadResponse {
 	bytes graph_def = 1;
+
+	optional VaccelStatus status = 2;
 }
 
 message TensorflowModelUnloadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
+}
+
+message TensorflowModelUnloadResponse {
+	optional VaccelStatus status = 1;
 }
 
 enum TFDataType {
@@ -86,6 +92,8 @@ message TensorflowModelRunRequest {
 message TensorflowModelRunResponse {
 	// An inference result is a number of output tensors
 	repeated TFTensor out_tensors = 1;
+
+	optional VaccelStatus status = 2;
 }
 
 /* TFLite */
@@ -149,4 +157,6 @@ message TensorflowLiteModelRunRequest {
 message TensorflowLiteModelRunResponse {
 	// An inference result is a number of output tensors
 	repeated TFLiteTensor out_tensors = 1;
+
+	optional VaccelStatus status = 2;
 }

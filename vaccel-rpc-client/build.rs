@@ -33,6 +33,7 @@ fn main() {
         .rename_item("vaccel_tf_buffer", "struct vaccel_tf_buffer")
         .rename_item("vaccel_tf_node", "struct vaccel_tf_node")
         .rename_item("vaccel_tf_tensor", "struct vaccel_tf_tensor")
+        .rename_item("vaccel_tf_status", "struct vaccel_tf_status")
         .rename_item("vaccel_tflite_tensor", "struct vaccel_tflite_tensor")
         .rename_item("vaccel_torch_buffer", "struct vaccel_torch_buffer")
         .rename_item("vaccel_torch_tensor", "struct vaccel_torch_tensor")

@@ -6,11 +6,12 @@
 #![allow(dead_code)]
 #![allow(improper_ctypes)]
 
-use std::{fmt, slice};
-use thiserror::Error as ThisError;
+use derive_more::Display;
+use std::slice;
 
 pub mod arg;
 pub mod config;
+pub mod error;
 pub mod ffi;
 pub mod file;
 pub mod ops;
@@ -20,45 +21,13 @@ pub mod session;
 
 pub use arg::Arg;
 pub use config::Config;
+pub use error::{Error, Result};
 pub use file::File;
 pub use resource::Resource;
 pub use session::Session;
 
-#[derive(ThisError, Debug)]
-pub enum Error {
-    /// Error returned by the vAccel runtime library
-    #[error("vAccel runtime error: {0}")]
-    Runtime(u32),
-
-    /// Invalid argument
-    #[error("Invalid argument")]
-    InvalidArgument,
-
-    /// Uninitialized vAccel object
-    #[error("Uninitialized")]
-    Uninitialized,
-
-    /// TensorFlow error
-    #[cfg(target_pointer_width = "64")]
-    #[error("TensorFlow error: {0:?}")]
-    TensorFlow(ops::tensorflow::Code),
-
-    /// TensorFlow Lite error
-    #[error("TensorFlow Lite error: {0:?}")]
-    TensorFlowLite(ops::tensorflow::lite::Code),
-
-    /// LibTorch error
-    #[error("Torch error: {0:?}")]
-    Torch(ops::torch::Code),
-
-    /// Other error types
-    #[error("Error: {0}")]
-    Others(String),
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Default, Display)]
+#[display("{}", inner.map_or("No value".to_string(), |v| v.to_string()))]
 pub struct VaccelId {
     inner: Option<ffi::vaccel_id_t>,
 }
@@ -66,15 +35,6 @@ pub struct VaccelId {
 impl VaccelId {
     pub fn has_id(&self) -> bool {
         self.inner.is_some()
-    }
-}
-
-impl fmt::Display for VaccelId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.inner {
-            None => write!(f, "'Uninitialized object'"),
-            Some(id) => write!(f, "{}", id),
-        }
     }
 }
 
@@ -150,21 +110,21 @@ pub unsafe fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&
 pub fn bootstrap_with_config(config: &mut Config) -> Result<()> {
     match unsafe { ffi::vaccel_bootstrap_with_config(config.inner_mut()) as u32 } {
         ffi::VACCEL_OK => Ok(()),
-        err => Err(Error::Runtime(err)),
+        err => Err(Error::Ffi(err)),
     }
 }
 
 pub fn bootstrap() -> Result<()> {
     match unsafe { ffi::vaccel_bootstrap() as u32 } {
         ffi::VACCEL_OK => Ok(()),
-        err => Err(Error::Runtime(err)),
+        err => Err(Error::Ffi(err)),
     }
 }
 
 pub fn cleanup() -> Result<()> {
     match unsafe { ffi::vaccel_cleanup() as u32 } {
         ffi::VACCEL_OK => Ok(()),
-        err => Err(Error::Runtime(err)),
+        err => Err(Error::Ffi(err)),
     }
 }
 
