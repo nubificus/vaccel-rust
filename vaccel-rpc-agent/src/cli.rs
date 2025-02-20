@@ -42,29 +42,35 @@ impl FromStr for VaccelConfig {
             let mut kv = part.splitn(2, '=');
             let key = kv
                 .next()
-                .ok_or(Error::CliError("Missing key".to_string()))?;
+                .ok_or(Error::InvalidArgument("Missing key".to_string()))?;
             let value = kv
                 .next()
-                .ok_or(Error::CliError("Missing value".to_string()))?;
+                .ok_or(Error::InvalidArgument("Missing value".to_string()))?;
             match key {
                 "plugins" => plugins = Some(value.to_string()),
                 "log_level" => {
                     log_level = Some(value.parse::<u8>().map_err(|_| {
-                        Error::CliError(format!("Invalid integer for log_level: {}", value))
+                        Error::InvalidArgument(format!("Invalid integer `{}` for log_level", value))
                     })?)
                 }
                 "log_file" => log_file = Some(value.to_string()),
                 "profiling_enabled" => {
                     profiling_enabled = Some(value.parse::<bool>().map_err(|_| {
-                        Error::CliError(format!("Invalid boolean for profiling_enabled: {}", value))
+                        Error::InvalidArgument(format!(
+                            "Invalid boolean `{}` for profiling_enabled",
+                            value
+                        ))
                     })?)
                 }
                 "version_ignore" => {
                     version_ignore = Some(value.parse::<bool>().map_err(|_| {
-                        Error::CliError(format!("Invalid boolean for version_ignore: {}", value))
+                        Error::InvalidArgument(format!(
+                            "Invalid boolean `{}` for version_ignore",
+                            value
+                        ))
                     })?)
                 }
-                _ => return Err(Error::CliError(format!("Unknown key: {}", key))),
+                _ => return Err(Error::InvalidArgument(format!("Unknown key `{}`", key))),
             }
         }
 

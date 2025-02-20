@@ -32,9 +32,7 @@ impl Agent {
 
     pub fn set_server_address(&mut self, address: &str) -> Result<&mut Self> {
         if self.server.is_some() {
-            return Err(Error::AgentError(
-                "Cannot change server_address of initialized agent".to_string(),
-            ));
+            return Err(Error::AlreadyRunning);
         }
         self.server_address = address.to_string();
         Ok(self)
@@ -42,9 +40,7 @@ impl Agent {
 
     pub fn set_vaccel_config(&self, config: VaccelConfig) -> Result<&Self> {
         if self.server.is_some() {
-            return Err(Error::AgentError(
-                "Cannot change vaccel_config of initialized agent".to_string(),
-            ));
+            return Err(Error::AlreadyRunning);
         }
         let config_ref = self.vaccel_config.clone();
         let mut conf = config_ref.lock().unwrap();
@@ -85,9 +81,7 @@ impl Agent {
                 self.server = Some(server);
                 Ok(())
             }
-            None => Err(Error::AgentError(
-                "Cannot stop uninitialized agent".to_string(),
-            )),
+            None => Err(Error::NotRunning),
         }
     }
 
@@ -98,9 +92,7 @@ impl Agent {
                 server.stop_listen().await;
                 Ok(())
             }
-            None => Err(Error::AgentError(
-                "Cannot stop uninitialized agent".to_string(),
-            )),
+            None => Err(Error::NotRunning),
         }
     }
 
@@ -111,9 +103,7 @@ impl Agent {
                 server.shutdown();
                 Ok(())
             }
-            None => Err(Error::AgentError(
-                "Cannot shutdown uninitialized agent".to_string(),
-            )),
+            None => Err(Error::NotRunning),
         }
     }
 
@@ -121,21 +111,17 @@ impl Agent {
     pub async fn shutdown(&mut self) -> Result<()> {
         match self.server.take() {
             Some(mut server) => server.shutdown().await.map_err(|e| e.into()),
-            None => Err(Error::AgentError(
-                "Cannot shutdown uninitialized agent".to_string(),
-            )),
+            None => Err(Error::NotRunning),
         }
     }
 
     fn server_init(&mut self) -> Result<()> {
         if self.server.is_some() {
-            return Err(Error::AgentError(
-                "Server has already been initialized".to_string(),
-            ));
+            return Err(Error::AlreadyRunning);
         }
 
         if self.server_address.is_empty() {
-            return Err(Error::AgentError(
+            return Err(Error::InvalidArgument(
                 "Server address cannot be empty".to_string(),
             ));
         }
@@ -171,7 +157,7 @@ impl Agent {
 fn resolve_uri(uri: &str) -> Result<String> {
     let parts: Vec<&str> = uri.split("://").collect();
     if parts.len() != 2 {
-        return Err(Error::AgentError("Invalid server address uri".into()));
+        return Err(Error::InvalidArgument("Invalid server address uri".into()));
     }
 
     let scheme = parts[0].to_lowercase();
@@ -179,21 +165,14 @@ fn resolve_uri(uri: &str) -> Result<String> {
         "vsock" | "unix" => Ok(uri.to_string()),
         "tcp" => {
             let address = parts[1].to_lowercase();
-            let mut resolved = match address.to_socket_addrs() {
-                Ok(a) => a,
-                Err(e) => return Err(Error::AgentError(e.to_string())),
-            };
+            let mut resolved = address.to_socket_addrs()?;
             let resolved_address = match resolved.next() {
                 Some(a) => a.to_string(),
-                None => {
-                    return Err(Error::AgentError(
-                        "Could not resolve TCP server address".into(),
-                    ))
-                }
+                None => return Err(Error::Other("Could not resolve TCP server address".into())),
             };
 
-            Ok(format!("{}://{}", scheme, resolved_address.as_str()))
+            Ok(format!("{}://{}", scheme, &resolved_address))
         }
-        _ => Err(Error::AgentError("Unsupported protocol".into())),
+        _ => Err(Error::Unsupported("Unsupported protocol".into())),
     }
 }
