@@ -19,37 +19,29 @@ pub use cli::Cli;
 
 #[derive(ThisError, Debug)]
 pub enum Error {
-    /// Agent error
-    #[error("Agent error: {0}")]
-    AgentError(String),
-
-    /// vAccel runtime error
     #[error("vAccel error: {0}")]
-    VaccelError(vaccel::Error),
+    Vaccel(#[from] vaccel::Error),
 
-    /// Socket error
     #[error("ttrpc error: {0}")]
-    TtrpcError(ttrpc::Error),
+    Ttrpc(#[from] ttrpc::Error),
 
-    /// CLI error
-    #[error("CLI error: {0}")]
-    CliError(String),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 
-    /// Undefined error
-    #[error("Undefined error")]
-    Undefined,
-}
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
 
-impl From<vaccel::Error> for Error {
-    fn from(err: vaccel::Error) -> Self {
-        Error::VaccelError(err)
-    }
-}
+    #[error("Agent not running")]
+    NotRunning,
 
-impl From<ttrpc::Error> for Error {
-    fn from(err: ttrpc::Error) -> Self {
-        Error::TtrpcError(err)
-    }
+    #[error("Agent already running")]
+    AlreadyRunning,
+
+    #[error("Unsupported operation: {0}")]
+    Unsupported(String),
+
+    #[error("Error: {0}")]
+    Other(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
