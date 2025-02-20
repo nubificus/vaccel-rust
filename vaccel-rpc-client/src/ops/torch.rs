@@ -104,7 +104,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
                     .iter()
                     .map(|e| unsafe {
                         e.as_ref()
-                            .ok_or(Error::InvalidArgument)?
+                            .ok_or(Error::InvalidArgument("".to_string()))?
                             .try_into()
                             .map_err(|e: vaccel::Error| e.into())
                     })
@@ -113,7 +113,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
                     Ok(s) => s,
                     Err(e) => {
                         return match e {
-                            Error::InvalidArgument => ffi::VACCEL_EINVAL,
+                            Error::InvalidArgument(_) => ffi::VACCEL_EINVAL,
                             _ => {
                                 error!("{}", e);
                                 ffi::VACCEL_EBACKEND

@@ -118,7 +118,7 @@ impl VaccelRpcClient {
 impl Error {
     fn to_tf_status(&self) -> TfStatus {
         match self {
-            Error::HostVaccelError(ref e) => match e.get_status() {
+            Error::HostVaccel(ref e) => match e.get_status() {
                 Some(status) => TfStatus::try_from(status).unwrap_or_default(),
                 None => TfStatus::new(u8::MAX, "Undefined error").unwrap_or_default(),
             },
