@@ -112,7 +112,7 @@ impl VaccelRpcClient {
 impl Error {
     fn to_tflite_status(&self) -> TfliteStatus {
         match self {
-            Error::HostVaccelError(ref e) => match e.get_status() {
+            Error::HostVaccel(ref e) => match e.get_status() {
                 Some(status) => TfliteStatus::from(status),
                 None => TfliteStatus(u8::MAX),
             },

@@ -25,54 +25,45 @@ extern crate ttrpc;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    /// Client error
-    #[error("Client error: {0}")]
-    ClientError(String),
+    #[error("vAccel error: {0}")]
+    Vaccel(#[from] vaccel::Error),
 
-    /// Socket error
     #[error("ttprc error: {0}")]
-    TtrpcError(ttrpc::Error),
+    Ttrpc(ttrpc::Error),
 
-    /// Async error
     #[cfg(feature = "async")]
     #[error("Async error: {0}")]
-    AsyncError(#[from] tokio::task::JoinError),
+    Async(#[from] tokio::task::JoinError),
 
-    /// vAccel error
-    #[error("vAccel error: {0}")]
-    VaccelError(#[from] vaccel::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 
-    /// Host vAccel runtime error
     #[error("Host vAccel error: {0}")]
-    HostVaccelError(vaccel::Error),
+    HostVaccel(vaccel::Error),
 
-    /// Agent error
-    #[error("Agent error: {0}")]
-    AgentError(String),
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
 
-    /// Invalid argument error
-    #[error("Invalid argument")]
-    InvalidArgument,
+    #[error("Unsupported operation: {0}")]
+    Unsupported(String),
 
-    /// Undefined error
-    #[error("Undefined error")]
-    Undefined,
-
-    /// Other errors
     #[error("Error: {0}")]
-    Others(String),
+    Other(String),
+
+    #[error("Unknown error")]
+    Unknown,
 }
 
 impl Error {
     pub fn to_ffi(&self) -> u32 {
         match self {
-            Error::HostVaccelError(e) => match e {
+            Error::HostVaccel(e) => match e {
                 vaccel::Error::Ffi(error) => *error,
                 vaccel::Error::FfiWithStatus { error, .. } => *error,
                 _ => ffi::VACCEL_EBACKEND,
             },
-            Error::ClientError(_) => ffi::VACCEL_EBACKEND,
-            _ => ffi::VACCEL_EIO,
+            Error::Ttrpc(_) => ffi::VACCEL_EIO,
+            _ => ffi::VACCEL_EBACKEND,
         }
     }
 }
@@ -83,12 +74,12 @@ impl From<ttrpc::Error> for Error {
             let details = rpc_status.details();
             if !details.is_empty() {
                 if let Ok(vaccel_error) = VaccelError::parse_from_bytes(details[0].value()) {
-                    return Error::HostVaccelError(vaccel_error.into());
+                    return Error::HostVaccel(vaccel_error.into());
                 }
             }
         }
 
-        Error::TtrpcError(err)
+        Error::Ttrpc(err)
     }
 }
 

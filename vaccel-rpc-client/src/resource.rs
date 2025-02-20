@@ -83,7 +83,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
                 .map(|&p| {
                     Ok(CStr::from_ptr(p)
                         .to_str()
-                        .map_err(|_| Error::InvalidArgument)?
+                        .map_err(|_| Error::Unknown)?
                         .to_string())
                 })
                 .collect::<Result<Vec<String>>>()
@@ -105,9 +105,9 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
             files = match f_slice
                 .iter()
                 .map(|&p| {
-                    let f = unsafe { p.as_ref().ok_or(Error::InvalidArgument)? };
+                    let f = unsafe { p.as_ref().ok_or(Error::Unknown)? };
 
-                    File::try_from(f).map_err(|_| Error::InvalidArgument)
+                    File::try_from(f).map_err(|_| Error::Unknown)
                 })
                 .collect::<Result<Vec<File>>>()
             {

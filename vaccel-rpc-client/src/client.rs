@@ -27,7 +27,7 @@ impl VaccelRpcClient {
     pub(crate) fn resolve_uri(uri: &str) -> Result<String> {
         let parts: Vec<&str> = uri.split("://").collect();
         if parts.len() != 2 {
-            return Err(Error::ClientError("Invalid server address uri".into()));
+            return Err(Error::InvalidArgument("Invalid server address uri".into()));
         }
 
         let scheme = parts[0].to_lowercase();
@@ -35,28 +35,25 @@ impl VaccelRpcClient {
             "vsock" | "unix" => Ok(uri.to_string()),
             "tcp" => {
                 let address = parts[1].to_lowercase();
-                let mut resolved = match address.to_socket_addrs() {
-                    Ok(a) => a,
-                    Err(e) => return Err(Error::ClientError(e.to_string())),
-                };
+                let mut resolved = address.to_socket_addrs()?;
                 let resolved_address = match resolved.next() {
                     Some(a) => a.to_string(),
                     None => {
-                        return Err(Error::ClientError(
-                            "Could not resolve TCP server address".into(),
-                        ))
+                        return Err(Error::Other("Could not resolve TCP server address".into()))
                     }
                 };
 
                 Ok(format!("{}://{}", scheme, resolved_address.as_str()))
             }
-            _ => Err(Error::ClientError("Unsupported protocol".into())),
+            _ => Err(Error::Unsupported("Unsupported protocol".into())),
         }
     }
 
     pub(crate) fn create_ttrpc_client(server_address: &str) -> Result<TtrpcClient> {
         if server_address.is_empty() {
-            return Err(Error::ClientError("Server address cannot be empty".into()));
+            return Err(Error::InvalidArgument(
+                "Server address cannot be empty".into(),
+            ));
         }
 
         let resolved_uri = Self::resolve_uri(server_address)?;
