@@ -19,7 +19,7 @@ for f in files: print(f)
 pymod = import('python')
 python = pymod.find_installation()
 
-libvaccel_dep = dependency('vaccel')
+libvaccel_dep = dependency('vaccel', version : '>=0.7.0')
 vaccel_sources = run_command(python, '-c',
   glob.format(libvaccel_dep.get_variable('includedir'), '.h'),
   check: true).stdout().strip().split('\n')
