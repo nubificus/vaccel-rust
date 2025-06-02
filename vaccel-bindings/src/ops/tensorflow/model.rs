@@ -36,8 +36,10 @@ impl InferenceArgs {
         }
     }
 
-    pub fn set_run_options(&mut self, run_opts: &Buffer) {
-        self.run_options = run_opts.inner();
+    pub fn set_run_options(&mut self, run_opts: Option<&Buffer>) {
+        if let Some(opts) = run_opts {
+            self.run_options = opts.inner();
+        }
     }
 
     pub fn add_input(&mut self, node: &Node, tensor: &dyn TensorAny) -> Result<()> {
@@ -54,6 +56,9 @@ impl InferenceArgs {
 impl Drop for InferenceArgs {
     fn drop(&mut self) {
         while let Some(tensor_ptr) = self.in_tensors.pop() {
+            if tensor_ptr.is_null() {
+                continue;
+            }
             let ret = unsafe { ffi::vaccel_tf_tensor_delete(tensor_ptr as *mut _) } as u32;
             if ret != ffi::VACCEL_OK {
                 warn!("Could not delete TF tensor: {}", ret);
@@ -84,7 +89,7 @@ impl InferenceResult {
         }
     }
 
-    pub fn get_output<T: TensorType>(&self, id: usize) -> Result<Tensor<T>> {
+    pub fn take_output<T: TensorType>(&mut self, id: usize) -> Result<Tensor<T>> {
         if id >= self.out_tensors.len() {
             return Err(Error::OutOfBounds);
         }
@@ -98,10 +103,13 @@ impl InferenceResult {
             return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
-        Ok(unsafe { Tensor::from_ffi(t)? })
+        let tensor: Tensor<T> = unsafe { Tensor::from_ffi(t)? };
+        self.out_tensors[id] = std::ptr::null_mut();
+
+        Ok(tensor)
     }
 
-    pub fn get_grpc_output(&self, id: usize) -> Result<TFTensor> {
+    pub fn to_grpc_output(&self, id: usize) -> Result<TFTensor> {
         if id >= self.out_tensors.len() {
             return Err(Error::OutOfBounds);
         }
@@ -125,6 +133,9 @@ impl InferenceResult {
 impl Drop for InferenceResult {
     fn drop(&mut self) {
         while let Some(tensor_ptr) = self.out_tensors.pop() {
+            if tensor_ptr.is_null() {
+                continue;
+            }
             let ret = unsafe { ffi::vaccel_tf_tensor_delete(tensor_ptr as *mut _) } as u32;
             if ret != ffi::VACCEL_OK {
                 warn!("Could not delete TF tensor: {}", ret);

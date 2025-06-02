@@ -33,8 +33,11 @@ impl AgentService {
 
         let mut sess_args = torch::InferenceArgs::new();
 
-        let run_options = torch::Buffer::new(req.run_options.as_slice())?;
-        sess_args.set_run_options(&run_options);
+        let run_options = req
+            .run_options
+            .map(|opts| torch::Buffer::new(opts.as_slice()))
+            .transpose()?;
+        sess_args.set_run_options(run_options.as_ref());
 
         let in_tensors = req.in_tensors;
         for tensor in in_tensors.iter() {
@@ -54,7 +57,7 @@ impl AgentService {
 
         let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {
-            out_tensors.push(result.get_grpc_output(i)?);
+            out_tensors.push(result.to_grpc_output(i)?);
         }
 
         let mut resp = TorchJitloadForwardResponse::new();

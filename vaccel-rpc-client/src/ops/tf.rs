@@ -55,7 +55,7 @@ impl VaccelRpcClient {
         &self,
         model_id: i64,
         session_id: i64,
-        run_options: Vec<u8>,
+        run_options: Option<Vec<u8>>,
         in_nodes: Vec<TFNode>,
         in_tensors: Vec<TFTensor>,
         out_nodes: Vec<TFNode>,
@@ -200,9 +200,11 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_session_run(
     status_ptr: *mut ffi::vaccel_tf_status,
 ) -> c_int {
     let run_options = unsafe {
-        c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
-            .unwrap_or(&[])
-            .to_owned()
+        run_options_ptr.as_ref().map(|opts| {
+            c_pointer_to_slice(opts.data as *mut u8, opts.size)
+                .unwrap_or(&[])
+                .to_owned()
+        })
     };
 
     let in_nodes: Vec<TFNode> =

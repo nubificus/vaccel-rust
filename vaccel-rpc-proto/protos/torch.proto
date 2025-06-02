@@ -36,7 +36,7 @@ message TorchJitloadForwardRequest {
 	int64 model_id = 2;
 
 	// Run options
-	bytes run_options = 3;
+	optional bytes run_options = 3;
 
 	// Input tensors
 	repeated TorchTensor in_tensors = 4;
