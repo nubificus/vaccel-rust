@@ -5,7 +5,7 @@ use derive_more::Display;
 use std::ffi::{CStr, CString};
 use vaccel_rpc_proto::error::VaccelStatus;
 
-#[derive(Debug, Default, Display)]
+#[derive(Debug, Default, Display, Clone)]
 #[display("{} ({})", self.message(), self.error_code())]
 pub struct Status {
     inner: ffi::vaccel_tf_status,

@@ -224,13 +224,17 @@ impl<T: TensorType> TensorAny for Tensor<T> {
 
 impl TensorAny for TorchTensor {
     fn inner(&self) -> Result<*const ffi::vaccel_torch_tensor> {
+        let size = self.data.len();
+        let data = &self.data;
+
         let mut inner: *mut ffi::vaccel_torch_tensor = std::ptr::null_mut();
         match unsafe {
-            ffi::vaccel_torch_tensor_new(
+            ffi::vaccel_torch_tensor_allocate(
                 &mut inner,
                 self.dims.len() as i64,
                 self.dims.as_ptr() as *mut _,
                 self.type_.value() as u32,
+                size,
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -238,30 +242,26 @@ impl TensorAny for TorchTensor {
         }
         assert!(!inner.is_null());
 
-        let size = self.data.len();
-        let data = self.data.to_owned();
-
-        match unsafe {
-            ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
-                as u32
-        } {
-            ffi::VACCEL_OK => (),
-            err => return Err(Error::Ffi(err)),
+        unsafe {
+            std::ptr::copy_nonoverlapping(data.as_ptr(), (*inner).data as *mut u8, size);
+            (*inner).size = size;
         }
-
-        std::mem::forget(data);
 
         Ok(inner)
     }
 
     fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_torch_tensor> {
+        let size = self.data.len();
+        let data = &self.data;
+
         let mut inner: *mut ffi::vaccel_torch_tensor = std::ptr::null_mut();
         match unsafe {
-            ffi::vaccel_torch_tensor_new(
+            ffi::vaccel_torch_tensor_allocate(
                 &mut inner,
                 self.dims.len() as i64,
-                self.dims.as_mut_ptr() as *mut _,
+                self.dims.as_ptr() as *mut _,
                 self.type_.value() as u32,
+                size,
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -269,18 +269,10 @@ impl TensorAny for TorchTensor {
         }
         assert!(!inner.is_null());
 
-        let size = self.data.len();
-        let data = self.data.to_owned();
-
-        match unsafe {
-            ffi::vaccel_torch_tensor_set_data(inner, data.as_ptr() as *mut libc::c_void, size)
-                as u32
-        } {
-            ffi::VACCEL_OK => (),
-            err => return Err(Error::Ffi(err)),
+        unsafe {
+            std::ptr::copy_nonoverlapping(data.as_ptr(), (*inner).data as *mut u8, size);
+            (*inner).size = size;
         }
-
-        std::mem::forget(data);
 
         Ok(inner)
     }
