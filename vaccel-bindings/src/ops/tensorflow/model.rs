@@ -6,9 +6,10 @@ use crate::{
     ops::{ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
+use log::warn;
 use protobuf::Enum;
 use std::{marker::PhantomPinned, pin::Pin};
-use vaccel_rpc_proto::tensorflow::{TFDataType, TFNode, TFTensor, TensorflowModelRunRequest};
+use vaccel_rpc_proto::tensorflow::{TFDataType, TFTensor};
 
 pub struct InferenceArgs {
     run_options: *const ffi::vaccel_tf_buffer,
@@ -50,29 +51,13 @@ impl InferenceArgs {
     }
 }
 
-impl From<InferenceArgs> for TensorflowModelRunRequest {
-    fn from(args: InferenceArgs) -> Self {
-        let in_nodes: Vec<TFNode> = args.in_nodes.into_iter().map(|ref e| e.into()).collect();
-        let out_nodes: Vec<TFNode> = args.out_nodes.into_iter().map(|ref e| e.into()).collect();
-        let in_tensors: Vec<TFTensor> = args
-            .in_tensors
-            .into_iter()
-            .map(|e| unsafe { e.as_ref().unwrap().into() })
-            .collect();
-        let run_options = unsafe {
-            std::slice::from_raw_parts(
-                (*args.run_options).data as *const u8,
-                (*args.run_options).size,
-            )
-        }
-        .to_vec();
-
-        TensorflowModelRunRequest {
-            in_nodes,
-            out_nodes,
-            in_tensors,
-            run_options,
-            ..Default::default()
+impl Drop for InferenceArgs {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.in_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_tf_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete TF tensor: {}", ret);
+            }
         }
     }
 }
@@ -137,6 +122,17 @@ impl InferenceResult {
     }
 }
 
+impl Drop for InferenceResult {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.out_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_tf_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete TF tensor: {}", ret);
+            }
+        }
+    }
+}
+
 pub struct Model<'a> {
     inner: Pin<&'a mut Resource>,
     _marker: PhantomPinned,
@@ -183,7 +179,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
             ffi::VACCEL_OK => Ok(result),
             err => Err(Error::FfiWithStatus {
                 error: err,
-                status: result.status.into(),
+                status: result.status.clone().into(),
             }),
         }
     }

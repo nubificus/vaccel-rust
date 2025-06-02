@@ -83,28 +83,21 @@ impl VaccelRpcClient {
                 let data = e.data;
 
                 let mut tensor = std::ptr::null_mut();
-                match ffi::vaccel_tf_tensor_new(
+                match ffi::vaccel_tf_tensor_allocate(
                     &mut tensor,
                     dims.len() as i32,
                     dims.as_ptr() as *mut i64,
                     data_type as u32,
-                ) as u32
-                {
-                    ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Ffi(err)),
-                }
-
-                match ffi::vaccel_tf_tensor_set_data(
-                    tensor,
-                    data.as_ptr() as *mut std::ffi::c_void,
                     data.len(),
                 ) as u32
                 {
                     ffi::VACCEL_OK => (),
                     err => return Err(vaccel::Error::Ffi(err)),
                 }
+                assert!(!tensor.is_null());
 
-                std::mem::forget(data);
+                std::ptr::copy_nonoverlapping(data.as_ptr(), (*tensor).data as *mut u8, data.len());
+                (*tensor).size = data.len();
 
                 Ok(tensor)
             })

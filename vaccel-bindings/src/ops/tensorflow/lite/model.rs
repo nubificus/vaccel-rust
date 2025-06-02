@@ -6,9 +6,10 @@ use crate::{
     ops::{ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
+use log::warn;
 use protobuf::Enum;
 use std::{marker::PhantomPinned, pin::Pin};
-use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType, TensorflowLiteModelRunRequest};
+use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType};
 
 pub struct InferenceArgs {
     in_tensors: Vec<*const ffi::vaccel_tflite_tensor>,
@@ -39,18 +40,13 @@ impl InferenceArgs {
     }
 }
 
-impl From<InferenceArgs> for TensorflowLiteModelRunRequest {
-    fn from(args: InferenceArgs) -> Self {
-        let in_tensors: Vec<TFLiteTensor> = args
-            .in_tensors
-            .into_iter()
-            .map(|e| unsafe { e.as_ref().unwrap().into() })
-            .collect();
-
-        TensorflowLiteModelRunRequest {
-            in_tensors,
-            nr_outputs: args.nr_outputs,
-            ..Default::default()
+impl Drop for InferenceArgs {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.in_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_tflite_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete TFLite tensor: {}", ret);
+            }
         }
     }
 }
@@ -111,6 +107,17 @@ impl InferenceResult {
                 data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_vec(),
                 ..Default::default()
             })
+        }
+    }
+}
+
+impl Drop for InferenceResult {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.out_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_tflite_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete TFLite tensor: {}", ret);
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::{
     ops::{ModelInitialize, ModelRun},
     Error, Resource, Result, Session,
 };
+use log::warn;
 use protobuf::Enum;
 use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
@@ -43,6 +44,17 @@ impl InferenceArgs {
 
     pub fn set_nr_outputs(&mut self, nr_outputs: i32) {
         self.nr_outputs = nr_outputs;
+    }
+}
+
+impl Drop for InferenceArgs {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.in_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_torch_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete Torch tensor: {}", ret);
+            }
+        }
     }
 }
 
@@ -101,6 +113,17 @@ impl InferenceResult {
                 data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_owned(),
                 ..Default::default()
             })
+        }
+    }
+}
+
+impl Drop for InferenceResult {
+    fn drop(&mut self) {
+        while let Some(tensor_ptr) = self.out_tensors.pop() {
+            let ret = unsafe { ffi::vaccel_torch_tensor_delete(tensor_ptr as *mut _) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete Torch tensor: {}", ret);
+            }
         }
     }
 }

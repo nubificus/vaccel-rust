@@ -135,7 +135,7 @@ impl AgentService {
 
         let mut resp = TensorflowModelRunResponse::new();
         resp.out_tensors = out_tensors;
-        resp.status = Some(result.status.into()).into();
+        resp.status = Some(result.status.clone().into()).into();
 
         Ok(resp)
     }
