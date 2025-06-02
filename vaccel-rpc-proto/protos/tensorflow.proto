@@ -79,7 +79,7 @@ message TensorflowModelRunRequest {
 	int64 model_id = 2;
 
 	// Run options
-	bytes run_options = 3;
+	optional bytes run_options = 3;
 
 	// Input nodes & tensors
 	repeated TFNode in_nodes = 4;

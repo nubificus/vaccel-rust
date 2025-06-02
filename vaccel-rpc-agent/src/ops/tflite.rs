@@ -114,7 +114,7 @@ impl AgentService {
 
         let mut out_tensors: Vec<TFLiteTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {
-            out_tensors.push(result.get_grpc_output(i)?);
+            out_tensors.push(result.to_grpc_output(i)?);
         }
 
         let mut resp = TensorflowLiteModelRunResponse::new();

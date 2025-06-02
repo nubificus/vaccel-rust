@@ -2,6 +2,7 @@
 
 use super::DataType;
 use crate::{ffi, Error, Result};
+use log::warn;
 use protobuf::Enum;
 use std::ops::{Deref, DerefMut};
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
@@ -195,7 +196,10 @@ impl<T: TensorType> Drop for Tensor<T> {
             return;
         }
 
-        unsafe { ffi::vaccel_torch_tensor_delete(self.inner) };
+        let ret = unsafe { ffi::vaccel_torch_tensor_delete(self.inner) } as u32;
+        if ret != ffi::VACCEL_OK {
+            warn!("Could not delete Torch tensor: {}", ret);
+        }
         self.inner = std::ptr::null_mut();
     }
 }

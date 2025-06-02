@@ -19,7 +19,7 @@ impl VaccelRpcClient {
         &self,
         session_id: i64,
         model_id: i64,
-        run_options: Vec<u8>,
+        run_options: Option<Vec<u8>>,
         in_tensors: Vec<TorchTensor>,
         nr_outputs: i32,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
@@ -85,9 +85,11 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
     nr_outputs: c_int,
 ) -> c_int {
     let run_options = unsafe {
-        c_pointer_to_slice((*run_options_ptr).data as *mut u8, (*run_options_ptr).size)
-            .unwrap_or(&[])
-            .to_owned()
+        run_options_ptr.as_ref().map(|opts| {
+            c_pointer_to_slice(opts.data as *mut u8, opts.size)
+                .unwrap_or(&[])
+                .to_owned()
+        })
     };
 
     let in_tensors: Vec<TorchTensor> =

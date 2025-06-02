@@ -99,8 +99,11 @@ impl AgentService {
 
         let mut sess_args = tf::InferenceArgs::new();
 
-        let run_options = tf::Buffer::new(req.run_options.as_slice())?;
-        sess_args.set_run_options(&run_options);
+        let run_options = req
+            .run_options
+            .map(|opts| tf::Buffer::new(opts.as_slice()))
+            .transpose()?;
+        sess_args.set_run_options(run_options.as_ref());
 
         let in_nodes: Vec<tf::Node> = req
             .in_nodes
@@ -130,7 +133,7 @@ impl AgentService {
 
         let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {
-            out_tensors.push(result.get_grpc_output(i)?);
+            out_tensors.push(result.to_grpc_output(i)?);
         }
 
         let mut resp = TensorflowModelRunResponse::new();

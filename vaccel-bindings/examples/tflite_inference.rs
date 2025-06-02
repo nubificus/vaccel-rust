@@ -56,8 +56,8 @@ fn main() -> utilities::Result<()> {
     sess_args.set_nr_outputs(1);
 
     // Run inference
-    let result = tflite_model.as_mut().run(&mut sess, &mut sess_args)?;
-    match result.get_output::<f32>(0) {
+    let mut result = tflite_model.as_mut().run(&mut sess, &mut sess_args)?;
+    match result.take_output::<f32>(0) {
         Ok(out) => {
             println!("Success!");
             println!(
