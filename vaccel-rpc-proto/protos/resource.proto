@@ -6,17 +6,19 @@ package vaccel;
 
 import "error.proto";
 
-message File {
-	string name = 1;
-	string path = 2;
-	bool path_owned = 3;
-	bytes data = 4;
-	uint32 size = 5;
+message Blob {
+	uint32 type_ = 1;
+	string name = 2;
+	string path = 3;
+	bool path_owned = 4;
+	bool data_owned = 5;
+	bytes data = 6;
+	uint32 size = 7;
 }
 
 message RegisterResourceRequest {
 	repeated string paths = 1;
-	repeated File files = 2;
+	repeated Blob blobs = 2;
 	uint32 resource_type = 3;
 	int64 resource_id = 4;
 	int64 session_id = 5;
