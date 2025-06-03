@@ -12,7 +12,7 @@ use thiserror::Error as ThisError;
 pub mod arg;
 pub mod config;
 pub mod ffi;
-pub mod file;
+pub mod blob;
 pub mod ops;
 pub mod profiling;
 pub mod resource;
@@ -20,7 +20,7 @@ pub mod session;
 
 pub use arg::Arg;
 pub use config::Config;
-pub use file::File;
+pub use blob::Blob;
 pub use resource::Resource;
 pub use session::Session;
 
