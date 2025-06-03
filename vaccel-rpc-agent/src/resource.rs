@@ -2,7 +2,7 @@
 
 use crate::{ttrpc_error, vaccel_error, AgentService};
 use log::info;
-use vaccel::{File, Resource, VaccelId};
+use vaccel::{Blob, Resource, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent::EmptyResponse;
 #[cfg(not(feature = "async"))]
@@ -33,11 +33,11 @@ impl AgentService {
         if !res_id.has_id() {
             // If we got resource id <= 0 we need to create a resource before registering
             info!("Creating new resource");
-            let mut res = match req.files.is_empty() {
+            let mut res = match req.blobs.is_empty() {
                 false => {
-                    let files: Vec<File> = req.files.iter().map(|f| f.into()).collect();
+                    let blobs: Vec<Blob> = req.blobs.iter().map(|f| f.into()).collect();
 
-                    match Resource::from_files(&files, req.resource_type) {
+                    match Resource::from_blobs(&blobs, req.resource_type) {
                         Ok(r) => r,
                         Err(e) => {
                             resp.set_error(vaccel_error(e));
@@ -49,7 +49,7 @@ impl AgentService {
                     if req.paths.is_empty() {
                         return Err(ttrpc_error(
                             ttrpc::Code::INVALID_ARGUMENT,
-                            "No paths or files provided".to_string(),
+                            "No paths or blobs provided".to_string(),
                         ));
                     }
 
