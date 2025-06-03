@@ -9,7 +9,7 @@ use std::ffi::{c_char, c_int, CStr};
 use vaccel::{c_pointer_to_slice, ffi};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::resource::{File, RegisterResourceRequest, UnregisterResourceRequest};
+use vaccel_rpc_proto::resource::{Blob, RegisterResourceRequest, UnregisterResourceRequest};
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
@@ -17,7 +17,7 @@ impl VaccelRpcClient {
     pub fn resource_register(
         &self,
         paths: Vec<String>,
-        files: Vec<File>,
+        blobs: Vec<Blob>,
         type_: u32,
         id: i64,
         sess_id: i64,
@@ -25,7 +25,7 @@ impl VaccelRpcClient {
         let ctx = ttrpc::context::Context::default();
         let mut req = RegisterResourceRequest::new();
         req.paths = paths;
-        req.files = files;
+        req.blobs = blobs;
         req.resource_type = type_;
         req.resource_id = id;
         req.session_id = sess_id;
@@ -57,7 +57,7 @@ impl VaccelRpcClient {
 pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     client_ptr: *mut VaccelRpcClient,
     paths_ptr: *mut *mut c_char,
-    files_ptr: *mut *mut ffi::vaccel_file,
+    blobs_ptr: *mut *mut ffi::vaccel_blob,
     nr_elems: usize,
     type_: u32,
     id: ffi::vaccel_id_t,
@@ -68,7 +68,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
         None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
 
-    let mut files: Vec<File> = Vec::new();
+    let mut blobs: Vec<Blob> = Vec::new();
     let mut paths: Vec<String> = Vec::new();
     if id < 0 {
         // FIXME: error reporting
@@ -93,23 +93,23 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
             };
             client.timer_stop(sess_id, "client_resource_register > paths");
         } else {
-            if files_ptr.is_null() {
+            if blobs_ptr.is_null() {
                 return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t);
             }
 
             client.timer_start(sess_id, "client_resource_register > files");
-            let f_slice = match c_pointer_to_slice(files_ptr, nr_elems) {
+            let f_slice = match c_pointer_to_slice(blobs_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
             };
-            files = match f_slice
+            blobs = match f_slice
                 .iter()
                 .map(|&p| {
                     let f = unsafe { p.as_ref().ok_or(Error::Unknown)? };
 
-                    File::try_from(f).map_err(|_| Error::Unknown)
+                    Blob::try_from(f).map_err(|_| Error::Unknown)
                 })
-                .collect::<Result<Vec<File>>>()
+                .collect::<Result<Vec<Blob>>>()
             {
                 Ok(f) => f,
                 Err(_) => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
@@ -119,7 +119,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     }
 
     client
-        .resource_register(paths, files, type_, id, sess_id)
+        .resource_register(paths, blobs, type_, id, sess_id)
         .into_ffi()
 }
 
