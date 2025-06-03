@@ -2,22 +2,24 @@
 
 use crate::{c_pointer_to_mut_slice, ffi, Error, Result};
 use std::ffi::{c_char, CStr, CString};
-use vaccel_rpc_proto::resource::File as ProtoFile;
+use vaccel_rpc_proto::resource::Blob as ProtoBlob;
 
 #[derive(Debug)]
-pub struct File {
-    inner: ffi::vaccel_file,
+pub struct Blob {
+    inner: ffi::vaccel_blob,
+    blob_type: u32,
     name: CString,
     path: CString,
     path_owned: bool,
+    data_owned: bool,
     data: Vec<u8>,
     size: usize,
 }
 
 // TODO: Optimize functions
 
-impl File {
-    pub fn new(name: &str, path: &str, path_owned: bool, data: &[u8], size: usize) -> Result<Self> {
+impl Blob {
+    pub fn new(blob_type: u32, name: &str, path: &str, path_owned: bool, data_owned: bool, data: &[u8], size: usize) -> Result<Self> {
         let mut d = data.to_owned();
         let n = CString::new(name).map_err(|e| {
             Error::ConversionFailed(format!("Could not convert `name` to `CString` [{}]", e))
@@ -26,11 +28,13 @@ impl File {
             Error::ConversionFailed(format!("Could not convert `path` to `CString` [{}]", e))
         })?;
 
-        Ok(File {
-            inner: ffi::vaccel_file {
+        Ok(Blob {
+            inner: ffi::vaccel_blob {
+                type_: blob_type,
                 name: n.as_c_str().as_ptr() as *mut c_char,
                 path: p.as_c_str().as_ptr() as *mut c_char,
                 path_owned,
+                data_owned,
                 data: if !d.is_empty() {
                     d.as_mut_ptr()
                 } else {
@@ -38,9 +42,11 @@ impl File {
                 },
                 size,
             },
+            blob_type,
             name: n,
             path: p,
             path_owned,
+            data_owned,
             data: d,
             size,
         })
@@ -50,8 +56,8 @@ impl File {
     ///
     /// `file_ptr` is expected to be a valid pointer to a file
     /// object allocated manually or by the respective vAccel functions.
-    pub unsafe fn from_ffi(file_ptr: *mut ffi::vaccel_file) -> Result<Self> {
-        let file = match unsafe { file_ptr.as_ref() } {
+    pub unsafe fn from_ffi(blob_ptr: *mut ffi::vaccel_blob) -> Result<Self> {
+        let blob = match unsafe { blob_ptr.as_ref() } {
             Some(f) => f,
             None => {
                 return Err(Error::InvalidArgument(
@@ -61,23 +67,27 @@ impl File {
         };
 
         let name = unsafe {
-            CStr::from_ptr(file.name).to_str().map_err(|e| {
+            CStr::from_ptr(blob.name).to_str().map_err(|e| {
                 Error::ConversionFailed(format!(
-                    "Could not convert `file.name` to `CString` [{}]",
+                    "Could not convert `blob.name` to `CString` [{}]",
                     e
                 ))
             })?
         };
         let path = unsafe {
-            CStr::from_ptr(file.path).to_str().map_err(|e| {
-                Error::ConversionFailed(format!(
-                    "Could not convert `file.path` to `CString` [{}]",
-                    e
-                ))
-            })?
+            if blob.path.is_null() {
+                ""
+            } else {
+                CStr::from_ptr(blob.path).to_str().map_err(|e| {
+                    Error::ConversionFailed(format!(
+                        "Could not convert `blob.path` to `CString` [{}]",
+                        e
+                    ))
+                })?
+            }
         };
-        let data = c_pointer_to_mut_slice(file.data, file.size).unwrap_or(&mut []);
-        Self::new(name, path, file.path_owned, data, file.size)
+        let data = c_pointer_to_mut_slice(blob.data, blob.size).unwrap_or(&mut []);
+        Self::new(blob.type_, name, path, blob.path_owned, blob.data_owned, data, blob.size)
     }
 
     pub fn set_data(&mut self, d: &mut [u8]) {
@@ -85,68 +95,78 @@ impl File {
         self.inner.data = self.data.as_mut_ptr();
     }
 
-    pub(crate) fn inner(&self) -> &ffi::vaccel_file {
+    pub(crate) fn inner(&self) -> &ffi::vaccel_blob {
         &self.inner
     }
 
-    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_file {
+    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_blob {
         &mut self.inner
     }
 }
 
-impl From<&ProtoFile> for File {
-    fn from(file: &ProtoFile) -> Self {
+impl From<&ProtoBlob> for Blob {
+    fn from(blob: &ProtoBlob) -> Self {
         Self::new(
-            &file.name,
-            &file.path,
-            file.path_owned,
-            &file.data,
-            file.size as usize,
+            blob.type_,
+            &blob.name,
+            &blob.path,
+            blob.path_owned,
+            blob.data_owned,
+            &blob.data,
+            blob.size as usize,
         )
         .unwrap()
     }
 }
 
-impl From<&File> for ProtoFile {
-    fn from(file: &File) -> Self {
-        ProtoFile {
-            name: file.name.to_owned().into_string().unwrap(),
-            path: file.path.to_owned().into_string().unwrap(),
-            path_owned: file.path_owned,
-            data: file.data.to_owned(),
-            size: file.size as u32,
+impl From<&Blob> for ProtoBlob {
+    fn from(blob: &Blob) -> Self {
+        ProtoBlob {
+            type_: blob.blob_type as u32,
+            name: blob.name.to_owned().into_string().unwrap(),
+            path: blob.path.to_owned().into_string().unwrap(),
+            path_owned: blob.path_owned,
+            data_owned: blob.data_owned,
+            data: blob.data.to_owned(),
+            size: blob.size as u32,
             ..Default::default()
         }
     }
 }
 
-impl TryFrom<&ffi::vaccel_file> for ProtoFile {
+impl TryFrom<&ffi::vaccel_blob> for ProtoBlob {
     type Error = Error;
 
-    fn try_from(file: &ffi::vaccel_file) -> Result<Self> {
+    fn try_from(blob: &ffi::vaccel_blob) -> Result<Self> {
         let name = unsafe {
-            CStr::from_ptr(file.name).to_str().map_err(|e| {
+            CStr::from_ptr(blob.name).to_str().map_err(|e| {
                 Error::ConversionFailed(format!(
-                    "Could not convert `file.name` to `CString` [{}]",
+                    "Could not convert `blob.name` to `CString` [{}]",
                     e
                 ))
             })?
         };
         let path = unsafe {
-            CStr::from_ptr(file.path).to_str().map_err(|e| {
-                Error::ConversionFailed(format!(
-                    "Could not convert `file.path` to `CString` [{}]",
-                    e
-                ))
-            })?
+            if blob.path.is_null() {
+                ""
+            } else {
+                CStr::from_ptr(blob.path).to_str().map_err(|e| {
+                    Error::ConversionFailed(format!(
+                            "Could not convert `blob.path` to `CString` [{}]",
+                            e
+                    ))
+                })?
+            }
         };
-        let data = unsafe { c_pointer_to_mut_slice(file.data, file.size).unwrap_or(&mut []) };
-        Ok(ProtoFile {
+        let data = unsafe { c_pointer_to_mut_slice(blob.data, blob.size).unwrap_or(&mut []) };
+        Ok(ProtoBlob {
+            type_: blob.type_,
             name: name.to_owned(),
             path: path.to_owned(),
-            path_owned: file.path_owned,
+            path_owned: blob.path_owned,
+            data_owned: blob.data_owned,
             data: data.to_owned(),
-            size: file.size as u32,
+            size: blob.size as u32,
             ..Default::default()
         })
     }
