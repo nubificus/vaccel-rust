@@ -67,6 +67,11 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
         Some(client) => client,
         None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
+    log::debug!(
+        "register_resource: id = {}, sess_id = {}, nr_elems = {}, files_ptr = {:?}, paths_ptr = {:?}",
+        id, sess_id, nr_elems, files_ptr, paths_ptr
+    );
+
 
     let mut files: Vec<File> = Vec::new();
     let mut paths: Vec<String> = Vec::new();

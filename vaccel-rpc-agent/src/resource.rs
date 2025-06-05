@@ -53,9 +53,13 @@ impl AgentService {
             );
             res.as_mut().register(&mut sess)?;
 
-            resp.resource_id = res.as_ref().id().into();
+	    let id = res.as_ref().id();
+            info!("Final resource ID: {}", id);
+            resp.resource_id = id.into();
 
-            let e = self.resources.insert(res.as_ref().id(), res);
+            //resp.resource_id = res.as_ref().id().into();
+
+            let e = self.resources.insert(id, res);
             assert!(e.is_none());
         } else {
             // If we got resource id > 0 simply register the resource
@@ -69,8 +73,12 @@ impl AgentService {
                 req.session_id
             );
             res.as_mut().register(&mut sess)?;
+	    let id = res.as_ref().id();
+            info!("Final resource ID: {}", id);
+            resp.resource_id = id.into();
 
-            resp.resource_id = res.as_ref().id().into();
+            //resp.resource_id = res.as_ref().id().into();
+
         }
 
         Ok(resp)
