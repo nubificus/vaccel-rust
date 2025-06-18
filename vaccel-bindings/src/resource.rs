@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, Blob, Result, Session, VaccelId};
+use crate::{ffi, Blob, Error, Result, Session, VaccelId};
 use log::warn;
 use std::{
     ffi::{c_char, c_void, CString},
@@ -14,6 +14,7 @@ pub struct Resource {
     // vaccel list struct uses self-referential pointers so we need to use `Pin`
     // here to make sure the underlying memory won't move
     _marker: PhantomPinned,
+    _blobs: Option<Vec<Blob>>,
 }
 
 impl Resource {
@@ -39,6 +40,7 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: None,
         };
         let mut boxed = Box::pin(r);
 
@@ -66,7 +68,7 @@ impl Resource {
     }
 
     /// Create new resource from blobs
-    pub fn from_blobs(blobs: &[Blob], res_type: u32) -> Result<Pin<Box<Self>>> {
+    pub fn from_blobs(blobs: Vec<Blob>, res_type: u32) -> Result<Pin<Box<Self>>> {
         let mut b: Vec<*const ffi::vaccel_blob> =
             blobs.iter().map(|f| f.inner() as *const _).collect();
 
@@ -77,6 +79,7 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: Some(blobs),
         };
         let mut boxed = Box::pin(r);
 
@@ -94,7 +97,12 @@ impl Resource {
     }
 
     /// Create new resource from in-memory data
-    pub fn from_buf(data: &[u8], res_type: u32, filename: Option<&str>, mem_only: bool) -> Result<Pin<Box<Self>>> {
+    pub fn from_buf(
+        data: &[u8],
+        res_type: u32,
+        filename: Option<&str>,
+        mem_only: bool,
+    ) -> Result<Pin<Box<Self>>> {
         let r = Resource {
             // Ensure id is always initialized
             inner: ffi::vaccel_resource {
@@ -102,6 +110,7 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: None,
         };
         let mut boxed = Box::pin(r);
 
