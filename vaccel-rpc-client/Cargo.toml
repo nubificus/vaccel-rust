@@ -17,7 +17,7 @@ log = "0.4"
 protobuf = "3.1"
 thiserror = "1.0"
 tokio = { version = "1.38", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel", features = ["async"] }
 #tracing = "0.1"
 #tracing-subscriber = "0.3"
 

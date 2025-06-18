@@ -11,7 +11,7 @@ license = "Apache-2.0"
 [dependencies]
 async-trait = "0.1"
 protobuf = "3.1"
-ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev", features = ["async"] }
+ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel", features = ["async"] }
 
 [build-dependencies]
-ttrpc-codegen = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "vaccel-dev" }
+ttrpc-codegen = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel" }
