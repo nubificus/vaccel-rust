@@ -10,19 +10,19 @@ use derive_more::Display;
 use std::slice;
 
 pub mod arg;
+pub mod blob;
 pub mod config;
 pub mod error;
 pub mod ffi;
-pub mod blob;
 pub mod ops;
 pub mod profiling;
 pub mod resource;
 pub mod session;
 
 pub use arg::Arg;
+pub use blob::Blob;
 pub use config::Config;
 pub use error::{Error, Result};
-pub use blob::Blob;
 pub use resource::Resource;
 pub use session::Session;
 

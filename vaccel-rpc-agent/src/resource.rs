@@ -31,9 +31,13 @@ impl AgentService {
             info!("Creating new resource");
             let mut res = match req.blobs.is_empty() {
                 false => {
-                    let blobs: Vec<Blob> = req.blobs.iter().map(|f| f.into()).collect();
+                    let blobs = req
+                        .blobs
+                        .into_iter()
+                        .map(|f| Ok(f.try_into()?))
+                        .collect::<Result<Vec<Blob>>>()?;
 
-                    Resource::from_blobs(&blobs, req.resource_type)?
+                    Resource::from_blobs(blobs, req.resource_type)?
                 }
                 true => {
                     if req.paths.is_empty() {
