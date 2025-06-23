@@ -5,6 +5,7 @@ use derive_more::Display;
 use thiserror::Error as ThisError;
 use vaccel_rpc_proto::error::{VaccelError, VaccelErrorType, VaccelStatus};
 
+/// An error status to use with operations returning status objects.
 #[derive(Debug, Clone, Default, Display)]
 #[display("{} ({})", message, code)]
 pub struct Status {
@@ -44,6 +45,7 @@ impl TryFrom<VaccelStatus> for Status {
     }
 }
 
+/// The core error variants.
 #[derive(ThisError, Debug, Clone)]
 pub enum Error {
     #[error("FFI error: {0}")]

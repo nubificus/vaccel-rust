@@ -1,108 +1,158 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{error::Status as ErrorStatus, ffi, Error, Result};
+use crate::{error::Status as ErrorStatus, ffi, Error, Handle, Result};
 use derive_more::Display;
-use std::ffi::{CStr, CString};
+use std::{
+    ffi::{CStr, CString},
+    ptr::{self, NonNull},
+};
 use vaccel_rpc_proto::error::VaccelStatus;
 
-#[derive(Debug, Default, Display, Clone)]
-#[display("{} ({})", self.message(), self.code())]
+/// Wrapper for the `struct vaccel_tf_status` C object.
+#[derive(Debug, Display)]
+#[display("{} ({})", self.message().unwrap_or("".to_string()), self.code())]
 pub struct Status {
-    inner: ffi::vaccel_tf_status,
+    inner: NonNull<ffi::vaccel_tf_status>,
+    owned: bool,
 }
 
 impl Status {
+    /// Creates a new `Status`.
     pub fn new(code: u8, message: &str) -> Result<Self> {
-        let mut inner = ffi::vaccel_tf_status::default();
         let c_message = CString::new(message).map_err(|e| {
             Error::ConversionFailed(format!("Could not convert `message` to `CString` [{}]", e))
         })?;
 
-        match unsafe {
-            ffi::vaccel_tf_status_init(&mut inner, code, c_message.as_c_str().as_ptr()) as u32
-        } {
-            ffi::VACCEL_OK => Ok(Self { inner }),
-            err => Err(Error::Ffi(err)),
+        let mut ptr: *mut ffi::vaccel_tf_status = ptr::null_mut();
+        match unsafe { ffi::vaccel_tf_status_new(&mut ptr, code, c_message.as_ptr()) as u32 } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
         }
+
+        unsafe { Self::from_ptr_owned(ptr) }
     }
 
+    /// Returns the code of the `Status`.
     pub fn code(&self) -> u8 {
-        self.inner.code
+        unsafe { self.inner.as_ref().code }
     }
 
-    pub fn message(&self) -> String {
-        if self.inner.message.is_null() {
-            return String::new();
+    /// Returns the message of the `Status`.
+    pub fn message(&self) -> Result<String> {
+        let inner = unsafe { self.inner.as_ref() };
+
+        if inner.message.is_null() {
+            return Err(Error::EmptyValue);
         }
 
-        let c_message = unsafe { CStr::from_ptr(self.inner.message) };
-        c_message.to_str().unwrap_or("").to_owned()
+        match unsafe { CStr::from_ptr(inner.message).to_str() } {
+            Ok(n) => Ok(n.to_string()),
+            Err(e) => Err(Error::ConversionFailed(format!(
+                "Could not convert `message` to `CString` [{}]",
+                e
+            ))),
+        }
     }
 
+    /// Populates a pointer of the wrapped C type with the `Status` data.
+    ///
     /// # Safety
     ///
     /// `ptr` is expected to be a valid pointer to an object allocated
     /// manually or by the respective vAccel function.
-    pub unsafe fn populate_ffi(&self, ptr: *mut ffi::vaccel_tf_status) {
-        if let Some(ffi) = unsafe { ptr.as_mut() } {
-            ffi.code = self.inner.code;
-            ffi.message = self.inner.message;
+    pub unsafe fn populate_ptr(&self, ptr: *mut ffi::vaccel_tf_status) -> Result<()> {
+        let ffi = unsafe { ptr.as_mut().ok_or(Error::EmptyValue)? };
+
+        ffi.code = self.inner.as_ref().code;
+        unsafe {
+            ffi.message = libc::strdup(self.inner.as_ref().message);
+            if ffi.message.is_null() {
+                return Err(Error::EmptyValue);
+            }
         }
+
+        Ok(())
     }
 
+    /// Returns `true` if the status is OK.
     pub fn is_ok(&self) -> bool {
         self.code() == 0
     }
+}
 
-    pub(crate) fn inner(&self) -> &ffi::vaccel_tf_status {
-        &self.inner
-    }
+impl_component_drop!(Status, vaccel_tf_status_delete, inner, owned);
 
-    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_tf_status {
-        &mut self.inner
+impl_component_handle!(Status, ffi::vaccel_tf_status, inner, owned);
+
+impl TryFrom<&VaccelStatus> for Status {
+    type Error = Error;
+
+    fn try_from(proto_status: &VaccelStatus) -> Result<Self> {
+        Self::new(
+            proto_status.code.try_into().map_err(|e| {
+                Error::ConversionFailed(format!("Could not convert `status.code` to `u8` [{}]", e))
+            })?,
+            &proto_status.message,
+        )
     }
 }
 
 impl TryFrom<VaccelStatus> for Status {
     type Error = Error;
 
-    fn try_from(status: VaccelStatus) -> Result<Self> {
-        Self::new(
-            status.code.try_into().map_err(|e| {
-                Error::ConversionFailed(format!("Could not convert `status.code` to `u8` [{}]", e))
-            })?,
-            &status.message,
-        )
+    fn try_from(proto_status: VaccelStatus) -> Result<Self> {
+        Status::try_from(&proto_status)
     }
 }
 
-impl From<Status> for VaccelStatus {
-    fn from(status: Status) -> Self {
-        let mut vaccel_status = Self::new();
-        vaccel_status.code = status.code() as u32;
-        vaccel_status.message = status.message();
-        vaccel_status
-    }
-}
-
-impl TryFrom<ErrorStatus> for Status {
+impl TryFrom<&Status> for VaccelStatus {
     type Error = Error;
 
-    fn try_from(status: ErrorStatus) -> Result<Self> {
-        Self::new(status.code, &status.message)
+    fn try_from(status: &Status) -> Result<Self> {
+        Ok(VaccelStatus {
+            code: status.code().into(),
+            message: status.message()?,
+            ..Default::default()
+        })
+    }
+}
+
+impl TryFrom<Status> for VaccelStatus {
+    type Error = Error;
+
+    fn try_from(status: Status) -> Result<Self> {
+        VaccelStatus::try_from(&status)
     }
 }
 
 impl TryFrom<&ErrorStatus> for Status {
     type Error = Error;
 
-    fn try_from(status: &ErrorStatus) -> Result<Self> {
-        Self::new(status.code, &status.message)
+    fn try_from(error_status: &ErrorStatus) -> Result<Self> {
+        Self::new(error_status.code, &error_status.message)
     }
 }
 
-impl From<Status> for ErrorStatus {
-    fn from(status: Status) -> Self {
-        Self::new(status.code(), &status.message())
+impl TryFrom<ErrorStatus> for Status {
+    type Error = Error;
+
+    fn try_from(error_status: ErrorStatus) -> Result<Self> {
+        Status::try_from(&error_status)
+    }
+}
+
+impl TryFrom<&Status> for ErrorStatus {
+    type Error = Error;
+
+    fn try_from(status: &Status) -> Result<Self> {
+        Ok(Self::new(status.code(), &status.message()?))
+    }
+}
+
+impl TryFrom<Status> for ErrorStatus {
+    type Error = Error;
+
+    fn try_from(status: Status) -> Result<Self> {
+        ErrorStatus::try_from(&status)
     }
 }
