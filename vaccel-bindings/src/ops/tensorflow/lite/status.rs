@@ -4,28 +4,31 @@ use crate::{error::Status as ErrorStatus, Error, Result};
 use derive_more::{From, Into};
 use vaccel_rpc_proto::error::VaccelStatus;
 
+/// Wrapper for the TFLite status.
 #[derive(Debug, Clone, Copy, PartialEq, Default, From, Into)]
 #[repr(transparent)]
 pub struct Status(pub u8);
 
 impl Status {
+    /// Populates a pointer of the wrapped C type with the `Status` data.
+    ///
     /// # Safety
     ///
     /// `ptr` is expected to be a valid pointer to an object allocated
     /// manually or by the respective vAccel function.
-    pub unsafe fn populate_ffi(&self, ptr: *mut u8) {
-        if let Some(ffi) = unsafe { ptr.as_mut() } {
-            *ffi = (*self).into();
-        }
+    pub unsafe fn populate_ptr(&self, ptr: *mut u8) -> Result<()> {
+        let ffi = unsafe { ptr.as_mut().ok_or(Error::EmptyValue)? };
+        *ffi = (*self).into();
+        Ok(())
     }
 }
 
-impl TryFrom<VaccelStatus> for Status {
+impl TryFrom<&VaccelStatus> for Status {
     type Error = Error;
 
-    fn try_from(status: VaccelStatus) -> Result<Self> {
+    fn try_from(proto_status: &VaccelStatus) -> Result<Self> {
         Ok(Status(
-            status
+            proto_status
                 .code
                 .try_into()
                 .map_err(|e| Error::ConversionFailed(format!("{}", e)))?,
@@ -33,23 +36,47 @@ impl TryFrom<VaccelStatus> for Status {
     }
 }
 
-impl From<Status> for VaccelStatus {
-    fn from(status: Status) -> Self {
-        let mut vaccel_status = Self::new();
-        vaccel_status.code = u8::from(status) as u32;
-        vaccel_status
+impl TryFrom<VaccelStatus> for Status {
+    type Error = Error;
+
+    fn try_from(proto_status: VaccelStatus) -> Result<Self> {
+        Status::try_from(&proto_status)
     }
 }
 
-impl From<ErrorStatus> for Status {
-    fn from(status: ErrorStatus) -> Self {
-        Status(status.code)
+impl From<&Status> for VaccelStatus {
+    fn from(status: &Status) -> Self {
+        VaccelStatus {
+            code: u8::from(*status) as u32,
+            ..Default::default()
+        }
+    }
+}
+
+impl From<Status> for VaccelStatus {
+    fn from(status: Status) -> Self {
+        VaccelStatus {
+            code: u8::from(status) as u32,
+            ..Default::default()
+        }
     }
 }
 
 impl From<&ErrorStatus> for Status {
-    fn from(status: &ErrorStatus) -> Self {
-        Status(status.code)
+    fn from(error_status: &ErrorStatus) -> Self {
+        Status(error_status.code)
+    }
+}
+
+impl From<ErrorStatus> for Status {
+    fn from(error_status: ErrorStatus) -> Self {
+        Status::from(&error_status)
+    }
+}
+
+impl From<&Status> for ErrorStatus {
+    fn from(status: &Status) -> Self {
+        Self::new((*status).into(), "")
     }
 }
 

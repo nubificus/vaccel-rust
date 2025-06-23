@@ -187,16 +187,22 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.tflite_model_run(model_id, sess_id, in_tensors, nr_outputs) {
-        Ok((tensors, status)) => {
-            out_tensors.copy_from_slice(&tensors);
-            status.populate_ffi(status_ptr);
-            ffi::VACCEL_OK
-        }
-        Err(e) => {
-            error!("{}", e);
-            e.to_tflite_status().populate_ffi(status_ptr);
-            e.to_ffi()
-        }
-    }) as c_int
+    let (ret, status) = client
+        .tflite_model_run(model_id, sess_id, in_tensors, nr_outputs)
+        .map_or_else(
+            |e| {
+                error!("{}", e);
+                (e.to_ffi(), e.to_tflite_status())
+            },
+            |(tensors, status)| {
+                out_tensors.copy_from_slice(&tensors);
+                (ffi::VACCEL_OK, status)
+            },
+        );
+
+    if let Err(e) = status.populate_ptr(status_ptr) {
+        error!("Could not populate status: {}", e);
+    }
+
+    ret as c_int
 }

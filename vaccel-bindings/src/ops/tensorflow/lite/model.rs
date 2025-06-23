@@ -4,11 +4,10 @@ use super::{DataType, Status, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
     ops::{ModelInitialize, ModelLoadUnload, ModelRun},
-    Error, Resource, Result, Session,
+    Error, Handle, Resource, Result, Session,
 };
 use log::warn;
 use protobuf::Enum;
-use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType};
 
 pub struct InferenceArgs {
@@ -90,7 +89,7 @@ impl InferenceResult {
             return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
-        let tensor: Tensor<T> = unsafe { Tensor::from_ffi(t)? };
+        let tensor: Tensor<T> = unsafe { Tensor::from_ptr(t)? };
         self.out_tensors[id] = std::ptr::null_mut();
 
         Ok(tensor)
@@ -132,16 +131,13 @@ impl Drop for InferenceResult {
 }
 
 pub struct Model<'a> {
-    inner: Pin<&'a mut Resource>,
-    _marker: PhantomPinned,
+    inner: &'a mut Resource,
 }
 
 impl<'a> ModelInitialize<'a> for Model<'a> {
-    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
-        Box::pin(Self {
-            inner,
-            _marker: PhantomPinned,
-        })
+    /// Creates a new 'Model` from a `Resource`.
+    fn new(inner: &'a mut Resource) -> Self {
+        Model { inner }
     }
 }
 
@@ -149,16 +145,17 @@ impl<'a> ModelRun<'a> for Model<'a> {
     type RunArgs = InferenceArgs;
     type RunResult = InferenceResult;
 
-    fn run(
-        self: Pin<&mut Self>,
-        sess: &mut Session,
-        args: &mut Self::RunArgs,
-    ) -> Result<Self::RunResult> {
+    /// Runs inference using the model.
+    ///
+    /// This requires that the model has previously been loaded using `load()`.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    fn run(&mut self, sess: &mut Session, args: &mut Self::RunArgs) -> Result<Self::RunResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
         match unsafe {
             ffi::vaccel_tflite_model_run(
-                sess.inner_mut(),
-                self.inner_mut().inner_mut(),
+                sess.as_mut_ptr(),
+                self.inner.as_mut_ptr(),
                 args.in_tensors.as_ptr() as *const *mut ffi::vaccel_tflite_tensor,
                 args.in_tensors.len() as i32,
                 result.out_tensors.as_mut_ptr(),
@@ -173,27 +170,32 @@ impl<'a> ModelRun<'a> for Model<'a> {
             }),
         }
     }
-
-    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
-        unsafe { self.get_unchecked_mut().inner.as_mut() }
-    }
 }
 
 impl<'a> ModelLoadUnload<'a> for Model<'a> {
     type LoadUnloadResult = ();
 
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
+    /// Loads the model.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    fn load(&mut self, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
-            ffi::vaccel_tflite_model_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+            ffi::vaccel_tflite_model_load(sess.as_mut_ptr(), self.inner.as_mut_ptr()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Ffi(err)),
         }
     }
 
-    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
+    /// Unloads the model.
+    ///
+    /// This will unload a model that was previously loaded in memory using
+    /// `load()`.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    fn unload(&mut self, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
-            ffi::vaccel_tflite_model_unload(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+            ffi::vaccel_tflite_model_unload(sess.as_mut_ptr(), self.inner.as_mut_ptr()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Ffi(err)),

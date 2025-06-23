@@ -1,81 +1,68 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, Result, VaccelId};
+use crate::{ffi, Error, Handle, Resource, Result, VaccelId};
 use log::warn;
+use std::ptr::{self, NonNull};
 
-/// The vAccel session  type
-///
-/// This is a handle for interacting with the underlying vAccel
-/// runtime system.
+/// Wrapper for the `struct vaccel_session` C object.
 #[derive(Debug)]
 pub struct Session {
-    inner: ffi::vaccel_session,
+    inner: NonNull<ffi::vaccel_session>,
+    owned: bool,
 }
 
 impl Session {
-    /// Create a new vAccel session
-    ///
-    /// This will allocate a new vaccel_session structure on the heap and
-    /// initialize it.
-    ///
-    /// # Arguments
-    ///
-    /// * `flags` - Flags for session creation.
-    pub fn new(flags: u32) -> Result<Self> {
-        // Ensure id is always initialized
-        let mut inner = ffi::vaccel_session {
-            id: -1,
-            ..Default::default()
-        };
+    /// Creates a new `Session` with default flags.
+    pub fn new() -> Result<Self> {
+        Self::with_flags(0)
+    }
 
-        match unsafe { ffi::vaccel_session_init(&mut inner, flags) as u32 } {
-            ffi::VACCEL_OK => Ok(Session { inner }),
-            err => Err(Error::Ffi(err)),
+    /// Creates a new `Session` with the specified flags.
+    pub fn with_flags(flags: u32) -> Result<Self> {
+        let mut ptr: *mut ffi::vaccel_session = ptr::null_mut();
+        match unsafe { ffi::vaccel_session_new(&mut ptr, flags) as u32 } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
         }
+
+        unsafe { Self::from_ptr_owned(ptr) }
     }
 
-    /// Get the session id
+    /// Returns the ID of the `Session`.
     pub fn id(&self) -> VaccelId {
-        VaccelId::from(self.inner.id)
+        VaccelId::from(unsafe { self.inner.as_ref().id })
     }
 
-    /// Returns `true` if the session has been initialized
+    /// Returns the flags set for the `Session`.
+    pub fn flags(&self) -> u32 {
+        unsafe { self.inner.as_ref().hint }
+    }
+
+    /// Returns `true` if the `Session` has been initialized.
     pub fn initialized(&self) -> bool {
         self.id().has_id()
     }
 
-    /// Update hint for session
+    /// Updates the hint flags for the 'Session`.
     pub fn update(&mut self, flags: u32) {
-        self.inner.hint = flags;
+        unsafe { self.inner.as_mut().hint = flags };
     }
 
-    /// Release a vAccel session's data
-    ///
-    /// This will close an open session and consume it.
-    pub fn release(&mut self) -> Result<()> {
-        if !self.initialized() {
-            return Err(Error::Uninitialized);
-        }
-
-        match unsafe { ffi::vaccel_session_release(&mut self.inner) as u32 } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Ffi(err)),
-        }
-    }
-
-    pub(crate) fn inner(&self) -> &ffi::vaccel_session {
-        &self.inner
-    }
-
-    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_session {
-        &mut self.inner
+    /// Returns `true` if the `Resource` is registered with the `Session`.
+    pub fn has_resource(&self, resource: &Resource) -> bool {
+        unsafe { ffi::vaccel_session_has_resource(self.inner.as_ptr(), resource.as_ptr()) }
     }
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
-        if self.initialized() && self.release().is_err() {
-            warn!("Could not release session");
+        if self.owned && self.initialized() {
+            let ret = unsafe { ffi::vaccel_session_delete(self.inner.as_ptr()) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete Session inner: {}", ret);
+            }
         }
     }
 }
+
+impl_component_handle!(Session, ffi::vaccel_session, inner, owned);

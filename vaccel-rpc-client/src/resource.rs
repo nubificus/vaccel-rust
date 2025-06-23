@@ -7,11 +7,11 @@ use crate::sync::client::VaccelRpcClient;
 use crate::{Error, IntoFfiResult, Result};
 use log::error;
 use std::ffi::{c_char, c_int, CStr};
-use vaccel::{c_pointer_to_slice, ffi};
+use vaccel::{c_pointer_to_slice, ffi, Blob, Handle};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{
-    Blob, RegisterResourceRequest, SyncResourceRequest, UnregisterResourceRequest,
+    Blob as ProtoBlob, RegisterResourceRequest, SyncResourceRequest, UnregisterResourceRequest,
 };
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
@@ -20,7 +20,7 @@ impl VaccelRpcClient {
     pub fn resource_register(
         &self,
         paths: Vec<String>,
-        blobs: Vec<Blob>,
+        blobs: Vec<ProtoBlob>,
         type_: u32,
         id: i64,
         sess_id: i64,
@@ -49,7 +49,7 @@ impl VaccelRpcClient {
         Ok(())
     }
 
-    pub fn resource_sync(&self, res_id: i64) -> Result<Vec<Blob>> {
+    pub fn resource_sync(&self, res_id: i64) -> Result<Vec<ProtoBlob>> {
         let ctx = ttrpc::context::Context::default();
         let mut req = SyncResourceRequest::new();
         req.resource_id = res_id;
@@ -81,10 +81,9 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
         None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
 
-    let mut blobs: Vec<Blob> = Vec::new();
+    let mut proto_blobs: Vec<ProtoBlob> = Vec::new();
     let mut paths: Vec<String> = Vec::new();
     if id <= 0 {
-        // FIXME: error reporting
         if !paths_ptr.is_null() {
             client.timer_start(sess_id, "client_resource_register > paths");
             let p_slice = match c_pointer_to_slice(paths_ptr, nr_elems) {
@@ -96,43 +95,46 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
                 .map(|&p| {
                     Ok(CStr::from_ptr(p)
                         .to_str()
-                        .map_err(|_| Error::Unknown)?
+                        .map_err(|e| {
+                            Error::InvalidArgument(format!(
+                                "Could not convert `paths` to `String` [{}]",
+                                e
+                            ))
+                        })?
                         .to_string())
                 })
                 .collect::<Result<Vec<String>>>()
             {
                 Ok(p) => p,
-                Err(_) => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
+                Err(e) => {
+                    error!("{}", e);
+                    return -(e.to_ffi() as ffi::vaccel_id_t);
+                }
             };
             client.timer_stop(sess_id, "client_resource_register > paths");
         } else {
-            if blobs_ptr.is_null() {
-                return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t);
-            }
-
             client.timer_start(sess_id, "client_resource_register > files");
-            let f_slice = match c_pointer_to_slice(blobs_ptr, nr_elems) {
+            let blobs = match c_pointer_to_slice(blobs_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
             };
-            blobs = match f_slice
+            proto_blobs = match blobs
                 .iter()
-                .map(|&p| {
-                    let f = unsafe { p.as_ref().ok_or(Error::Unknown)? };
-
-                    Blob::try_from(f).map_err(|_| Error::Unknown)
-                })
-                .collect::<Result<Vec<Blob>>>()
+                .map(|ptr| Ok(Blob::from_ptr(*ptr)?.try_into()?))
+                .collect::<Result<Vec<ProtoBlob>>>()
             {
                 Ok(f) => f,
-                Err(_) => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
+                Err(e) => {
+                    error!("{}", e);
+                    return -(e.to_ffi() as ffi::vaccel_id_t);
+                }
             };
             client.timer_stop(sess_id, "client_resource_register > files");
         }
     }
 
     client
-        .resource_register(paths, blobs, type_, id, sess_id)
+        .resource_register(paths, proto_blobs, type_, id, sess_id)
         .into_ffi()
 }
 
