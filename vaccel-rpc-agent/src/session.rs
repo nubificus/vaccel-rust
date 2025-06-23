@@ -44,7 +44,7 @@ impl AgentService {
     }
 
     pub(crate) fn do_destroy_session(&self, req: DestroySessionRequest) -> Result<Empty> {
-        let (_, mut sess) = self
+        let (_, sess) = self
             .sessions
             .remove(&req.session_id.into())
             .ok_or_else(|| {
@@ -56,7 +56,7 @@ impl AgentService {
         if let Entry::Occupied(t) = self.timers.entry(req.session_id.into()) {
             t.remove_entry();
         }
-        sess.release()?;
+        drop(sess);
 
         info!("Destroyed session {}", req.session_id);
         Ok(Empty::new())

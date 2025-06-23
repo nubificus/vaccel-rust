@@ -53,7 +53,7 @@ impl AgentService {
 
         info!("session:{} PyTorch jitload forward", sess.id());
         let mut model = torch::Model::new(res.as_mut());
-        let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+        let result = model.run(&mut sess, &mut sess_args)?;
 
         let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {

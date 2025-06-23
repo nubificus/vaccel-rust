@@ -52,14 +52,14 @@ impl AgentService {
 
             info!(
                 "Registering resource {} with session {}",
-                res.as_ref().id(),
+                res.id(),
                 req.session_id
             );
-            res.as_mut().register(&mut sess)?;
+            res.register(&mut sess)?;
 
-            resp.resource_id = res.as_ref().id().into();
+            resp.resource_id = res.id().into();
 
-            let e = self.resources.insert(res.as_ref().id(), res);
+            let e = self.resources.insert(res.id(), Box::new(res));
             assert!(e.is_none());
         } else {
             // If we got resource id > 0 simply register the resource
@@ -69,12 +69,12 @@ impl AgentService {
 
             info!(
                 "Registering resource {} with session {}",
-                res.as_ref().id(),
+                res.id(),
                 req.session_id
             );
-            res.as_mut().register(&mut sess)?;
+            res.register(&mut sess)?;
 
-            resp.resource_id = res.as_ref().id().into();
+            resp.resource_id = res.id().into();
         }
 
         Ok(resp)
@@ -101,21 +101,20 @@ impl AgentService {
 
         info!(
             "Unregistering resource {} from session {}",
-            res.as_ref().id(),
+            res.id(),
             req.session_id
         );
-        res.as_mut().unregister(&mut sess)?;
+        res.unregister(&mut sess)?;
 
         // If resource in registered to other sessions do not destroy
-        let refcount = res.as_ref().refcount()?;
+        let refcount = res.refcount()?;
         if refcount > 0 {
             return Ok(Empty::new());
         }
 
-        info!("Destroying resource {}", res.as_ref().id());
-        res.as_mut().release()?;
-
+        info!("Destroying resource {}", res.id());
         drop(res);
+
         self.resources
             .remove(&req.resource_id.into())
             .ok_or_else(|| {

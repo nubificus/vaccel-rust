@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, Result, Session};
+use crate::{ffi, Error, Handle, Result, Session};
 use std::os::raw::c_void;
 
 impl Session {
@@ -17,7 +17,7 @@ impl Session {
 
         match unsafe {
             ffi::vaccel_image_classification(
-                self.inner_mut(),
+                self.as_mut_ptr(),
                 img.as_ptr() as *mut c_void,
                 tags.as_mut_ptr(),
                 out_img.as_mut_ptr(),
@@ -36,7 +36,7 @@ impl Session {
 
         match unsafe {
             ffi::vaccel_image_detection(
-                self.inner_mut(),
+                self.as_mut_ptr(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
                 img.len(),
@@ -53,7 +53,7 @@ impl Session {
 
         match unsafe {
             ffi::vaccel_image_segmentation(
-                self.inner_mut(),
+                self.as_mut_ptr(),
                 img.as_mut_ptr() as *mut c_void,
                 out_img.as_mut_ptr(),
                 img.len(),

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, profiling::ProfRegions, Arg, Error, Result, Session};
+use crate::{ffi, profiling::ProfRegions, Arg, Error, Handle, Result, Session};
 
 impl Session {
     /// vAccel generic operation
@@ -21,14 +21,16 @@ impl Session {
         timers: &mut ProfRegions,
     ) -> Result<()> {
         timers.start("genop > session > read_args");
-        let mut read_args: Vec<ffi::vaccel_arg> = read.iter().map(|e| *e.inner()).collect();
-        let mut write_args: Vec<ffi::vaccel_arg> = write.iter().map(|e| *e.inner()).collect();
+        let mut read_args: Vec<ffi::vaccel_arg> =
+            read.iter().map(|e| unsafe { *e.as_ptr() }).collect();
+        let mut write_args: Vec<ffi::vaccel_arg> =
+            write.iter().map(|e| unsafe { *e.as_ptr() }).collect();
         timers.stop("genop > session > read_args");
 
         match unsafe {
             timers.start("genop > session > vaccel_genop");
             let res = ffi::vaccel_genop(
-                self.inner_mut(),
+                self.as_mut_ptr(),
                 read_args.as_mut_ptr(),
                 read_args.len() as i32,
                 write_args.as_mut_ptr(),

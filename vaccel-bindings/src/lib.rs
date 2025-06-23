@@ -9,6 +9,10 @@
 use derive_more::Display;
 use std::slice;
 
+#[macro_use]
+pub mod handle;
+pub use handle::Handle;
+
 pub mod arg;
 pub mod blob;
 pub mod config;
@@ -108,7 +112,7 @@ pub unsafe fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&
 }
 
 pub fn bootstrap_with_config(config: &mut Config) -> Result<()> {
-    match unsafe { ffi::vaccel_bootstrap_with_config(config.inner_mut()) as u32 } {
+    match unsafe { ffi::vaccel_bootstrap_with_config(config.as_mut_ptr()) as u32 } {
         ffi::VACCEL_OK => Ok(()),
         err => Err(Error::Ffi(err)),
     }
