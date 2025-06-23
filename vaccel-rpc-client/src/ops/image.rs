@@ -42,13 +42,13 @@ impl VaccelRpcClient {
 pub unsafe extern "C" fn vaccel_rpc_client_image_classify(
     client_ptr: *const VaccelRpcClient,
     sess_id: i64,
-    img: *const c_uchar,
+    img_ptr: *const c_uchar,
     img_len: usize,
-    tags: *mut c_uchar,
+    tags_ptr: *mut c_uchar,
     tags_len: usize,
 ) -> c_int {
-    let img = unsafe { slice::from_raw_parts(img, img_len) };
-    let tags_slice = unsafe { slice::from_raw_parts_mut(tags, tags_len) };
+    let img = unsafe { slice::from_raw_parts(img_ptr, img_len) };
+    let tags = unsafe { slice::from_raw_parts_mut(tags_ptr, tags_len) };
 
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
@@ -57,7 +57,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_image_classify(
 
     (match client.image_classify(sess_id, img.to_vec()) {
         Ok(ret) => {
-            tags_slice.copy_from_slice(&ret[..tags_slice.len()]);
+            tags.copy_from_slice(&ret[..tags.len()]);
             ffi::VACCEL_OK
         }
         Err(e) => {

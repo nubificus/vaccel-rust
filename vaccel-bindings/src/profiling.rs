@@ -13,6 +13,7 @@ use vaccel_rpc_proto::profiling::{
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;
 
+/// Wrapper for the `struct timespec` C object.
 #[derive(Debug, Clone, Copy)]
 struct Timespec {
     tv_sec: u64,
@@ -20,15 +21,18 @@ struct Timespec {
 }
 
 impl Timespec {
+    /// Creates a new zero-initialized `Timespec`.
     pub const fn zero() -> Timespec {
         Timespec::new(0, 0)
     }
 
+    /// Creates a new `Timespec`.
     const fn new(tv_sec: u64, tv_nsec: u32) -> Timespec {
         assert!(tv_nsec < NSEC_PER_SEC);
         Timespec { tv_sec, tv_nsec }
     }
 
+    /// Creates a new `Timespec` by retrieving the time of the monotonic clock.
     pub fn now() -> Timespec {
         let mut t = libc::timespec {
             tv_sec: 0,
@@ -41,6 +45,7 @@ impl Timespec {
         Timespec::new(t.tv_sec as u64, t.tv_nsec as u32)
     }
 
+    /// Returns the elapsed time since the `Timespec` timestamp.
     pub fn elapsed(&self) -> Duration {
         let t = Timespec::now();
         let d1 = Duration::new(self.tv_sec, self.tv_nsec);
@@ -48,10 +53,12 @@ impl Timespec {
         d2 - d1
     }
 
+    /// Returns the `Timespec` as a timestamp in nanoseconds.
     pub const fn as_nanos(&self) -> u128 {
         Duration::new(self.tv_sec, self.tv_nsec).as_nanos()
     }
 
+    /// Creates a `Timespec` from a timestamp in nanoseconds
     pub const fn from_nanos(nanos: u64) -> Timespec {
         Timespec::new(
             nanos / (NSEC_PER_SEC as u64),
@@ -60,6 +67,7 @@ impl Timespec {
     }
 }
 
+/// Wrapper for the `struct vaccel_prof_sample` C object.
 #[derive(Debug, Clone, Copy)]
 pub struct Sample {
     inner: ffi::vaccel_prof_sample,
@@ -68,6 +76,7 @@ pub struct Sample {
 }
 
 impl Sample {
+    /// Creates a new `Sample`.
     const fn new(start: Timespec, time: Duration) -> Self {
         Sample {
             inner: ffi::vaccel_prof_sample {
@@ -86,6 +95,7 @@ impl Default for Sample {
     }
 }
 
+/// A collection of profiling samples.
 #[derive(Debug, Clone, Default)]
 pub struct ProfRegions {
     map: BTreeMap<String, Vec<Sample>>,
@@ -117,6 +127,7 @@ impl Extend<(String, Vec<Sample>)> for ProfRegions {
 }
 
 impl ProfRegions {
+    /// Creates a new `ProfRegions`.
     pub fn new(name: &str) -> ProfRegions {
         ProfRegions {
             map: BTreeMap::new(),
@@ -124,24 +135,29 @@ impl ProfRegions {
         }
     }
 
+    /// Returns the length of the collection.
     pub fn len(&self) -> usize {
         self.map.len()
     }
 
+    /// Returns `true` if the collection is empty.
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }
 
+    /// Removes all samples from the collection.
     pub fn clear(&mut self) {
         #[cfg(feature = "profiling")]
         self.map.clear();
     }
 
+    /// Inserts a new set of samples into the collection.
     pub fn insert(&mut self, name: &str, samples: Vec<Sample>) {
         #[cfg(feature = "profiling")]
         self.map.insert(name.to_string(), samples);
     }
 
+    /// Starts a sample by name.
     pub fn start(&mut self, name: &str) {
         #[cfg(feature = "profiling")]
         {
@@ -158,6 +174,7 @@ impl ProfRegions {
         }
     }
 
+    /// Stops a sample by name.
     pub fn stop(&mut self, name: &str) {
         #[cfg(feature = "profiling")]
         {
@@ -178,6 +195,7 @@ impl ProfRegions {
         }
     }
 
+    /// Returns a single set of samples by name.
     pub fn single(&self, name: &str) -> Option<&Vec<Sample>> {
         #[cfg(feature = "profiling")]
         {
@@ -187,6 +205,7 @@ impl ProfRegions {
         None
     }
 
+    /// Returns the collection of samples.
     pub fn get(&self) -> Option<&BTreeMap<String, Vec<Sample>>> {
         #[cfg(feature = "profiling")]
         {
@@ -196,6 +215,7 @@ impl ProfRegions {
         None
     }
 
+    /// Converts the samples to their FFI representations.
     pub fn to_ffi(&self) -> Option<BTreeMap<String, Vec<ffi::vaccel_prof_sample>>> {
         #[cfg(feature = "profiling")]
         {
@@ -213,6 +233,7 @@ impl ProfRegions {
         None
     }
 
+    /// Returns a string with timing information.
     fn format(name: &str, time: u128, entries: usize) -> String {
         #[cfg(feature = "profiling")]
         {
@@ -222,6 +243,7 @@ impl ProfRegions {
         String::new()
     }
 
+    /// Prints timing information for the last sample from a set of samples.
     pub fn print_single(&self, name: &str) {
         #[cfg(feature = "profiling")]
         {
@@ -234,6 +256,7 @@ impl ProfRegions {
         }
     }
 
+    /// Prints timing information with total times for a set of samples.
     pub fn print_total_single(&self, name: &str) {
         #[cfg(feature = "profiling")]
         {
@@ -245,6 +268,7 @@ impl ProfRegions {
         }
     }
 
+    /// Prints timing information for all samples.
     pub fn print(&self) {
         #[cfg(feature = "profiling")]
         {
@@ -256,6 +280,7 @@ impl ProfRegions {
         }
     }
 
+    /// Prints timing information with total times for all of samples.
     pub fn print_total(&self) {
         #[cfg(feature = "profiling")]
         {
@@ -266,6 +291,7 @@ impl ProfRegions {
         }
     }
 
+    /// Returns a string with timing information for all samples.
     pub fn print_to_buf(&self) -> String {
         #[cfg(feature = "profiling")]
         {
@@ -281,6 +307,7 @@ impl ProfRegions {
         String::new()
     }
 
+    /// Returns a string with timing information with total times for all samples.
     pub fn print_total_to_buf(&self) -> String {
         #[cfg(feature = "profiling")]
         {
