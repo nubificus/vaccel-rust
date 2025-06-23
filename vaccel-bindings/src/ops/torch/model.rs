@@ -4,11 +4,10 @@ use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
     ops::{ModelInitialize, ModelRun},
-    Error, Resource, Result, Session,
+    Error, Handle, Resource, Result, Session,
 };
 use log::warn;
 use protobuf::Enum;
-use std::{marker::PhantomPinned, pin::Pin};
 use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
 pub struct InferenceArgs {
@@ -34,7 +33,7 @@ impl InferenceArgs {
 
     pub fn set_run_options(&mut self, run_opts: Option<&Buffer>) {
         if let Some(opts) = run_opts {
-            self.run_options = opts.inner();
+            self.run_options = opts.as_ptr();
         }
     }
 
@@ -95,7 +94,7 @@ impl InferenceResult {
             return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
         }
 
-        let tensor: Tensor<T> = unsafe { Tensor::from_ffi(t)? };
+        let tensor: Tensor<T> = unsafe { Tensor::from_ptr(t)? };
         self.out_tensors[id] = std::ptr::null_mut();
 
         Ok(tensor)
@@ -140,16 +139,13 @@ impl Drop for InferenceResult {
 }
 
 pub struct Model<'a> {
-    inner: Pin<&'a mut Resource>,
-    _marker: PhantomPinned,
+    inner: &'a mut Resource,
 }
 
 impl<'a> ModelInitialize<'a> for Model<'a> {
-    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
-        Box::pin(Self {
-            inner,
-            _marker: PhantomPinned,
-        })
+    /// Creates a new 'Model` from a `Resource`.
+    fn new(inner: &'a mut Resource) -> Self {
+        Model { inner }
     }
 }
 
@@ -157,16 +153,17 @@ impl<'a> ModelRun<'a> for Model<'a> {
     type RunArgs = InferenceArgs;
     type RunResult = InferenceResult;
 
-    fn run(
-        self: Pin<&mut Self>,
-        sess: &mut Session,
-        args: &mut InferenceArgs,
-    ) -> Result<InferenceResult> {
+    /// Runs inference using the model.
+    ///
+    /// This requires that the model has previously been loaded using `load()`.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    fn run(&mut self, sess: &mut Session, args: &mut InferenceArgs) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
         match unsafe {
             ffi::vaccel_torch_jitload_forward(
-                sess.inner_mut(),
-                self.inner_mut().inner_mut(),
+                sess.as_mut_ptr(),
+                self.inner.as_mut_ptr(),
                 args.run_options,
                 args.in_tensors.as_ptr() as *mut *mut ffi::vaccel_torch_tensor,
                 args.in_tensors.len() as i32,
@@ -177,9 +174,5 @@ impl<'a> ModelRun<'a> for Model<'a> {
             ffi::VACCEL_OK => Ok(result),
             err => Err(Error::Ffi(err)),
         }
-    }
-
-    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
-        unsafe { self.get_unchecked_mut().inner.as_mut() }
     }
 }

@@ -3,11 +3,14 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
-#![allow(dead_code)]
 #![allow(improper_ctypes)]
 
 use derive_more::Display;
 use std::slice;
+
+#[macro_use]
+pub mod handle;
+pub use handle::Handle;
 
 pub mod arg;
 pub mod blob;
@@ -26,6 +29,7 @@ pub use error::{Error, Result};
 pub use resource::Resource;
 pub use session::Session;
 
+/// Wrapper for the `vaccel_id_t` C object.
 #[derive(PartialEq, Eq, Hash, Debug, Default, Display)]
 #[display("{}", inner.map_or("No value".to_string(), |v| v.to_string()))]
 pub struct VaccelId {
@@ -33,6 +37,7 @@ pub struct VaccelId {
 }
 
 impl VaccelId {
+    /// Returns `true` if the `VaccelId` holds an actual ID.
     pub fn has_id(&self) -> bool {
         self.inner.is_some()
     }
@@ -71,18 +76,8 @@ impl From<u32> for VaccelId {
     }
 }
 
-/// # Safety
+/// Wrapper for `slice::from_raw_parts()` with null pointer checking.
 ///
-/// `buf` must be a valid pointer to an array of objects of type `T` with the provided len.
-/// See also: https://doc.rust-lang.org/std/vec/struct.Vec.html#safety
-pub unsafe fn c_pointer_to_vec<T>(buf: *mut T, len: usize, capacity: usize) -> Option<Vec<T>> {
-    if buf.is_null() {
-        None
-    } else {
-        Some(unsafe { Vec::from_raw_parts(buf, len, capacity) })
-    }
-}
-
 /// # Safety
 ///
 /// `buf` must be a valid pointer to an array of objects of type `T` with the provided len.
@@ -95,6 +90,8 @@ pub unsafe fn c_pointer_to_slice<'a, T>(buf: *const T, len: usize) -> Option<&'a
     }
 }
 
+/// Wrapper for `slice::from_raw_parts_mut()` with null pointer checking.
+///
 /// # Safety
 ///
 /// `buf` must be a valid pointer to an array of objects of type `T` with the provided len.
@@ -107,13 +104,15 @@ pub unsafe fn c_pointer_to_mut_slice<'a, T>(buf: *mut T, len: usize) -> Option<&
     }
 }
 
+/// Bootstraps the vAccel library using the provided config.
 pub fn bootstrap_with_config(config: &mut Config) -> Result<()> {
-    match unsafe { ffi::vaccel_bootstrap_with_config(config.inner_mut()) as u32 } {
+    match unsafe { ffi::vaccel_bootstrap_with_config(config.as_mut_ptr()) as u32 } {
         ffi::VACCEL_OK => Ok(()),
         err => Err(Error::Ffi(err)),
     }
 }
 
+/// Bootstraps the vAccel library.
 pub fn bootstrap() -> Result<()> {
     match unsafe { ffi::vaccel_bootstrap() as u32 } {
         ffi::VACCEL_OK => Ok(()),
@@ -121,6 +120,7 @@ pub fn bootstrap() -> Result<()> {
     }
 }
 
+/// Perfoms cleanup for the vAccel library.
 pub fn cleanup() -> Result<()> {
     match unsafe { ffi::vaccel_cleanup() as u32 } {
         ffi::VACCEL_OK => Ok(()),
@@ -128,6 +128,7 @@ pub fn cleanup() -> Result<()> {
     }
 }
 
+/// Returns `true` if the vAccel library is initialized.
 pub fn is_initialized() -> bool {
     unsafe { ffi::vaccel_is_initialized() }
 }

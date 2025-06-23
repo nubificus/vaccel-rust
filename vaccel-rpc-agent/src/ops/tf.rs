@@ -33,12 +33,12 @@ impl AgentService {
 
         info!("session:{} TensorFlow model load", sess.id());
         let mut model = tf::Model::new(res.as_mut());
-        let status = model.as_mut().load(&mut sess)?;
+        let status = model.load(&mut sess)?;
 
         let mut resp = TensorflowModelLoadResponse::new();
         // FIXME: Either remove this or properly return graph_def
         resp.graph_def = Vec::new();
-        resp.status = Some(status.into()).into();
+        resp.status = Some(status.try_into()?).into();
 
         Ok(resp)
     }
@@ -67,10 +67,10 @@ impl AgentService {
 
         info!("session:{} TensorFlow model unload", sess.id());
         let mut model = tf::Model::new(res.as_mut());
-        let status = model.as_mut().unload(&mut sess)?;
+        let status = model.unload(&mut sess)?;
 
         let mut resp = TensorflowModelUnloadResponse::new();
-        resp.status = Some(status.into()).into();
+        resp.status = Some(status.try_into()?).into();
 
         Ok(resp)
     }
@@ -99,10 +99,7 @@ impl AgentService {
 
         let mut sess_args = tf::InferenceArgs::new();
 
-        let run_options = req
-            .run_options
-            .map(|opts| tf::Buffer::new(opts.as_slice()))
-            .transpose()?;
+        let run_options = req.run_options.map(tf::Buffer::new).transpose()?;
         sess_args.set_run_options(run_options.as_ref());
 
         let in_nodes: Vec<tf::Node> = req
@@ -129,7 +126,7 @@ impl AgentService {
 
         info!("session:{} TensorFlow model run", sess.id());
         let mut model = tf::Model::new(res.as_mut());
-        let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+        let result = model.run(&mut sess, &mut sess_args)?;
 
         let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {
@@ -138,7 +135,7 @@ impl AgentService {
 
         let mut resp = TensorflowModelRunResponse::new();
         resp.out_tensors = out_tensors;
-        resp.status = Some(result.status.clone().into()).into();
+        resp.status = Some((&result.status).try_into()?).into();
 
         Ok(resp)
     }
