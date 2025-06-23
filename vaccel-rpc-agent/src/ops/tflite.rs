@@ -37,7 +37,7 @@ impl AgentService {
 
         info!("session:{} TensorFlow Lite model load", sess.id());
         let mut model = tflite::Model::new(res.as_mut());
-        model.as_mut().load(&mut sess)?;
+        model.load(&mut sess)?;
 
         Ok(Empty::new())
     }
@@ -66,7 +66,7 @@ impl AgentService {
 
         info!("session:{} TensorFlow Lite model unload", sess.id());
         let mut model = tflite::Model::new(res.as_mut());
-        model.as_mut().unload(&mut sess)?;
+        model.unload(&mut sess)?;
 
         Ok(Empty::new())
     }
@@ -110,7 +110,7 @@ impl AgentService {
 
         info!("session:{} TensorFlow Lite model run", sess.id());
         let mut model = tflite::Model::new(res.as_mut());
-        let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+        let result = model.run(&mut sess, &mut sess_args)?;
 
         let mut out_tensors: Vec<TFLiteTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {

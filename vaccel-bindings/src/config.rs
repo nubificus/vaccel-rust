@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, Result};
-use log::warn;
+use crate::{ffi, Error, Handle, Result};
 use std::{
     ffi::{c_char, c_uint, CString},
-    ptr,
+    ptr::{self, NonNull},
 };
 
+/// Wrapper for the `struct vaccel_config` C object.
 #[derive(Debug)]
 pub struct Config {
-    inner: ffi::vaccel_config,
-    initialized: bool,
+    inner: NonNull<ffi::vaccel_config>,
+    owned: bool,
 }
 
-// inner (`ffi::vaccel_config`) is only accessed through this (Config) struct's
+// inner (`*ffi::vaccel_config`) is only accessed through this (Config) struct's
 // methods and does not access TLS variables or global state so this should be
 // safe
 unsafe impl Send for Config {}
 
 impl Config {
-    /// Create a new resource object
+    /// Creates a new `Config`.
     pub fn new(
         plugins: Option<&str>,
         log_level: u8,
@@ -61,10 +61,10 @@ impl Config {
             }
         };
 
-        let mut inner = ffi::vaccel_config::default();
+        let mut ptr: *mut ffi::vaccel_config = ptr::null_mut();
         match unsafe {
-            ffi::vaccel_config_init(
-                &mut inner,
+            ffi::vaccel_config_new(
+                &mut ptr,
                 plugins_ptr,
                 log_level as c_uint,
                 log_file_ptr,
@@ -72,61 +72,25 @@ impl Config {
                 version_ignore,
             ) as u32
         } {
-            ffi::VACCEL_OK => Ok(Config {
-                inner,
-                initialized: true,
-            }),
-            err => Err(Error::Ffi(err)),
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
         }
+
+        unsafe { Self::from_ptr_owned(ptr) }
     }
 
-    /// Create new config from environment variables
+    /// Creates a new `Config` from environment variables.
     pub fn from_env() -> Result<Self> {
-        let mut inner = ffi::vaccel_config::default();
-        match unsafe { ffi::vaccel_config_init_from_env(&mut inner) as u32 } {
-            ffi::VACCEL_OK => Ok(Config {
-                inner,
-                initialized: true,
-            }),
-            err => Err(Error::Ffi(err)),
-        }
-    }
-
-    /// Returns `true` if the config has been initialized
-    pub fn initialized(&self) -> bool {
-        self.initialized
-    }
-
-    /// Release config data
-    pub fn release(&mut self) -> Result<()> {
-        if !self.initialized {
-            return Err(Error::Uninitialized);
+        let mut ptr: *mut ffi::vaccel_config = ptr::null_mut();
+        match unsafe { ffi::vaccel_config_from_env(&mut ptr) as u32 } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
         }
 
-        match unsafe { ffi::vaccel_config_release(&mut self.inner) as u32 } {
-            ffi::VACCEL_OK => {
-                self.initialized = false;
-                Ok(())
-            }
-            err => Err(Error::Ffi(err)),
-        }
-    }
-
-    // Warning: Do not copy internal raw pointers
-    pub(crate) fn inner(&self) -> &ffi::vaccel_config {
-        &self.inner
-    }
-
-    // Warning: Do not copy internal raw pointers
-    pub(crate) fn inner_mut(&mut self) -> &mut ffi::vaccel_config {
-        &mut self.inner
+        unsafe { Self::from_ptr_owned(ptr) }
     }
 }
 
-impl Drop for Config {
-    fn drop(&mut self) {
-        if self.initialized && self.release().is_err() {
-            warn!("Could not release config");
-        }
-    }
-}
+impl_component_drop!(Config, vaccel_config_delete, inner, owned);
+
+impl_component_handle!(Config, ffi::vaccel_config, inner, owned);

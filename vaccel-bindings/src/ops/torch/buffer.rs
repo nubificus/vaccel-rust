@@ -1,91 +1,86 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, Error, Result};
-use std::ops::{Deref, DerefMut};
+use log::warn;
+use std::ptr::{self, NonNull};
 
-// vaccel_torch_buffer, bufferLength was required
+/// Wrapper for the `struct vaccel_torch_buffer` C object.
 pub struct Buffer {
-    inner: *mut ffi::vaccel_torch_buffer,
-    vaccel_owned: bool,
+    inner: NonNull<ffi::vaccel_torch_buffer>,
+    owned: bool,
+    _buffer: Option<Vec<u8>>,
 }
 
 impl Buffer {
-    pub fn new(data: &[u8]) -> Result<Self> {
-        let mut inner: *mut ffi::vaccel_torch_buffer = std::ptr::null_mut();
+    /// Creates a new `Buffer`.
+    pub fn new(data: Vec<u8>) -> Result<Self> {
+        let mut buffer = data;
+        let mut ptr: *mut ffi::vaccel_torch_buffer = ptr::null_mut();
         match unsafe {
-            ffi::vaccel_torch_buffer_new(&mut inner, data.as_ptr() as *mut _, data.len()) as u32
+            ffi::vaccel_torch_buffer_new(&mut ptr, buffer.as_mut_ptr() as *mut _, buffer.len())
+                as u32
         } {
             ffi::VACCEL_OK => (),
             err => return Err(Error::Ffi(err)),
         }
-        assert!(!inner.is_null());
-        unsafe { assert!(!(*inner).data.is_null()) };
-        unsafe { assert!(!(*inner).size > 0) };
 
-        Ok(Buffer {
-            inner,
-            vaccel_owned: false,
-        })
+        NonNull::new(ptr)
+            .map(|inner| Buffer {
+                inner,
+                owned: true,
+                _buffer: Some(buffer),
+            })
+            .ok_or(Error::EmptyValue)
     }
 
-    /// # Safety
-    ///
-    /// `buffer` is expected to be a valid pointer to an object allocated
-    /// manually or by the respective vAccel function.
-    pub unsafe fn from_vaccel_buffer(buffer: *mut ffi::vaccel_torch_buffer) -> Result<Self> {
-        if buffer.is_null() || (*buffer).data.is_null() || (*buffer).size == 0 {
-            return Err(Error::InvalidArgument(
-                "`buffer`, `buffer.data` and `buffer.size` cannot be `null`".to_string(),
-            ));
+    /// Returns the data of the `Buffer` as a slice.
+    pub fn as_slice(&self) -> Option<&[u8]> {
+        let inner = unsafe { self.inner.as_ref() };
+
+        if inner.data.is_null() {
+            None
+        } else {
+            Some(unsafe { std::slice::from_raw_parts(inner.data as *const _, inner.size) })
         }
-
-        Ok(Buffer {
-            inner: buffer,
-            vaccel_owned: true,
-        })
     }
 
-    pub fn as_slice(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts((*self.inner).data as *const u8, (*self.inner).size) }
-    }
+    /// Returns the data of the `Buffer` as a mutable slice.
+    pub fn as_mut_slice(&mut self) -> Option<&mut [u8]> {
+        let inner = unsafe { self.inner.as_mut() };
 
-    pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut((*self.inner).data as *mut u8, (*self.inner).size) }
-    }
-
-    pub(crate) fn inner(&self) -> *const ffi::vaccel_torch_buffer {
-        self.inner
-    }
-
-    pub(crate) fn inner_mut(&mut self) -> *mut ffi::vaccel_torch_buffer {
-        self.inner
+        if inner.data.is_null() {
+            None
+        } else {
+            Some(unsafe { std::slice::from_raw_parts_mut(inner.data as *mut _, inner.size) })
+        }
     }
 }
 
 impl Drop for Buffer {
     fn drop(&mut self) {
-        if !self.vaccel_owned {
-            // Data is not owned from vaccel runtime. Unset it from
-            // the buffer so we avoid double free.
+        if self.owned {
+            // Data is not owned by vaccel runtime. Unset it from the buffer
+            // so we avoid double free.
             let mut data = std::ptr::null_mut();
             let mut size = Default::default();
-            unsafe { ffi::vaccel_torch_buffer_take_data(self.inner, &mut data, &mut size) };
+            unsafe {
+                ffi::vaccel_torch_buffer_take_data(self.inner.as_ptr(), &mut data, &mut size)
+            };
+
+            let ret = unsafe { ffi::vaccel_torch_buffer_delete(self.inner.as_ptr()) } as u32;
+            if ret != ffi::VACCEL_OK {
+                warn!("Could not delete Buffer inner: {}", ret);
+            }
         }
-
-        unsafe { ffi::vaccel_torch_buffer_delete(self.inner) };
     }
 }
 
-impl Deref for Buffer {
-    type Target = [u8];
-
-    fn deref(&self) -> &[u8] {
-        self.as_slice()
+impl_component_handle!(
+    Buffer,
+    ffi::vaccel_torch_buffer,
+    inner,
+    owned,
+    extra_vec_fields: {
+        _buffer: None,
     }
-}
-
-impl DerefMut for Buffer {
-    fn deref_mut(&mut self) -> &mut [u8] {
-        self.as_mut_slice()
-    }
-}
+);

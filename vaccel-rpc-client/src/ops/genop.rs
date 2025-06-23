@@ -6,11 +6,11 @@ use crate::asynchronous::client::VaccelRpcClient;
 use crate::sync::client::VaccelRpcClient;
 use crate::Result;
 use log::error;
-use std::{convert::TryInto, ffi::c_int, ptr};
-use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
+use std::{ffi::c_int, ptr};
+use vaccel::{c_pointer_to_mut_slice, ffi, Arg, Handle};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::genop::{Arg, GenopRequest};
+use vaccel_rpc_proto::genop::{Arg as ProtoArg, GenopRequest};
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
@@ -18,9 +18,9 @@ impl VaccelRpcClient {
     pub fn genop(
         &mut self,
         sess_id: i64,
-        read_args: Vec<Arg>,
-        write_args: Vec<Arg>,
-    ) -> Result<Vec<Arg>> {
+        read_args: Vec<ProtoArg>,
+        write_args: Vec<ProtoArg>,
+    ) -> Result<Vec<ProtoArg>> {
         let ctx = ttrpc::context::Context::default();
 
         self.timer_start(sess_id, "genop > client > req create");
@@ -61,64 +61,47 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
     };
 
     client.timer_start(sess_id, "genop > read_args");
-    let read_args: Vec<Arg> = match c_pointer_to_slice(read_args_ptr, nr_read_args) {
-        Some(slice) => slice
-            .iter()
-            .map(|e| {
-                let size = e.size;
-                let argtype = e.argtype;
-                let buf: Vec<u8> = {
-                    c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
-                        .unwrap_or(&[])
-                        .to_vec()
-                };
-                Arg {
-                    buf,
-                    size,
-                    argtype,
-                    ..Default::default()
-                }
-            })
-            .collect(),
+    let read_args = match c_pointer_to_mut_slice(read_args_ptr, nr_read_args) {
+        Some(slice) => slice,
         None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_read_args = match read_args
+        .iter_mut()
+        .map(|a| Ok(Arg::from_ref(a)?.into()))
+        .collect::<Result<Vec<ProtoArg>>>()
+    {
+        Ok(arg) => arg,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
     };
     client.timer_stop(sess_id, "genop > read_args");
 
     client.timer_start(sess_id, "genop > write_args");
-    let write_args_ref = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
-
-    let write_args: Vec<Arg> = match c_pointer_to_mut_slice(write_args_ptr, nr_write_args) {
-        Some(slice) => slice
-            .iter_mut()
-            .map(|e| {
-                let size = e.size;
-                let argtype = e.argtype;
-                let buf: Vec<u8> = {
-                    c_pointer_to_slice(e.buf as *mut u8, size.try_into().unwrap())
-                        .unwrap_or(&[])
-                        .to_vec()
-                };
-                Arg {
-                    buf,
-                    size,
-                    argtype,
-                    ..Default::default()
-                }
-            })
-            .collect(),
-        None => vec![],
+    let write_args = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
+    let proto_write_args = match write_args
+        .iter_mut()
+        .map(|a| Ok(Arg::from_ref(a)?.into()))
+        .collect::<Result<Vec<ProtoArg>>>()
+    {
+        Ok(arg) => arg,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
     };
     client.timer_stop(sess_id, "genop > write_args");
 
     client.timer_start(sess_id, "genop > client.genop");
     #[cfg(feature = "async-stream")]
-    let do_genop = client.genop_stream(sess_id, read_args, write_args);
+    let do_genop = client.genop_stream(sess_id, proto_read_args, proto_write_args);
     #[cfg(not(feature = "async-stream"))]
-    let do_genop = client.genop(sess_id, read_args, write_args);
+    let do_genop = client.genop(sess_id, proto_read_args, proto_write_args);
     let ret = match do_genop {
         Ok(result) => {
             client.timer_start(sess_id, "genop > write_args copy");
-            for (w, r) in write_args_ref.iter_mut().zip(result.iter()) {
+            for (w, r) in write_args.iter_mut().zip(result.iter()) {
                 unsafe {
                     ptr::copy_nonoverlapping(r.buf.as_ptr(), w.buf as *mut u8, r.size as usize)
                 }

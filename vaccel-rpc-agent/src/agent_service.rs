@@ -2,7 +2,7 @@
 
 use dashmap::DashMap;
 use protobuf::Message;
-use std::{pin::Pin, sync::Arc};
+use std::sync::Arc;
 use thiserror::Error as ThisError;
 use vaccel::{self, profiling::ProfRegions, Resource, Session, VaccelId};
 use vaccel_rpc_proto::{
@@ -70,7 +70,7 @@ impl<T> IntoTtrpcResult<T> for Result<T> {
 #[derive(Clone, Debug)]
 pub struct AgentService {
     pub(crate) sessions: Arc<DashMap<VaccelId, Box<Session>>>,
-    pub(crate) resources: Arc<DashMap<VaccelId, Pin<Box<Resource>>>>,
+    pub(crate) resources: Arc<DashMap<VaccelId, Box<Resource>>>,
     pub(crate) timers: Arc<DashMap<VaccelId, ProfRegions>>,
 }
 

@@ -30,9 +30,10 @@ impl AgentService {
                 )
             })?;
 
-        info!("session:{} PyTorch load model", sess.id());
+        info!("session:{} PyTorch model load", sess.id());
         let mut model = torch::Model::new(res.as_mut());
-        model.as_mut().load(&mut sess)?;
+        model.load(&mut sess)?;
+
         Ok(Empty::new())
     }
 
@@ -60,10 +61,7 @@ impl AgentService {
 
         let mut sess_args = torch::InferenceArgs::new();
 
-        let run_options = req
-            .run_options
-            .map(|opts| torch::Buffer::new(opts.as_slice()))
-            .transpose()?;
+        let run_options = req.run_options.map(torch::Buffer::new).transpose()?;
         sess_args.set_run_options(run_options.as_ref());
 
         let in_tensors = req.in_tensors;
@@ -80,7 +78,7 @@ impl AgentService {
 
         info!("session:{} PyTorch model run", sess.id());
         let mut model = torch::Model::new(res.as_mut());
-        let result = model.as_mut().run(&mut sess, &mut sess_args)?;
+        let result = model.run(&mut sess, &mut sess_args)?;
 
         let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
         for i in 0..num_outputs {
