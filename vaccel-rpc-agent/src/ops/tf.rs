@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
-use log::{debug, info};
-use vaccel::ops::{tensorflow as tf, ModelInitialize, ModelLoadUnload, ModelRun};
+use log::info;
+use vaccel::ops::tf;
 use vaccel_rpc_proto::tensorflow::{
-    TFTensor, TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
+    TensorflowModelLoadRequest, TensorflowModelLoadResponse, TensorflowModelRunRequest,
     TensorflowModelRunResponse, TensorflowModelUnloadRequest, TensorflowModelUnloadResponse,
 };
 
@@ -32,8 +32,7 @@ impl AgentService {
             })?;
 
         info!("session:{} TensorFlow model load", sess.id());
-        let mut model = tf::Model::new(res.as_mut());
-        let status = model.load(&mut sess)?;
+        let status = sess.tf_model_load(&mut res)?;
 
         let mut resp = TensorflowModelLoadResponse::new();
         // FIXME: Either remove this or properly return graph_def
@@ -66,8 +65,7 @@ impl AgentService {
             })?;
 
         info!("session:{} TensorFlow model unload", sess.id());
-        let mut model = tf::Model::new(res.as_mut());
-        let status = model.unload(&mut sess)?;
+        let status = sess.tf_model_unload(&mut res)?;
 
         let mut resp = TensorflowModelUnloadResponse::new();
         resp.status = Some(status.try_into()?).into();
@@ -97,45 +95,37 @@ impl AgentService {
                 )
             })?;
 
-        let mut sess_args = tf::InferenceArgs::new();
-
         let run_options = req.run_options.map(tf::Buffer::new).transpose()?;
-        sess_args.set_run_options(run_options.as_ref());
 
-        let in_nodes: Vec<tf::Node> = req
+        let in_nodes = req
             .in_nodes
-            .iter()
+            .into_iter()
             .map(|e| e.try_into())
             .collect::<vaccel::Result<Vec<tf::Node>>>()?;
-        let in_tensors = req.in_tensors;
-        for it in in_nodes.iter().zip(in_tensors.iter()) {
-            let (node, tensor) = it;
-            debug!("tensor.dim: {:?}", tensor.dims);
-            sess_args.add_input(node, tensor)?;
-        }
-
-        let out_nodes: Vec<tf::Node> = req
+        let out_nodes = req
             .out_nodes
-            .iter()
+            .into_iter()
             .map(|e| e.try_into())
             .collect::<vaccel::Result<Vec<tf::Node>>>()?;
-        let num_outputs = out_nodes.len();
-        for output in out_nodes.iter() {
-            sess_args.request_output(output);
-        }
+
+        let in_tensors = req
+            .in_tensors
+            .into_iter()
+            .map(|e| e.try_into())
+            .collect::<vaccel::Result<Vec<tf::DynTensor>>>()?;
 
         info!("session:{} TensorFlow model run", sess.id());
-        let mut model = tf::Model::new(res.as_mut());
-        let result = model.run(&mut sess, &mut sess_args)?;
-
-        let mut out_tensors: Vec<TFTensor> = Vec::with_capacity(num_outputs);
-        for i in 0..num_outputs {
-            out_tensors.push(result.to_grpc_output(i)?);
-        }
+        let (out_tensors, status) = sess.tf_model_run(
+            &mut res,
+            run_options.as_ref(),
+            &in_nodes,
+            &in_tensors,
+            &out_nodes,
+        )?;
 
         let mut resp = TensorflowModelRunResponse::new();
-        resp.out_tensors = out_tensors;
-        resp.status = Some((&result.status).try_into()?).into();
+        resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
+        resp.status = Some(status.try_into()?).into();
 
         Ok(resp)
     }

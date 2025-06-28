@@ -5,6 +5,7 @@ use log::warn;
 use std::ptr::{self, NonNull};
 
 /// Wrapper for the `struct vaccel_torch_buffer` C object.
+#[derive(Debug)]
 pub struct Buffer {
     inner: NonNull<ffi::vaccel_torch_buffer>,
     owned: bool,

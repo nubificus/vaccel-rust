@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ffi;
+use half::f16;
 
-pub mod model;
-pub mod status;
-pub mod tensor;
-
-pub use model::{InferenceArgs, InferenceResult, Model};
-pub use status::Status;
-pub use tensor::{Tensor, TensorAny, TensorType};
-
+/// Data types for tensors.
 #[derive(Debug, PartialEq, Default)]
 pub enum DataType {
     UnknownValue(u32),
@@ -36,6 +30,7 @@ pub enum DataType {
 }
 
 impl DataType {
+    /// Converts the `DataType` to the corresponding C API integer
     pub fn to_int(&self) -> u32 {
         match self {
             DataType::NoType => ffi::VACCEL_TFLITE_NOTYPE,
@@ -61,6 +56,7 @@ impl DataType {
         }
     }
 
+    /// Creates a `DataType` from a corresponding C API integer
     pub fn from_int(val: u32) -> DataType {
         match val {
             ffi::VACCEL_TFLITE_NOTYPE => DataType::NoType,
@@ -85,4 +81,31 @@ impl DataType {
             unknown => DataType::UnknownValue(unknown),
         }
     }
+}
+
+/// Provides basic methods for Rust-convertible tensor data types.
+pub trait TensorType: Default + Clone + bytemuck::Pod {
+    /// DataType of the Tensor type
+    fn data_type() -> DataType;
+
+    /// Unit value of type
+    fn one() -> Self;
+
+    /// Zero value of type
+    fn zero() -> Self;
+}
+
+impl_tensor_types! {
+    DataType;
+    f32 => Float32,
+    i32 => Int32,
+    u8 => UInt8,
+    i64 => Int64,
+    i16 => Int16,
+    i8 => Int8,
+    f16 => Float16,
+    f64 => Float64,
+    u64 => UInt64,
+    u32 => UInt32,
+    u16 => UInt16,
 }
