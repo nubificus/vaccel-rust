@@ -3,10 +3,8 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
-use vaccel::ops::{torch, ModelInitialize, ModelRun};
-use vaccel_rpc_proto::torch::{
-    TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchTensor,
-};
+use vaccel::ops::torch;
+use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse};
 
 impl AgentService {
     pub(crate) fn do_torch_jitload_forward(
@@ -31,34 +29,32 @@ impl AgentService {
                 )
             })?;
 
-        let mut sess_args = torch::InferenceArgs::new();
-
         let run_options = req.run_options.map(torch::Buffer::new).transpose()?;
-        sess_args.set_run_options(run_options.as_ref());
 
-        let in_tensors = req.in_tensors;
-        for tensor in in_tensors.iter() {
-            sess_args.add_input(tensor)?;
-        }
+        let in_tensors = req
+            .in_tensors
+            .into_iter()
+            .map(|e| e.try_into())
+            .collect::<vaccel::Result<Vec<torch::DynTensor>>>()?;
 
-        sess_args.set_nr_outputs(req.nr_outputs);
-        let num_outputs: usize = req.nr_outputs.try_into().map_err(|e: TryFromIntError| {
-            AgentServiceError::Internal(
-                format!("Could not convert `nr_outputs` to usize: {}", e).to_string(),
-            )
-        })?;
+        let nr_out_tensors = req
+            .nr_out_tensors
+            .try_into()
+            .map_err(|e: TryFromIntError| {
+                AgentServiceError::Internal(
+                    format!("Could not convert `nr_out_tensors` to `usize`: {}", e).to_string(),
+                )
+            })?;
 
         info!("session:{} PyTorch jitload forward", sess.id());
-        let mut model = torch::Model::new(res.as_mut());
-        let result = model.run(&mut sess, &mut sess_args)?;
-
-        let mut out_tensors: Vec<TorchTensor> = Vec::with_capacity(num_outputs);
-        for i in 0..num_outputs {
-            out_tensors.push(result.to_grpc_output(i)?);
-        }
-
+        let out_tensors = sess.torch_jitload_forward(
+            &mut res,
+            run_options.as_ref(),
+            &in_tensors,
+            nr_out_tensors,
+        )?;
         let mut resp = TorchJitloadForwardResponse::new();
-        resp.out_tensors = out_tensors;
+        resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
 
         Ok(resp)
     }

@@ -15,7 +15,7 @@ pub enum AgentServiceError {
     #[error("Invalid argument: {0}")]
     InvalidArgument(String),
 
-    #[error("Object not founc: {0}")]
+    #[error("Object not found: {0}")]
     NotFound(String),
 
     #[error("Internal error: {0}")]

@@ -1,26 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ffi;
+use half::f16;
 
-pub mod buffer;
-pub mod lite;
-#[cfg(target_pointer_width = "64")]
-pub mod model;
-#[cfg(target_pointer_width = "64")]
-pub mod node;
-pub mod status;
-#[cfg(target_pointer_width = "64")]
-pub mod tensor;
-
-pub use buffer::Buffer;
-#[cfg(target_pointer_width = "64")]
-pub use model::{InferenceArgs, InferenceResult, Model};
-#[cfg(target_pointer_width = "64")]
-pub use node::Node;
-pub use status::Status;
-#[cfg(target_pointer_width = "64")]
-pub use tensor::{Tensor, TensorAny, TensorType};
-
+/// Data types for tensors.
 #[derive(Debug, PartialEq, Default)]
 pub enum DataType {
     UnknownValue(u32),
@@ -51,6 +34,7 @@ pub enum DataType {
 }
 
 impl DataType {
+    /// Converts the `DataType` to the corresponding C API integer
     pub fn to_int(&self) -> u32 {
         match self {
             DataType::Float => ffi::VACCEL_TF_FLOAT,
@@ -80,6 +64,7 @@ impl DataType {
         }
     }
 
+    /// Creates a `DataType` from a corresponding C API integer
     pub fn from_int(val: u32) -> DataType {
         match val {
             ffi::VACCEL_TF_FLOAT => DataType::Float,
@@ -107,4 +92,31 @@ impl DataType {
             unknown => DataType::UnknownValue(unknown),
         }
     }
+}
+
+/// Provides basic methods for Rust-convertible tensor data types.
+pub trait TensorType: Default + Clone + bytemuck::Pod {
+    /// DataType of the Tensor type
+    fn data_type() -> DataType;
+
+    /// Unit value of type
+    fn one() -> Self;
+
+    /// Zero value of type
+    fn zero() -> Self;
+}
+
+impl_tensor_types! {
+    DataType;
+    f32 => Float,
+    f64 => Double,
+    i32 => Int32,
+    u8 => UInt8,
+    i16 => Int16,
+    i8 => Int8,
+    i64 => Int64,
+    u16 => UInt16,
+    f16 => Half,
+    u32 => UInt32,
+    u64 => UInt64,
 }
