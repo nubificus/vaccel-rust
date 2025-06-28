@@ -18,9 +18,12 @@ default = ["profiling"]
 profiling = []
 
 [dependencies]
+bytemuck = { version = "1.23", features = ["extern_crate_alloc"] }
 env_logger = "0.11"
+half = { version = "2.6", features = ["bytemuck", "num-traits"] }
 log = "0.4"
 libc = "0.2"
+num-traits = "0.2"
 protobuf = "3.1"
 derive_more = { version = "2.0", features = ["display", "from", "into"] }
 thiserror = "1.0"

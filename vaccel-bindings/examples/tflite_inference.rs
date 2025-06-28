@@ -3,12 +3,11 @@
 mod utilities;
 
 use env_logger::Env;
-use log::{error, info};
+use log::error;
 use std::path::PathBuf;
 use vaccel::{
-    ffi,
-    ops::{tensorflow::lite as tflite, ModelInitialize, ModelLoadUnload, ModelRun},
-    Resource, Session,
+    ops::{tf::lite as tflite, Model, Tensor},
+    Session,
 };
 
 fn main() -> utilities::Result<()> {
@@ -16,50 +15,33 @@ fn main() -> utilities::Result<()> {
 
     // Create session
     let mut sess = Session::new()?;
-    info!("New session {}", sess.id());
 
-    let path = vec![PathBuf::from("./examples/files/tf/lstm2.tflite")
+    let path = PathBuf::from("./examples/files/tf/lstm2.tflite")
         .to_string_lossy()
-        .to_string()];
-    let mut model = Resource::new(&path, ffi::VACCEL_RESOURCE_MODEL)?;
-    info!("New model {}", model.id());
+        .to_string();
 
-    // Register model with session
-    model.register(&mut sess)?;
-    info!("Registered model {} with session {}", model.id(), sess.id());
-
-    let mut tflite_model = tflite::Model::new(&mut model);
-    // Load model file
-    if let Err(e) = tflite_model.load(&mut sess) {
-        error!("Could not load file for model {}: {}", model.id(), e);
-        return Err(utilities::Error::Vaccel(e));
-    }
-
-    // Prepare data for inference
-    let in_tensor = tflite::Tensor::<f32>::new(&[1, 30])?.with_data(&[1.0; 30])?;
-
-    let mut sess_args = tflite::InferenceArgs::new();
-    sess_args.add_input(&in_tensor)?;
-    sess_args.set_nr_outputs(1);
+    // Load tflite model
+    let mut tflite_model = match tflite::Model::load(path, &mut sess) {
+        Ok(model) => model,
+        Err(e) => {
+            error!("Could not load model: {}", e);
+            return Err(utilities::Error::Vaccel(e));
+        }
+    };
 
     // Run inference
-    let mut result = match tflite_model.run(&mut sess, &mut sess_args) {
-        Ok(r) => r,
-        Err(e) => {
-            println!("Inference failed: {}", e);
-            return Err(utilities::Error::Vaccel(e));
-        }
-    };
-
-    // Get output
-    let out_tensor = match result.take_output::<f32>(0) {
-        Ok(tensor) => tensor,
-        Err(e) => {
-            println!("Failed to get output tensor: {}", e);
-            return Err(utilities::Error::Vaccel(e));
-        }
-    };
+    let out_tensors =
+        match tflite_model.run(&[tflite::Tensor::<f32>::new(&[1, 30])?.with_data(&[1.0; 30])?]) {
+            Ok(r) => r,
+            Err(e) => {
+                error!("Inference failed: {}", e);
+                return Err(utilities::Error::Vaccel(e));
+            }
+        };
     println!("Success!");
+
+    // View output
+    let out_tensor = &out_tensors[0];
     println!(
         "Output tensor => type:{:?} nr_dims:{}",
         out_tensor.data_type(),
@@ -78,14 +60,8 @@ fn main() -> utilities::Result<()> {
         None => println!("None"),
     };
 
-    tflite_model.unload(&mut sess)?;
-
-    model.unregister(&mut sess)?;
-    info!(
-        "Unregistered model {} from session {}",
-        model.id(),
-        sess.id()
-    );
+    // Optional: Releases the session ref
+    // tflite_model.unload()?;
 
     Ok(())
 }

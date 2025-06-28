@@ -108,7 +108,7 @@ message TensorflowLiteModelUnloadRequest {
 	int64 model_id = 2;
 }
 
-enum TFLiteType {
+enum TFLiteDataType {
 	// Add unused value here so that we are compatible
 	// with what vAccelRT returns us
 	UNUSED = 0;
@@ -141,7 +141,7 @@ message TFLiteTensor {
 	repeated int32 dims = 2;
 
 	// Data type
-	TFLiteType type = 3;
+	TFLiteDataType type = 3;
 }
 
 message TensorflowLiteModelRunRequest {
@@ -151,7 +151,7 @@ message TensorflowLiteModelRunRequest {
 	// Input tensors
 	repeated TFLiteTensor in_tensors = 3;
 	// Number of output tensors
-	int32 nr_outputs = 4;
+	uint64 nr_out_tensors = 4;
 }
 
 message TensorflowLiteModelRunResponse {
