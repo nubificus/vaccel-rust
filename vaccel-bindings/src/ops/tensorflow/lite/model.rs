@@ -1,189 +1,64 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{DataType, Status, Tensor, TensorAny, TensorType};
+use super::Status;
 use crate::{
     ffi,
-    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
+    ops::{Model as ModelTrait, Tensor},
     Error, Handle, Resource, Result, Session,
 };
 use log::warn;
-use protobuf::Enum;
-use vaccel_rpc_proto::tensorflow::{TFLiteTensor, TFLiteType};
 
-pub struct InferenceArgs {
-    in_tensors: Vec<*const ffi::vaccel_tflite_tensor>,
-    nr_outputs: i32,
-}
-
-impl Default for InferenceArgs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl InferenceArgs {
-    pub fn new() -> Self {
-        InferenceArgs {
-            in_tensors: vec![],
-            nr_outputs: 0,
+impl Session {
+    /// Loads the model.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    pub fn tflite_model_load(&mut self, resource: &mut Resource) -> Result<()> {
+        match unsafe {
+            ffi::vaccel_tflite_session_load(self.as_mut_ptr(), resource.as_mut_ptr()) as u32
+        } {
+            ffi::VACCEL_OK => Ok(()),
+            err => Err(Error::Ffi(err)),
         }
     }
-
-    pub fn add_input(&mut self, tensor: &dyn TensorAny) -> Result<()> {
-        self.in_tensors.push(tensor.inner()?);
-        Ok(())
-    }
-
-    pub fn set_nr_outputs(&mut self, nr_outputs: i32) {
-        self.nr_outputs = nr_outputs;
-    }
-}
-
-impl Drop for InferenceArgs {
-    fn drop(&mut self) {
-        while let Some(tensor_ptr) = self.in_tensors.pop() {
-            if tensor_ptr.is_null() {
-                continue;
-            }
-            let ret = unsafe { ffi::vaccel_tflite_tensor_delete(tensor_ptr as *mut _) } as u32;
-            if ret != ffi::VACCEL_OK {
-                warn!("Could not delete TFLite tensor: {}", ret);
-            }
-        }
-    }
-}
-
-pub struct InferenceResult {
-    out_tensors: Vec<*mut ffi::vaccel_tflite_tensor>,
-    pub status: Status,
-}
-
-impl InferenceResult {
-    pub fn new(len: usize) -> Self {
-        let out_tensors = vec![std::ptr::null_mut(); len];
-
-        InferenceResult {
-            out_tensors,
-            status: Status(0),
-        }
-    }
-
-    pub fn from_vec(tensors: Vec<*mut ffi::vaccel_tflite_tensor>) -> Self {
-        InferenceResult {
-            out_tensors: tensors,
-            status: Status(0),
-        }
-    }
-
-    pub fn take_output<T: TensorType>(&mut self, id: usize) -> Result<Tensor<T>> {
-        if id >= self.out_tensors.len() {
-            return Err(Error::OutOfBounds);
-        }
-
-        let t = self.out_tensors[id];
-        if t.is_null() {
-            return Err(Error::EmptyValue);
-        }
-
-        if unsafe { DataType::from_int((*t).data_type) } != T::data_type() {
-            return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
-        }
-
-        let tensor: Tensor<T> = unsafe { Tensor::from_ptr(t)? };
-        self.out_tensors[id] = std::ptr::null_mut();
-
-        Ok(tensor)
-    }
-
-    pub fn to_grpc_output(&self, id: usize) -> Result<TFLiteTensor> {
-        if id >= self.out_tensors.len() {
-            return Err(Error::OutOfBounds);
-        }
-
-        let t = self.out_tensors[id];
-        if t.is_null() {
-            return Err(Error::EmptyValue);
-        }
-
-        unsafe {
-            Ok(TFLiteTensor {
-                dims: std::slice::from_raw_parts((*t).dims, (*t).nr_dims as usize).to_vec(),
-                type_: TFLiteType::from_i32((*t).data_type as i32).unwrap().into(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_vec(),
-                ..Default::default()
-            })
-        }
-    }
-}
-
-impl Drop for InferenceResult {
-    fn drop(&mut self) {
-        while let Some(tensor_ptr) = self.out_tensors.pop() {
-            if tensor_ptr.is_null() {
-                continue;
-            }
-            let ret = unsafe { ffi::vaccel_tflite_tensor_delete(tensor_ptr as *mut _) } as u32;
-            if ret != ffi::VACCEL_OK {
-                warn!("Could not delete TFLite tensor: {}", ret);
-            }
-        }
-    }
-}
-
-pub struct Model<'a> {
-    inner: &'a mut Resource,
-}
-
-impl<'a> ModelInitialize<'a> for Model<'a> {
-    /// Creates a new 'Model` from a `Resource`.
-    fn new(inner: &'a mut Resource) -> Self {
-        Model { inner }
-    }
-}
-
-impl<'a> ModelRun<'a> for Model<'a> {
-    type RunArgs = InferenceArgs;
-    type RunResult = InferenceResult;
 
     /// Runs inference using the model.
     ///
     /// This requires that the model has previously been loaded using `load()`.
     ///
     /// The inner `Resource` must be registered to the provided `Session`.
-    fn run(&mut self, sess: &mut Session, args: &mut Self::RunArgs) -> Result<Self::RunResult> {
-        let mut result = InferenceResult::new(args.in_tensors.len());
+    pub fn tflite_model_run<T: Tensor + Handle<CType = ffi::vaccel_tflite_tensor>>(
+        &mut self,
+        resource: &mut Resource,
+        in_tensors: &[T],
+        nr_out_tensors: usize,
+    ) -> Result<(Vec<T>, Status)> {
+        let c_in_tensors: Vec<*mut ffi::vaccel_tflite_tensor> =
+            in_tensors.iter().map(|n| n.as_ptr() as *mut _).collect();
+
+        let mut c_out_tensors = vec![std::ptr::null_mut(); nr_out_tensors];
+        let mut status = Status(0);
         match unsafe {
             ffi::vaccel_tflite_session_run(
-                sess.as_mut_ptr(),
-                self.inner.as_mut_ptr(),
-                args.in_tensors.as_ptr() as *const *mut ffi::vaccel_tflite_tensor,
-                args.in_tensors.len() as i32,
-                result.out_tensors.as_mut_ptr(),
-                args.nr_outputs,
-                &mut result.status.0 as *mut _,
+                self.as_mut_ptr(),
+                resource.as_mut_ptr(),
+                c_in_tensors.as_ptr(),
+                c_in_tensors.len() as i32,
+                c_out_tensors.as_mut_ptr(),
+                nr_out_tensors as i32,
+                &mut status.0 as *mut _,
             ) as u32
         } {
-            ffi::VACCEL_OK => Ok(result),
-            error => Err(Error::FfiWithStatus {
-                error,
-                status: result.status.into(),
+            ffi::VACCEL_OK => Ok((
+                c_out_tensors
+                    .into_iter()
+                    .map(|ptr| unsafe { T::from_ptr(ptr) })
+                    .collect::<Result<Vec<_>>>()?,
+                status,
+            )),
+            err => Err(Error::FfiWithStatus {
+                error: err,
+                status: status.into(),
             }),
-        }
-    }
-}
-
-impl<'a> ModelLoadUnload<'a> for Model<'a> {
-    type LoadUnloadResult = ();
-
-    /// Loads the model.
-    ///
-    /// The inner `Resource` must be registered to the provided `Session`.
-    fn load(&mut self, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
-        match unsafe {
-            ffi::vaccel_tflite_session_load(sess.as_mut_ptr(), self.inner.as_mut_ptr()) as u32
-        } {
-            ffi::VACCEL_OK => Ok(()),
-            err => Err(Error::Ffi(err)),
         }
     }
 
@@ -193,12 +68,102 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     /// `load()`.
     ///
     /// The inner `Resource` must be registered to the provided `Session`.
-    fn unload(&mut self, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
+    pub fn tflite_model_unload(&mut self, resource: &mut Resource) -> Result<()> {
         match unsafe {
-            ffi::vaccel_tflite_session_delete(sess.as_mut_ptr(), self.inner.as_mut_ptr()) as u32
+            ffi::vaccel_tflite_session_delete(self.as_mut_ptr(), resource.as_mut_ptr()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Ffi(err)),
+        }
+    }
+}
+
+/// A model abstraction for user-friendly inference operations.
+pub struct Model<'a> {
+    resource: Resource,
+    session: Option<&'a mut Session>,
+    loaded: bool,
+    nr_out_tensors: usize,
+}
+
+impl<'a> Model<'a> {
+    /// Sets the model number of output tensors.
+    pub fn set_nr_out_tensors(&mut self, val: usize) -> &mut Self {
+        self.nr_out_tensors = val;
+        self
+    }
+
+    /// Sets the model number of output tensors (for chaining with `new()`).
+    pub fn with_nr_out_tensors(mut self, val: usize) -> Self {
+        self.nr_out_tensors = val;
+        self
+    }
+}
+
+impl<'a> ModelTrait<'a> for Model<'a> {
+    type TensorHandle = ffi::vaccel_tflite_tensor;
+
+    fn load<P: AsRef<str>>(path: P, session: &'a mut Session) -> Result<Self> {
+        let mut resource = Resource::new([path], ffi::VACCEL_RESOURCE_MODEL)?;
+        resource.register(session)?;
+
+        session.tflite_model_load(&mut resource)?;
+
+        Ok(Model {
+            resource,
+            session: Some(session),
+            loaded: true,
+            nr_out_tensors: 1,
+        })
+    }
+
+    fn unload(&mut self) -> Result<()> {
+        if !self.loaded {
+            return Err(Error::Uninitialized);
+        }
+
+        let session = self
+            .session
+            .take()
+            .ok_or(Error::InvalidArgument("Session not set".to_string()))?;
+        session.tflite_model_unload(&mut self.resource)?;
+
+        self.resource.unregister(session)?;
+        self.loaded = false;
+
+        Ok(())
+    }
+
+    fn run<T: Tensor + Handle<CType = Self::TensorHandle>>(
+        &mut self,
+        in_tensors: &[T],
+    ) -> Result<Vec<T>> {
+        if !self.loaded {
+            return Err(Error::Uninitialized);
+        }
+
+        let session = self
+            .session
+            .as_mut()
+            .ok_or(Error::InvalidArgument("Session not set".to_string()))?;
+
+        let (out_tensors, _) =
+            session.tflite_model_run(&mut self.resource, in_tensors, self.nr_out_tensors)?;
+
+        Ok(out_tensors)
+    }
+
+    fn is_loaded(&self) -> bool {
+        self.loaded
+    }
+}
+
+impl<'a> Drop for Model<'a> {
+    fn drop(&mut self) {
+        if self.loaded {
+            if let Err(e) = self.unload() {
+                warn!("Could not unload model: {}", e);
+            }
         }
     }
 }

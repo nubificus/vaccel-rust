@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::DataType;
-use crate::{ffi, Error, Handle, Result};
+use super::{DataType, DynTensor, TensorType};
+use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
 use protobuf::Enum;
 use std::ptr::{self, NonNull};
 use vaccel_rpc_proto::tensorflow::{TFDataType, TFTensor};
 
-/// Wrapper for the `struct vaccel_tf_tensor` C object.
+/// Typed wrapper for the `struct vaccel_tf_tensor` C object.
 #[derive(Debug, PartialEq)]
 pub struct Tensor<T: TensorType> {
     inner: NonNull<ffi::vaccel_tf_tensor>,
@@ -14,30 +14,81 @@ pub struct Tensor<T: TensorType> {
     _data: Option<Vec<T>>,
 }
 
-pub trait TensorType: Default + Clone {
-    /// DataType of the Tensor type
-    fn data_type() -> DataType;
-
-    /// Unit value of type
-    fn one() -> Self;
-
-    /// Zero value of type
-    fn zero() -> Self;
-}
-
 impl<T: TensorType> Tensor<T> {
     /// Creates a new `Tensor<T>` with zeroed data.
     pub fn new(dims: &[i64]) -> Result<Self> {
-        let data_count = Self::calculate_data_count(Some(dims))?;
-        let mut data = Vec::with_capacity(data_count);
-        data.resize(data_count, T::zero());
+        let data_count = Self::calculate_data_count(dims)?;
+
+        let mut ptr: *mut ffi::vaccel_tf_tensor = ptr::null_mut();
+        match unsafe {
+            ffi::vaccel_tf_tensor_allocate(
+                &mut ptr,
+                dims.len() as i32,
+                dims.as_ptr(),
+                T::data_type().to_int(),
+                data_count * T::data_type().size_of(),
+            ) as u32
+        } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
+        }
+
+        NonNull::new(ptr)
+            .map(|inner| Tensor {
+                inner,
+                owned: true,
+                _data: None,
+            })
+            .ok_or(Error::EmptyValue)
+    }
+
+    /// Sets the data of a new `Tensor`.
+    ///
+    /// This can only be used with a `Tensor` created with the `new` method.
+    pub fn with_data(mut self, data: &[T]) -> Result<Self> {
+        if !self.owned || self._data.is_some() || self.dims().is_err() {
+            return Err(Error::InvalidArgument(
+                "This method can only be used with a `Tensor` created with `new()`".to_string(),
+            ));
+        }
+
+        let data_count = Self::calculate_data_count(self.dims()?)?;
+        if data.len() != data_count {
+            return Err(Error::InvalidArgument(format!(
+                "Unexpected data length: expected {}, got {}",
+                data_count,
+                data.len()
+            )));
+        }
+
+        let slice = self.as_mut_slice()?.ok_or_else(|| {
+            Error::InvalidArgument(
+                "This method can only be used with a `Tensor` created with `new()`".to_string(),
+            )
+        })?;
+
+        slice.copy_from_slice(data);
+        Ok(self)
+    }
+
+    /// Creates a new `Tensor<T>` by consuming a vector of existing data.
+    pub fn from_data(dims: &[i64], data: Vec<T>) -> Result<Self> {
+        let mut data = data;
+        let data_count = Self::calculate_data_count(dims)?;
+        if data.len() != data_count {
+            return Err(Error::InvalidArgument(format!(
+                "Unexpected data length; expected {} got {}",
+                data_count,
+                data.len()
+            )));
+        }
 
         let mut ptr: *mut ffi::vaccel_tf_tensor = ptr::null_mut();
         match unsafe {
             ffi::vaccel_tf_tensor_new(
                 &mut ptr,
                 dims.len() as i32,
-                dims.as_ptr() as *const _,
+                dims.as_ptr(),
                 T::data_type().to_int(),
             ) as u32
         } {
@@ -48,8 +99,8 @@ impl<T: TensorType> Tensor<T> {
         match unsafe {
             ffi::vaccel_tf_tensor_set_data(
                 ptr,
-                data.as_ptr() as *mut _,
-                data.len() * std::mem::size_of::<T>(),
+                data.as_mut_ptr() as *mut _,
+                data.len() * T::data_type().size_of(),
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -65,82 +116,14 @@ impl<T: TensorType> Tensor<T> {
             .ok_or(Error::EmptyValue)
     }
 
-    /// Sets the data of a new `Tensor`.
-    ///
-    /// This can only be used with a `Tensor` created with the `new` method.
-    pub fn with_data(self, data: &[T]) -> Result<Self> {
-        if let Some(dims) = self.dims() {
-            let data_count = Self::calculate_data_count(Some(dims))?;
-            if data.len() != data_count {
-                return Err(Error::InvalidArgument(format!(
-                    "'data` length must be {}",
-                    data_count
-                )));
-            }
-        }
-
-        match self.as_mut_slice() {
-            Ok(Some(slice)) => {
-                for (e, v) in slice.iter_mut().zip(data) {
-                    e.clone_from(v);
-                }
-                Ok(self)
-            }
-            _ => Err(Error::InvalidArgument(
-                "This method can only be used with a `Tensor` created with `new()`".to_string(),
-            )),
-        }
-    }
-
-    /// Returns the number of dimensions of the `Tensor`.
-    pub fn nr_dims(&self) -> usize {
-        match self.dims() {
-            Some(dims) => dims.len(),
-            None => 0,
-        }
-    }
-
-    /// Returns the dimensions of the `Tensor`.
-    pub fn dims(&self) -> Option<&[i64]> {
-        let inner = unsafe { self.inner.as_ref() };
-
-        if inner.dims.is_null() {
-            None
-        } else {
-            Some(unsafe { std::slice::from_raw_parts(inner.dims, inner.nr_dims as usize) })
-        }
-    }
-
-    /// Returns the dimensions at the specified index from the `Tensor` dimensions.
-    pub fn dim(&self, idx: usize) -> Result<i64> {
-        match self.dims() {
-            Some(dims) => {
-                if idx >= dims.len() {
-                    return Err(Error::OutOfBounds);
-                }
-
-                Ok(dims[idx])
-            }
-            None => Err(Error::OutOfBounds),
-        }
-    }
-
-    /// Returns the data of the `Tensor`.
-    ///
-    /// This is equivalent to calling the `as_slice` method.
-    pub fn data(&self) -> Result<Option<&[T]>> {
-        self.as_slice()
-    }
-
     /// Returns the data of the `Tensor` as a slice.
     pub fn as_slice(&self) -> Result<Option<&[T]>> {
         let inner = unsafe { self.inner.as_ref() };
-        let dims = self.dims();
 
-        if inner.data.is_null() || dims.is_none() {
+        if inner.data.is_null() {
             Ok(None)
         } else {
-            let data_count = Self::calculate_data_count(dims)?;
+            let data_count = self.verify_data_count()?;
             Ok(Some(unsafe {
                 std::slice::from_raw_parts(inner.data as *const T, data_count)
             }))
@@ -148,58 +131,66 @@ impl<T: TensorType> Tensor<T> {
     }
 
     /// Returns the data of the `Tensor` as a mutable slice.
-    pub fn as_mut_slice(&self) -> Result<Option<&mut [T]>> {
-        let inner = unsafe { self.inner.as_ref() };
-        let dims = self.dims();
+    pub fn as_mut_slice(&mut self) -> Result<Option<&mut [T]>> {
+        let inner = unsafe { self.inner.as_mut() };
 
-        if inner.data.is_null() || dims.is_none() {
+        if inner.data.is_null() {
             Ok(None)
         } else {
-            let data_count = Self::calculate_data_count(dims)?;
+            let data_count = self.verify_data_count()?;
             Ok(Some(unsafe {
                 std::slice::from_raw_parts_mut(inner.data as *mut T, data_count)
             }))
         }
     }
 
-    /// Returns the data of the `Tensor` as a slice of bytes.
-    pub fn as_bytes(&self) -> Option<&[u8]> {
-        let inner = unsafe { self.inner.as_ref() };
-
-        if inner.data.is_null() {
-            None
-        } else {
-            Some(unsafe { std::slice::from_raw_parts(inner.data as *const _, inner.size) })
-        }
-    }
-
-    /// Returns the type of the `Tensor` data.
-    pub fn data_type(&self) -> DataType {
-        T::data_type()
-    }
-
-    pub fn as_grpc(&self) -> TFTensor {
-        TFTensor {
-            data: self.as_bytes().unwrap_or(&[]).to_vec(),
-            dims: self.dims().unwrap_or(&[]).to_owned(),
-            type_: TFDataType::from_i32(self.data_type().to_int() as i32)
-                .unwrap()
-                .into(),
-            ..Default::default()
-        }
-    }
-
     /// Calculates data count from a dims slice.
-    fn calculate_data_count(dims: Option<&[i64]>) -> Result<usize> {
-        match dims {
-            Some(d) => d.iter().product::<i64>().try_into().map_err(|e| {
-                Error::ConversionFailed(format!(
-                    "Could not convert `data_count` to `usize` [{}]",
-                    e
-                ))
-            }),
-            None => Ok(0),
+    fn calculate_data_count(dims: &[i64]) -> Result<usize> {
+        dims.iter().product::<i64>().try_into().map_err(|e| {
+            Error::ConversionFailed(format!("Could not convert `data_count` to `usize` [{}]", e))
+        })
+    }
+
+    /// Verifies the data count matches with the `Tensor` data.
+    /// Returns the data count if successful.
+    fn verify_data_count(&self) -> Result<usize> {
+        let dims = self
+            .dims()
+            .map_err(|_| Error::InvalidArgument("Dimensions are not set".to_string()))?;
+        let expected_data_count = Self::calculate_data_count(dims)?;
+
+        let expected_data_size = expected_data_count * self.data_type().size_of();
+        let data_size = self.as_bytes().unwrap_or(&[]).len();
+        if expected_data_size != data_size {
+            return Err(Error::ConversionFailed(format!(
+                "Unexpeted data size; expected {} got {}",
+                expected_data_size, data_size
+            )));
         }
+
+        Ok(expected_data_count)
+    }
+
+    /// Creates a `Tensor` directly from its raw components
+    pub(crate) fn from_raw_parts(
+        ptr: NonNull<ffi::vaccel_tf_tensor>,
+        owned: bool,
+        data: Option<Vec<T>>,
+    ) -> Self {
+        Self {
+            inner: ptr,
+            owned,
+            _data: data,
+        }
+    }
+
+    /// Decomposes a `Tensor` into its raw components
+    pub(crate) fn into_raw_parts(
+        mut self,
+    ) -> (NonNull<ffi::vaccel_tf_tensor>, bool, Option<Vec<T>>) {
+        let parts = (self.inner, self.owned, self._data.take());
+        self.take_ownership();
+        parts
     }
 }
 
@@ -222,21 +213,50 @@ impl_component_handle!(
     where: T: TensorType
 );
 
-pub trait TensorAny {
-    fn inner(&self) -> Result<*const ffi::vaccel_tf_tensor>;
+impl<T: TensorType> TensorTrait for Tensor<T> {
+    type Data = T;
+    type DataType = DataType;
+    type ShapeType = i64;
 
-    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_tf_tensor>;
-
-    fn data_type(&self) -> DataType;
-}
-
-impl<T: TensorType> TensorAny for Tensor<T> {
-    fn inner(&self) -> Result<*const ffi::vaccel_tf_tensor> {
-        Ok(self.as_ptr())
+    fn nr_dims(&self) -> usize {
+        match self.dims() {
+            Ok(dims) => dims.len(),
+            Err(_) => 0,
+        }
     }
 
-    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_tf_tensor> {
-        Ok(self.as_mut_ptr())
+    fn dims(&self) -> Result<&[i64]> {
+        let inner = unsafe { self.inner.as_ref() };
+
+        if inner.dims.is_null() {
+            Err(Error::EmptyValue)
+        } else {
+            Ok(unsafe { std::slice::from_raw_parts(inner.dims, inner.nr_dims as usize) })
+        }
+    }
+
+    fn dim(&self, idx: usize) -> Result<i64> {
+        let dims = self.dims()?;
+
+        if idx >= dims.len() {
+            return Err(Error::OutOfBounds);
+        }
+
+        Ok(dims[idx])
+    }
+
+    fn data(&self) -> Result<Option<&[T]>> {
+        self.as_slice()
+    }
+
+    fn as_bytes(&self) -> Option<&[u8]> {
+        let inner = unsafe { self.inner.as_ref() };
+
+        if inner.data.is_null() {
+            None
+        } else {
+            Some(unsafe { std::slice::from_raw_parts(inner.data as *const _, inner.size) })
+        }
     }
 
     fn data_type(&self) -> DataType {
@@ -244,245 +264,28 @@ impl<T: TensorType> TensorAny for Tensor<T> {
     }
 }
 
-impl TensorAny for TFTensor {
-    fn inner(&self) -> Result<*const ffi::vaccel_tf_tensor> {
-        let size = self.data.len();
-        let data = &self.data;
+impl<T: TensorType> From<Tensor<T>> for DynTensor {
+    fn from(tensor: Tensor<T>) -> Self {
+        let (inner, owned, data) = tensor.into_raw_parts();
+        DynTensor::from_raw_parts(inner, owned, data.map(|v| bytemuck::cast_vec(v)))
+    }
+}
 
-        let mut inner: *mut ffi::vaccel_tf_tensor = std::ptr::null_mut();
-        match unsafe {
-            ffi::vaccel_tf_tensor_allocate(
-                &mut inner,
-                self.dims.len() as i32,
-                self.dims.as_ptr() as *mut _,
-                self.type_.value() as u32,
-                size,
-            ) as u32
-        } {
-            ffi::VACCEL_OK => (),
-            err => return Err(Error::Ffi(err)),
+impl<T: TensorType> From<&Tensor<T>> for TFTensor {
+    fn from(tensor: &Tensor<T>) -> Self {
+        TFTensor {
+            dims: tensor.dims().unwrap_or(&[]).to_vec(),
+            type_: TFDataType::from_i32(tensor.data_type().to_int() as i32)
+                .unwrap()
+                .into(),
+            data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
+            ..Default::default()
         }
-        assert!(!inner.is_null());
-
-        unsafe {
-            std::ptr::copy_nonoverlapping(data.as_ptr(), (*inner).data as *mut u8, size);
-            (*inner).size = size;
-        }
-
-        Ok(inner)
-    }
-
-    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_tf_tensor> {
-        let size = self.data.len();
-        let data = &self.data;
-
-        let mut inner: *mut ffi::vaccel_tf_tensor = std::ptr::null_mut();
-        match unsafe {
-            ffi::vaccel_tf_tensor_allocate(
-                &mut inner,
-                self.dims.len() as i32,
-                self.dims.as_ptr() as *mut _,
-                self.type_.value() as u32,
-                size,
-            ) as u32
-        } {
-            ffi::VACCEL_OK => (),
-            err => return Err(Error::Ffi(err)),
-        }
-        assert!(!inner.is_null());
-
-        unsafe {
-            std::ptr::copy_nonoverlapping(data.as_ptr(), (*inner).data as *mut u8, size);
-            (*inner).size = size;
-        }
-
-        Ok(inner)
-    }
-
-    fn data_type(&self) -> DataType {
-        DataType::from_int(self.type_.value() as u32)
     }
 }
 
-impl TensorAny for *mut ffi::vaccel_tf_tensor {
-    fn inner(&self) -> Result<*const ffi::vaccel_tf_tensor> {
-        Ok(*self)
-    }
-
-    fn inner_mut(&mut self) -> Result<*mut ffi::vaccel_tf_tensor> {
-        Ok(*self)
-    }
-
-    fn data_type(&self) -> DataType {
-        DataType::from_int(unsafe { (**self).data_type })
-    }
-}
-
-impl TensorType for f32 {
-    fn data_type() -> DataType {
-        DataType::Float
-    }
-
-    fn one() -> Self {
-        1.0f32
-    }
-
-    fn zero() -> Self {
-        0.0f32
-    }
-}
-
-impl TensorType for f64 {
-    fn data_type() -> DataType {
-        DataType::Double
-    }
-
-    fn one() -> Self {
-        1.0f64
-    }
-
-    fn zero() -> Self {
-        0.0f64
-    }
-}
-
-impl TensorType for i32 {
-    fn data_type() -> DataType {
-        DataType::Int32
-    }
-
-    fn one() -> Self {
-        1i32
-    }
-
-    fn zero() -> Self {
-        0i32
-    }
-}
-
-impl TensorType for u8 {
-    fn data_type() -> DataType {
-        DataType::UInt8
-    }
-
-    fn one() -> Self {
-        1u8
-    }
-
-    fn zero() -> Self {
-        0u8
-    }
-}
-
-impl TensorType for i16 {
-    fn data_type() -> DataType {
-        DataType::Int16
-    }
-
-    fn one() -> Self {
-        1i16
-    }
-
-    fn zero() -> Self {
-        0i16
-    }
-}
-
-impl TensorType for i8 {
-    fn data_type() -> DataType {
-        DataType::Int8
-    }
-
-    fn one() -> Self {
-        1i8
-    }
-
-    fn zero() -> Self {
-        0i8
-    }
-}
-
-impl TensorType for i64 {
-    fn data_type() -> DataType {
-        DataType::Int64
-    }
-
-    fn one() -> Self {
-        1i64
-    }
-
-    fn zero() -> Self {
-        0i64
-    }
-}
-
-impl TensorType for u16 {
-    fn data_type() -> DataType {
-        DataType::UInt16
-    }
-
-    fn one() -> Self {
-        1u16
-    }
-
-    fn zero() -> Self {
-        0u16
-    }
-}
-
-impl TensorType for u32 {
-    fn data_type() -> DataType {
-        DataType::UInt32
-    }
-
-    fn one() -> Self {
-        1u32
-    }
-
-    fn zero() -> Self {
-        0u32
-    }
-}
-
-impl TensorType for usize {
-    fn data_type() -> DataType {
-        DataType::UInt64
-    }
-
-    fn one() -> Self {
-        1usize
-    }
-
-    fn zero() -> Self {
-        0usize
-    }
-}
-
-impl TensorType for bool {
-    fn data_type() -> DataType {
-        DataType::Bool
-    }
-
-    fn one() -> Self {
-        true
-    }
-
-    fn zero() -> Self {
-        false
-    }
-}
-
-impl From<&ffi::vaccel_tf_tensor> for TFTensor {
-    fn from(tensor: &ffi::vaccel_tf_tensor) -> Self {
-        unsafe {
-            TFTensor {
-                dims: std::slice::from_raw_parts(tensor.dims, tensor.nr_dims as usize).to_vec(),
-                type_: TFDataType::from_i32(tensor.data_type as i32)
-                    .unwrap()
-                    .into(),
-                data: std::slice::from_raw_parts(tensor.data as *mut u8, tensor.size).to_vec(),
-                ..Default::default()
-            }
-        }
+impl<T: TensorType> From<Tensor<T>> for TFTensor {
+    fn from(tensor: Tensor<T>) -> Self {
+        TFTensor::from(&tensor)
     }
 }
