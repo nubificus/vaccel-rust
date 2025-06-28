@@ -10,12 +10,12 @@ enum TorchDataType {
 	// Add unused value here so that we are compatible
 	// with what vAccelRT returns us
 	UNUSED = 0;
-	UInt8 = 1;
-	Int8 = 2;
-	Int16 = 3;
-	Int32 = 4;
-	Int64 = 5;
-	Half = 6;
+	BYTE = 1;
+	CHAR = 2;
+	SHORT = 3;
+	INT = 4;
+	LONG = 5;
+	HALF = 6;
 	FLOAT = 7;
 }
 
@@ -48,7 +48,7 @@ message TorchModelRunRequest {
 	repeated TorchTensor in_tensors = 4;
 
 	// Number of output tensors
-	int32 nr_outputs = 5;
+	uint64 nr_out_tensors = 5;
 }
 
 message TorchModelRunResponse {

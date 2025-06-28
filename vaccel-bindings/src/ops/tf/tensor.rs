@@ -4,12 +4,12 @@ use super::{DataType, DynTensor, TensorType};
 use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
 use protobuf::Enum;
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
+use vaccel_rpc_proto::tensorflow::{TFDataType, TFTensor};
 
-/// Typed wrapper for the `struct vaccel_torch_tensor` C object.
+/// Typed wrapper for the `struct vaccel_tf_tensor` C object.
 #[derive(Debug, PartialEq)]
 pub struct Tensor<T: TensorType> {
-    inner: NonNull<ffi::vaccel_torch_tensor>,
+    inner: NonNull<ffi::vaccel_tf_tensor>,
     owned: bool,
     _data: Option<Vec<T>>,
 }
@@ -19,11 +19,11 @@ impl<T: TensorType> Tensor<T> {
     pub fn new(dims: &[i64]) -> Result<Self> {
         let data_count = Self::calculate_data_count(dims)?;
 
-        let mut ptr: *mut ffi::vaccel_torch_tensor = ptr::null_mut();
+        let mut ptr: *mut ffi::vaccel_tf_tensor = ptr::null_mut();
         match unsafe {
-            ffi::vaccel_torch_tensor_allocate(
+            ffi::vaccel_tf_tensor_allocate(
                 &mut ptr,
-                dims.len() as i64,
+                dims.len() as i32,
                 dims.as_ptr(),
                 T::data_type().to_int(),
                 data_count * T::data_type().size_of(),
@@ -83,11 +83,11 @@ impl<T: TensorType> Tensor<T> {
             )));
         }
 
-        let mut ptr: *mut ffi::vaccel_torch_tensor = ptr::null_mut();
+        let mut ptr: *mut ffi::vaccel_tf_tensor = ptr::null_mut();
         match unsafe {
-            ffi::vaccel_torch_tensor_new(
+            ffi::vaccel_tf_tensor_new(
                 &mut ptr,
-                dims.len() as i64,
+                dims.len() as i32,
                 dims.as_ptr(),
                 T::data_type().to_int(),
             ) as u32
@@ -97,7 +97,7 @@ impl<T: TensorType> Tensor<T> {
         }
 
         match unsafe {
-            ffi::vaccel_torch_tensor_set_data(
+            ffi::vaccel_tf_tensor_set_data(
                 ptr,
                 data.as_mut_ptr() as *mut _,
                 data.len() * T::data_type().size_of(),
@@ -173,7 +173,7 @@ impl<T: TensorType> Tensor<T> {
 
     /// Creates a `Tensor` directly from its raw components
     pub(crate) fn from_raw_parts(
-        ptr: NonNull<ffi::vaccel_torch_tensor>,
+        ptr: NonNull<ffi::vaccel_tf_tensor>,
         owned: bool,
         data: Option<Vec<T>>,
     ) -> Self {
@@ -187,7 +187,7 @@ impl<T: TensorType> Tensor<T> {
     /// Decomposes a `Tensor` into its raw components
     pub(crate) fn into_raw_parts(
         mut self,
-    ) -> (NonNull<ffi::vaccel_torch_tensor>, bool, Option<Vec<T>>) {
+    ) -> (NonNull<ffi::vaccel_tf_tensor>, bool, Option<Vec<T>>) {
         let parts = (self.inner, self.owned, self._data.take());
         self.take_ownership();
         parts
@@ -196,7 +196,7 @@ impl<T: TensorType> Tensor<T> {
 
 impl_component_drop!(
     Tensor<T>,
-    vaccel_torch_tensor_delete,
+    vaccel_tf_tensor_delete,
     inner,
     owned,
     where: T: TensorType
@@ -204,7 +204,7 @@ impl_component_drop!(
 
 impl_component_handle!(
     Tensor<T>,
-    ffi::vaccel_torch_tensor,
+    ffi::vaccel_tf_tensor,
     inner,
     owned,
     extra_vec_fields: {
@@ -271,11 +271,11 @@ impl<T: TensorType> From<Tensor<T>> for DynTensor {
     }
 }
 
-impl<T: TensorType> From<&Tensor<T>> for TorchTensor {
+impl<T: TensorType> From<&Tensor<T>> for TFTensor {
     fn from(tensor: &Tensor<T>) -> Self {
-        TorchTensor {
+        TFTensor {
             dims: tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TorchDataType::from_i32(tensor.data_type().to_int() as i32)
+            type_: TFDataType::from_i32(tensor.data_type().to_int() as i32)
                 .unwrap()
                 .into(),
             data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
@@ -284,8 +284,8 @@ impl<T: TensorType> From<&Tensor<T>> for TorchTensor {
     }
 }
 
-impl<T: TensorType> From<Tensor<T>> for TorchTensor {
+impl<T: TensorType> From<Tensor<T>> for TFTensor {
     fn from(tensor: Tensor<T>) -> Self {
-        TorchTensor::from(&tensor)
+        TFTensor::from(&tensor)
     }
 }

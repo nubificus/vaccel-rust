@@ -7,7 +7,11 @@ use crate::sync::client::VaccelRpcClient;
 use crate::{Error, Result};
 use log::error;
 use std::ffi::c_int;
-use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
+use vaccel::{
+    c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
+    ops::torch::{DataType, DynTensor},
+    Handle,
+};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
@@ -32,7 +36,7 @@ impl VaccelRpcClient {
         model_id: i64,
         run_options: Option<Vec<u8>>,
         in_tensors: Vec<TorchTensor>,
-        nr_outputs: i32,
+        nr_out_tensors: u64,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
         let ctx = ttrpc::context::Context::default();
 
@@ -41,39 +45,25 @@ impl VaccelRpcClient {
             model_id,
             run_options,
             in_tensors,
-            nr_outputs,
+            nr_out_tensors,
             ..Default::default()
         };
 
         let resp = self.execute(AgentServiceClient::torch_model_run, ctx, &req)?;
 
-        resp.out_tensors
+        Ok(resp
+            .out_tensors
             .into_iter()
-            .map(|e| unsafe {
-                let dims = e.dims;
-                let data_type = e.type_.value();
-                let data = e.data;
-
-                let mut tensor = std::ptr::null_mut();
-                match ffi::vaccel_torch_tensor_allocate(
-                    &mut tensor,
-                    dims.len() as i64,
-                    dims.as_ptr() as *mut i64,
-                    data_type as u32,
-                    data.len(),
-                ) as u32
-                {
-                    ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Ffi(err).into()),
-                }
-                assert!(!tensor.is_null());
-
-                std::ptr::copy_nonoverlapping(data.as_ptr(), (*tensor).data as *mut u8, data.len());
-                (*tensor).size = data.len();
-
-                Ok(tensor)
+            .map(|e| {
+                let tensor = DynTensor::new_unchecked(
+                    &e.dims,
+                    DataType::from_int(e.type_.value() as u32),
+                    e.data.len(),
+                )?
+                .with_data(&e.data)?;
+                tensor.into_ptr()
             })
-            .collect()
+            .collect::<vaccel::Result<Vec<*mut ffi::vaccel_torch_tensor>>>()?)
     }
 }
 
@@ -115,9 +105,9 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
     model_id: ffi::vaccel_id_t,
     run_options_ptr: *const ffi::vaccel_torch_buffer,
     in_tensors_ptr: *const *mut ffi::vaccel_torch_tensor,
-    nr_inputs: c_int,
+    nr_inputs: usize,
     out_tensors_ptr: *mut *mut ffi::vaccel_torch_tensor,
-    nr_outputs: c_int,
+    nr_out_tensors: usize,
 ) -> c_int {
     let run_options = unsafe {
         run_options_ptr.as_ref().map(|opts| {
@@ -127,36 +117,23 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
         })
     };
 
-    let in_tensors: Vec<TorchTensor> =
-        match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
-            Some(slice) => {
-                let res = slice
-                    .iter()
-                    .map(|e| unsafe {
-                        e.as_ref()
-                            .ok_or(Error::InvalidArgument("".to_string()))?
-                            .try_into()
-                            .map_err(|e: vaccel::Error| e.into())
-                    })
-                    .collect();
-                match res {
-                    Ok(s) => s,
-                    Err(e) => {
-                        return match e {
-                            Error::InvalidArgument(_) => ffi::VACCEL_EINVAL,
-                            _ => {
-                                error!("{}", e);
-                                ffi::VACCEL_EBACKEND
-                            }
-                        } as c_int
-                    }
-                }
-            }
-            None => return ffi::VACCEL_EINVAL as c_int,
-        };
-
-    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs.try_into().unwrap())
+    let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
+        Some(slice) => slice,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_in_tensors: Vec<TorchTensor> = match in_tensors
+        .iter()
+        .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
+        .collect::<Result<Vec<TorchTensor>>>()
     {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
+    };
+
+    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_out_tensors) {
         Some(vec) => vec,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
@@ -166,7 +143,25 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.torch_model_run(sess_id, model_id, run_options, in_tensors, nr_outputs) {
+    let proto_nr_out_tensors = match nr_out_tensors.try_into() {
+        Ok(num) => num,
+        Err(e) => {
+            let error = Error::InvalidArgument(format!(
+                "Could not convert `nr_out_tensors` to `u64` [{}]",
+                e
+            ));
+            error!("{}", error);
+            return error.to_ffi() as c_int;
+        }
+    };
+
+    (match client.torch_model_run(
+        sess_id,
+        model_id,
+        run_options,
+        proto_in_tensors,
+        proto_nr_out_tensors,
+    ) {
         Ok(results) => {
             out_tensors.copy_from_slice(&results);
             ffi::VACCEL_OK

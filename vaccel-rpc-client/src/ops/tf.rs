@@ -8,8 +8,9 @@ use crate::{Error, Result};
 use log::error;
 use std::ffi::c_int;
 use vaccel::{
-    c_pointer_to_mut_slice, c_pointer_to_slice, ffi, ops::tensorflow::Node,
-    ops::tensorflow::Status as TfStatus, Handle,
+    c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
+    ops::tf::{DataType, DynTensor, Node, Status as TfStatus},
+    Handle,
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
@@ -75,32 +76,17 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_run, ctx, &req)?;
 
-        let out_tensors: Vec<*mut ffi::vaccel_tf_tensor> = resp
+        let out_tensors = resp
             .out_tensors
             .into_iter()
-            .map(|e| unsafe {
-                let dims = e.dims;
-                let data_type = e.type_.value();
-                let data = e.data;
-
-                let mut tensor = std::ptr::null_mut();
-                match ffi::vaccel_tf_tensor_allocate(
-                    &mut tensor,
-                    dims.len() as i32,
-                    dims.as_ptr() as *mut i64,
-                    data_type as u32,
-                    data.len(),
-                ) as u32
-                {
-                    ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Ffi(err)),
-                }
-                assert!(!tensor.is_null());
-
-                std::ptr::copy_nonoverlapping(data.as_ptr(), (*tensor).data as *mut u8, data.len());
-                (*tensor).size = data.len();
-
-                Ok(tensor)
+            .map(|e| {
+                let tensor = DynTensor::new_unchecked(
+                    &e.dims,
+                    DataType::from_int(e.type_.value() as u32),
+                    e.data.len(),
+                )?
+                .with_data(&e.data)?;
+                tensor.into_ptr()
             })
             .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tf_tensor>>>()?;
         let status = resp.status.unwrap_or(VaccelStatus::default());
@@ -238,12 +224,20 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
         }
     };
 
-    let in_tensors: Vec<TFTensor> = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
-        Some(slice) => slice
-            .iter()
-            .map(|e| unsafe { e.as_ref().unwrap().into() })
-            .collect(),
+    let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
+        Some(slice) => slice,
         None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_in_tensors: Vec<TFTensor> = match in_tensors
+        .iter()
+        .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
+        .collect::<Result<Vec<TFTensor>>>()
+    {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
     };
 
     let out_nodes = match c_pointer_to_slice(out_nodes_ptr, nr_outputs) {
@@ -278,7 +272,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
             sess_id,
             run_options,
             proto_in_nodes,
-            in_tensors,
+            proto_in_tensors,
             proto_out_nodes,
         )
         .map_or_else(
