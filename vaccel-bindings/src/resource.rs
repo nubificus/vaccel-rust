@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ffi, Error, File, Result, Session, VaccelId};
+use crate::{ffi, Blob, Error, Result, Session, VaccelId};
 use log::warn;
 use std::{
     ffi::{c_char, c_void, CString},
@@ -14,6 +14,7 @@ pub struct Resource {
     // vaccel list struct uses self-referential pointers so we need to use `Pin`
     // here to make sure the underlying memory won't move
     _marker: PhantomPinned,
+    _blobs: Option<Vec<Blob>>,
 }
 
 impl Resource {
@@ -39,6 +40,7 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: None,
         };
         let mut boxed = Box::pin(r);
 
@@ -65,10 +67,10 @@ impl Resource {
         self.id().has_id()
     }
 
-    /// Create new resource from files
-    pub fn from_files(files: &[File], res_type: u32) -> Result<Pin<Box<Self>>> {
-        let mut f: Vec<*const ffi::vaccel_file> =
-            files.iter().map(|f| f.inner() as *const _).collect();
+    /// Create new resource from blobs
+    pub fn from_blobs(blobs: Vec<Blob>, res_type: u32) -> Result<Pin<Box<Self>>> {
+        let mut b: Vec<*const ffi::vaccel_blob> =
+            blobs.iter().map(|f| f.inner() as *const _).collect();
 
         let r = Resource {
             // Ensure id is always initialized
@@ -77,14 +79,15 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: Some(blobs),
         };
         let mut boxed = Box::pin(r);
 
         match unsafe {
-            ffi::vaccel_resource_init_from_files(
+            ffi::vaccel_resource_init_from_blobs(
                 &mut boxed.as_mut().get_unchecked_mut().inner,
-                f.as_mut_ptr(),
-                f.len(),
+                b.as_mut_ptr(),
+                b.len(),
                 res_type,
             ) as u32
         } {
@@ -94,7 +97,12 @@ impl Resource {
     }
 
     /// Create new resource from in-memory data
-    pub fn from_buf(data: &[u8], res_type: u32, filename: Option<&str>) -> Result<Pin<Box<Self>>> {
+    pub fn from_buf(
+        data: &[u8],
+        res_type: u32,
+        filename: Option<&str>,
+        mem_only: bool,
+    ) -> Result<Pin<Box<Self>>> {
         let r = Resource {
             // Ensure id is always initialized
             inner: ffi::vaccel_resource {
@@ -102,6 +110,7 @@ impl Resource {
                 ..Default::default()
             },
             _marker: PhantomPinned,
+            _blobs: None,
         };
         let mut boxed = Box::pin(r);
 
@@ -125,6 +134,7 @@ impl Resource {
                 data.len(),
                 res_type,
                 c_fname.as_c_str().as_ptr(),
+                mem_only,
             )
         } as u32
         {
