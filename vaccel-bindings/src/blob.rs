@@ -1,11 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{ffi, Error, Handle, Result};
+use num_enum::{FromPrimitive, IntoPrimitive};
+use protobuf::Enum;
 use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::resource::Blob as ProtoBlob;
+use vaccel_rpc_proto::resource::{Blob as ProtoBlob, BlobType as ProtoBlobType};
+
+/// The blob types.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, FromPrimitive, IntoPrimitive)]
+#[repr(u32)]
+pub enum BlobType {
+    File = ffi::VACCEL_BLOB_FILE,
+    Buffer = ffi::VACCEL_BLOB_BUFFER,
+    Mapped = ffi::VACCEL_BLOB_MAPPED,
+    #[num_enum(catch_all)]
+    Unknown(u32),
+}
 
 /// Wrapper for the `struct vaccel_blob` C object.
 #[derive(Debug)]
@@ -72,13 +85,13 @@ impl Blob {
 
     /// Sets the type of the `Blob`.
     #[doc(hidden)]
-    fn set_type(&mut self, type_: u32) {
-        unsafe { self.inner.as_mut().type_ = type_ };
+    fn set_type(&mut self, ty: BlobType) {
+        unsafe { self.inner.as_mut().type_ = ty.into() };
     }
 
     /// Returns the type of the `Blob`.
-    pub fn type_(&self) -> u32 {
-        unsafe { self.inner.as_ref().type_ }
+    pub fn type_(&self) -> BlobType {
+        BlobType::from(unsafe { self.inner.as_ref().type_ })
     }
 
     /// Returns the name of the `Blob`.
@@ -150,7 +163,7 @@ impl TryFrom<&ProtoBlob> for Blob {
     fn try_from(proto_blob: &ProtoBlob) -> Result<Self> {
         let mut blob = Self::from_buf(proto_blob.data.to_owned(), &proto_blob.name, None, false)?;
 
-        blob.set_type(proto_blob.type_);
+        blob.set_type(BlobType::from(proto_blob.type_.value() as u32));
         Ok(blob)
     }
 }
@@ -161,7 +174,7 @@ impl TryFrom<ProtoBlob> for Blob {
     fn try_from(proto_blob: ProtoBlob) -> Result<Self> {
         let mut blob = Self::from_buf(proto_blob.data, &proto_blob.name, None, false)?;
 
-        blob.set_type(proto_blob.type_);
+        blob.set_type(BlobType::from(proto_blob.type_.value() as u32));
         Ok(blob)
     }
 }
@@ -171,7 +184,9 @@ impl TryFrom<&Blob> for ProtoBlob {
 
     fn try_from(blob: &Blob) -> Result<Self> {
         Ok(ProtoBlob {
-            type_: blob.type_(),
+            type_: ProtoBlobType::from_i32(u32::from(blob.type_()) as i32)
+                .unwrap()
+                .into(),
             name: blob.name()?,
             data: blob.data().unwrap_or(&[]).to_vec(),
             size: blob.size() as u32,

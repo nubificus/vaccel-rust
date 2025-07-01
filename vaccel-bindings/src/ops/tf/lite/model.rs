@@ -4,7 +4,7 @@ use super::Status;
 use crate::{
     ffi,
     ops::{Model as ModelTrait, Tensor},
-    Error, Handle, Resource, Result, Session,
+    Error, Handle, Resource, ResourceType, Result, Session,
 };
 use log::warn;
 
@@ -104,7 +104,7 @@ impl<'a> ModelTrait<'a> for Model<'a> {
     type TensorHandle = ffi::vaccel_tflite_tensor;
 
     fn load<P: AsRef<str>>(path: P, session: &'a mut Session) -> Result<Self> {
-        let mut resource = Resource::new([path], ffi::VACCEL_RESOURCE_MODEL)?;
+        let mut resource = Resource::new([path], ResourceType::Model)?;
         resource.register(session)?;
 
         session.tflite_model_load(&mut resource)?;
