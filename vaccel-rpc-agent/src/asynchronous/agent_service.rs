@@ -16,7 +16,10 @@ use vaccel_rpc_proto::{
     genop::{Arg, GenopRequest, GenopResponse},
     image::{ImageClassificationRequest, ImageClassificationResponse},
     profiling::{ProfilingRequest, ProfilingResponse},
-    resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
+    resource::{
+        RegisterResourceRequest, RegisterResourceResponse, SyncResourceRequest,
+        SyncResourceResponse, UnregisterResourceRequest,
+    },
     session::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
@@ -73,6 +76,14 @@ impl agent_ttrpc::AgentService for AgentService {
         req: UnregisterResourceRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_unregister_resource(req).into_ttrpc()
+    }
+
+    async fn sync_resource(
+        &self,
+        _ctx: &::ttrpc::asynchronous::TtrpcContext,
+        req: SyncResourceRequest,
+    ) -> ttrpc::Result<SyncResourceResponse> {
+        self.do_sync_resource(req).into_ttrpc()
     }
 
     #[cfg(target_pointer_width = "64")]

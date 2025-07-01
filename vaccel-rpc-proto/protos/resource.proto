@@ -29,3 +29,11 @@ message UnregisterResourceRequest {
 	int64 resource_id = 1;
 	int64 session_id = 2;
 }
+
+message SyncResourceRequest {
+	int64 resource_id = 1;
+}
+
+message SyncResourceResponse {
+	repeated Blob blobs = 1;
+}

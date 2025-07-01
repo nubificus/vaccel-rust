@@ -3,11 +3,15 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use vaccel::{Blob, Resource, VaccelId};
+use vaccel_rpc_proto::resource::Blob as RpcBlob;
 #[allow(unused_imports)]
 use vaccel_rpc_proto::{
     empty::Empty,
     error::VaccelError,
-    resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
+    resource::{
+        RegisterResourceRequest, RegisterResourceResponse, SyncResourceRequest,
+        SyncResourceResponse, UnregisterResourceRequest,
+    },
 };
 
 impl AgentService {
@@ -125,5 +129,39 @@ impl AgentService {
             })?;
 
         Ok(Empty::new())
+    }
+
+    pub(crate) fn do_sync_resource(
+        &self,
+        req: SyncResourceRequest,
+    ) -> Result<SyncResourceResponse> {
+        let res_id = VaccelId::from(req.resource_id);
+        let mut resp = SyncResourceResponse::new();
+
+        let res = self.resources.get_mut(&res_id).ok_or_else(|| {
+            AgentServiceError::NotFound(format!("Unknown resource {}", &res_id).to_string())
+        })?;
+
+        info!("Synchronizing resource {}", res.as_ref().id(),);
+
+        let blobs = match res.as_ref().get_ref().blobs() {
+            Some(blobs) => blobs,
+            None => return Err(AgentServiceError::Internal("No blobs found".into())),
+        };
+
+        for blob in blobs.iter() {
+            let data = match blob.data()? {
+                Some(slice) => slice.to_vec(),
+                None => return Err(AgentServiceError::Internal("Blob has no data".into())),
+            };
+
+            resp.blobs.push(RpcBlob {
+                data,
+                size: blob.size()? as u32,
+                ..Default::default()
+            });
+        }
+
+        Ok(resp)
     }
 }
