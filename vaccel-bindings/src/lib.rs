@@ -23,11 +23,11 @@ pub mod session;
 pub mod vaccel;
 
 pub use arg::Arg;
-pub use blob::Blob;
+pub use blob::{Blob, BlobType};
 pub use config::Config;
 pub use error::{Error, Result};
 pub use handle::Handle;
-pub use resource::Resource;
+pub use resource::{Resource, ResourceType};
 pub use session::Session;
 pub use vaccel::{bootstrap, bootstrap_with_config, cleanup, is_initialized, VaccelId};
 

@@ -36,7 +36,7 @@ impl DynTensor {
                 &mut ptr,
                 dims.len() as i32,
                 dims.as_ptr(),
-                data_type.to_int(),
+                data_type.into(),
                 data_size,
             ) as u32
         } {
@@ -111,7 +111,7 @@ impl DynTensor {
                 &mut ptr,
                 dims.len() as i32,
                 dims.as_ptr(),
-                data_type.to_int(),
+                data_type.into(),
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -291,7 +291,7 @@ impl TensorTrait for DynTensor {
     }
 
     fn data_type(&self) -> DataType {
-        DataType::from_int(unsafe { self.inner.as_ref().data_type })
+        DataType::from(unsafe { self.inner.as_ref().data_type })
     }
 }
 
@@ -314,7 +314,7 @@ impl From<&DynTensor> for TFLiteTensor {
     fn from(dyn_tensor: &DynTensor) -> Self {
         TFLiteTensor {
             dims: dyn_tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TFLiteDataType::from_i32(dyn_tensor.data_type().to_int() as i32)
+            type_: TFLiteDataType::from_i32(u32::from(dyn_tensor.data_type()) as i32)
                 .unwrap()
                 .into(),
             data: dyn_tensor.data().unwrap().unwrap_or(&[]).to_vec(),
@@ -335,7 +335,7 @@ impl TryFrom<&TFLiteTensor> for DynTensor {
     fn try_from(proto_tensor: &TFLiteTensor) -> Result<Self> {
         DynTensor::from_data_unchecked(
             &proto_tensor.dims,
-            DataType::from_int(proto_tensor.type_.value() as u32),
+            DataType::from(proto_tensor.type_.value() as u32),
             proto_tensor.data.clone(),
         )
     }
@@ -347,7 +347,7 @@ impl TryFrom<TFLiteTensor> for DynTensor {
     fn try_from(proto_tensor: TFLiteTensor) -> Result<Self> {
         DynTensor::from_data_unchecked(
             &proto_tensor.dims,
-            DataType::from_int(proto_tensor.type_.value() as u32),
+            DataType::from(proto_tensor.type_.value() as u32),
             proto_tensor.data,
         )
     }

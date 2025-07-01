@@ -2,10 +2,22 @@
 
 use crate::{ffi, Blob, Error, Handle, Result, Session, VaccelId};
 use log::warn;
+use num_enum::{FromPrimitive, IntoPrimitive};
 use std::{
     ffi::{c_char, c_void, CString},
     ptr::{self, NonNull},
 };
+
+/// The resource types.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, FromPrimitive, IntoPrimitive)]
+#[repr(u32)]
+pub enum ResourceType {
+    Lib = ffi::VACCEL_RESOURCE_LIB,
+    Data = ffi::VACCEL_RESOURCE_DATA,
+    Model = ffi::VACCEL_RESOURCE_MODEL,
+    #[num_enum(catch_all)]
+    Unknown(u32),
+}
 
 /// Wrapper for the `struct vaccel_resource` C object.
 #[derive(Debug)]
@@ -17,7 +29,7 @@ pub struct Resource {
 
 impl Resource {
     /// Creates a new `Resource`.
-    pub fn new<I, P>(paths: I, res_type: u32) -> Result<Self>
+    pub fn new<I, P>(paths: I, res_type: ResourceType) -> Result<Self>
     where
         I: IntoIterator<Item = P>,
         P: AsRef<str>,
@@ -37,7 +49,7 @@ impl Resource {
                 &mut ptr,
                 c_paths_ptrs.as_mut_ptr(),
                 c_paths_ptrs.len(),
-                res_type,
+                res_type.into(),
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -48,7 +60,7 @@ impl Resource {
     }
 
     /// Creates a new `Resource` from blobs.
-    pub fn from_blobs(blobs: Vec<Blob>, res_type: u32) -> Result<Self> {
+    pub fn from_blobs(blobs: Vec<Blob>, res_type: ResourceType) -> Result<Self> {
         let mut c_blobs_ptrs: Vec<*const ffi::vaccel_blob> =
             blobs.iter().map(|b| b.as_ptr()).collect();
 
@@ -58,7 +70,7 @@ impl Resource {
                 &mut ptr,
                 c_blobs_ptrs.as_mut_ptr(),
                 c_blobs_ptrs.len(),
-                res_type,
+                res_type.into(),
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -77,7 +89,7 @@ impl Resource {
     /// Creates a new `Resource` from in-memory data.
     pub fn from_buf(
         data: &[u8],
-        res_type: u32,
+        res_type: ResourceType,
         filename: Option<&str>,
         mem_only: bool,
     ) -> Result<Self> {
@@ -91,7 +103,7 @@ impl Resource {
                 &mut ptr,
                 data.as_ptr() as *mut c_void,
                 data.len(),
-                res_type,
+                res_type.into(),
                 c_fname.as_ptr(),
                 mem_only,
             )
@@ -112,6 +124,11 @@ impl Resource {
     /// Returns the remote ID of the `Resource`.
     pub fn remote_id(&self) -> VaccelId {
         VaccelId::from(unsafe { self.inner.as_ref().remote_id })
+    }
+
+    /// Returns the type of the `Resource`.
+    pub fn type_(&self) -> ResourceType {
+        ResourceType::from(unsafe { self.inner.as_ref().type_ })
     }
 
     /// Returns the blobs of the `Resource`.

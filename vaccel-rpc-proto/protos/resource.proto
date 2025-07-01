@@ -6,17 +6,29 @@ package vaccel;
 
 import "error.proto";
 
+enum BlobType {
+    FILE = 0;
+    BUFFER = 1;
+    MAPPED = 2;
+}
+
 message Blob {
-	uint32 type_ = 1;
+	BlobType type_ = 1;
 	string name = 2;
 	bytes data = 3;
 	uint32 size = 4;
 }
 
+enum ResourceType {
+	LIB = 0;
+	DATA = 1;
+	MODEL = 2;
+}
+
 message RegisterResourceRequest {
 	repeated string paths = 1;
 	repeated Blob blobs = 2;
-	uint32 resource_type = 3;
+	ResourceType resource_type = 3;
 	int64 resource_id = 4;
 	int64 session_id = 5;
 }

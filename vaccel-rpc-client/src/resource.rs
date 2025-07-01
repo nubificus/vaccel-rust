@@ -6,12 +6,14 @@ use crate::asynchronous::client::VaccelRpcClient;
 use crate::sync::client::VaccelRpcClient;
 use crate::{Error, IntoFfiResult, Result};
 use log::error;
+use protobuf::Enum;
 use std::ffi::{c_char, c_int, CStr};
 use vaccel::{c_pointer_to_slice, ffi, Blob, Handle};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{
-    Blob as ProtoBlob, RegisterResourceRequest, SyncResourceRequest, UnregisterResourceRequest,
+    Blob as ProtoBlob, RegisterResourceRequest, ResourceType, SyncResourceRequest,
+    UnregisterResourceRequest,
 };
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
@@ -21,16 +23,18 @@ impl VaccelRpcClient {
         &self,
         paths: Vec<String>,
         blobs: Vec<ProtoBlob>,
-        type_: u32,
-        id: i64,
+        res_type: i32,
+        res_id: i64,
         sess_id: i64,
     ) -> Result<i64> {
         let ctx = ttrpc::context::Context::default();
         let mut req = RegisterResourceRequest::new();
         req.paths = paths;
         req.blobs = blobs;
-        req.resource_type = type_;
-        req.resource_id = id;
+        req.resource_type = ResourceType::from_i32(res_type)
+            .ok_or(Error::InvalidArgument("Invalid resource type".to_string()))?
+            .into();
+        req.resource_id = res_id;
         req.session_id = sess_id;
 
         let resp = self.execute(AgentServiceClient::register_resource, ctx, &req)?;
@@ -72,7 +76,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     paths_ptr: *mut *mut c_char,
     blobs_ptr: *mut *mut ffi::vaccel_blob,
     nr_elems: usize,
-    type_: u32,
+    r#type: u32,
     id: ffi::vaccel_id_t,
     sess_id: ffi::vaccel_id_t,
 ) -> ffi::vaccel_id_t {
@@ -134,7 +138,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     }
 
     client
-        .resource_register(paths, proto_blobs, type_, id, sess_id)
+        .resource_register(paths, proto_blobs, r#type as i32, id, sess_id)
         .into_ffi()
 }
 

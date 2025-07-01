@@ -25,7 +25,7 @@ impl<T: TensorType> Tensor<T> {
                 &mut ptr,
                 dims.len() as i32,
                 dims.as_ptr(),
-                T::data_type().to_int(),
+                T::data_type().into(),
                 data_count * T::data_type().size_of(),
             ) as u32
         } {
@@ -89,7 +89,7 @@ impl<T: TensorType> Tensor<T> {
                 &mut ptr,
                 dims.len() as i32,
                 dims.as_ptr(),
-                T::data_type().to_int(),
+                T::data_type().into(),
             ) as u32
         } {
             ffi::VACCEL_OK => (),
@@ -275,7 +275,7 @@ impl<T: TensorType> From<&Tensor<T>> for TFLiteTensor {
     fn from(tensor: &Tensor<T>) -> Self {
         TFLiteTensor {
             dims: tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TFLiteDataType::from_i32(tensor.data_type().to_int() as i32)
+            type_: TFLiteDataType::from_i32(u32::from(tensor.data_type()) as i32)
                 .unwrap()
                 .into(),
             data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
