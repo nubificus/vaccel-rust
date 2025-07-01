@@ -76,7 +76,7 @@ impl VaccelRpcClient {
             .map(|e| {
                 let tensor = DynTensor::new_unchecked(
                     &e.dims,
-                    DataType::from_int(e.type_.value() as u32),
+                    DataType::from(e.type_.value() as u32),
                     e.data.len(),
                 )?
                 .with_data(&e.data)?;

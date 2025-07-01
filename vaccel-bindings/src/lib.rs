@@ -26,7 +26,7 @@ pub use arg::Arg;
 pub use blob::Blob;
 pub use config::Config;
 pub use error::{Error, Result};
-pub use resource::Resource;
+pub use resource::{Resource, ResourceType};
 pub use session::Session;
 
 /// Wrapper for the `vaccel_id_t` C object.
