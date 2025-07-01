@@ -24,8 +24,7 @@ macro_rules! impl_tensor_types {
             pub fn size_of(&self) -> usize {
                 match self {
                     $(<$enum_type>::$variant => std::mem::size_of::<$type>(),)*
-                    // For any variant not covered above, return 0 or panic
-                    _ => 0, // or panic!("No size defined for {:?}", self)
+                    _ => 0,
                 }
             }
 

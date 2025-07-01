@@ -2,7 +2,7 @@
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
-use vaccel::{Blob, Resource, VaccelId};
+use vaccel::{Blob, Resource, ResourceType, VaccelId};
 use vaccel_rpc_proto::resource::Blob as ProtoBlob;
 #[allow(unused_imports)]
 use vaccel_rpc_proto::{
@@ -33,6 +33,7 @@ impl AgentService {
         if !res_id.has_id() {
             // If we got resource id <= 0 we need to create a resource before registering
             info!("Creating new resource");
+            let res_type = ResourceType::from(req.resource_type.value() as u32);
             let mut res = match req.blobs.is_empty() {
                 false => {
                     let blobs = req
@@ -41,7 +42,7 @@ impl AgentService {
                         .map(|f| Ok(f.try_into()?))
                         .collect::<Result<Vec<Blob>>>()?;
 
-                    Resource::from_blobs(blobs, req.resource_type)?
+                    Resource::from_blobs(blobs, res_type)?
                 }
                 true => {
                     if req.paths.is_empty() {
@@ -50,7 +51,7 @@ impl AgentService {
                         ));
                     }
 
-                    Resource::new(&req.paths, req.resource_type)?
+                    Resource::new(&req.paths, res_type)?
                 }
             };
 
