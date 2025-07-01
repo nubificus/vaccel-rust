@@ -201,6 +201,10 @@ impl Resource {
     pub(crate) fn inner_mut(self: Pin<&mut Self>) -> &mut ffi::vaccel_resource {
         unsafe { &mut self.get_unchecked_mut().inner }
     }
+
+    pub fn blobs(&self) -> Option<&Vec<Blob>> {
+        self._blobs.as_ref()
+    }
 }
 
 impl Drop for Resource {

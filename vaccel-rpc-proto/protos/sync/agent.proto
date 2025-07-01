@@ -22,6 +22,7 @@ service AgentService {
 	// vAccel resource handling
 	rpc RegisterResource(RegisterResourceRequest) returns (RegisterResourceResponse);
 	rpc UnregisterResource(UnregisterResourceRequest) returns (Empty);
+	rpc SyncResource(SyncResourceRequest) returns (SyncResourceResponse);
 
 	// Image Classification API
 	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
