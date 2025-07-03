@@ -10,9 +10,7 @@ use std::ffi::c_int;
 use vaccel::{ffi, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::session::{
-    CreateSessionRequest, DestroySessionRequest, UpdateSessionRequest,
-};
+use vaccel_rpc_proto::session::{CreateRequest, DestroyRequest, UpdateRequest};
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 //use tracing::{info, instrument, Instrument};
@@ -20,7 +18,7 @@ use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 impl VaccelRpcClient {
     pub fn session_init(&self, flags: u32) -> Result<i64> {
         let ctx = ttrpc::context::Context::default();
-        let req = CreateSessionRequest {
+        let req = CreateRequest {
             flags,
             ..Default::default()
         };
@@ -32,7 +30,7 @@ impl VaccelRpcClient {
 
     pub fn session_update(&self, sess_id: i64, flags: u32) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-        let req = UpdateSessionRequest {
+        let req = UpdateRequest {
             session_id: sess_id,
             flags,
             ..Default::default()
@@ -45,7 +43,7 @@ impl VaccelRpcClient {
 
     pub fn session_release(&self, sess_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-        let req = DestroySessionRequest {
+        let req = DestroyRequest {
             session_id: sess_id,
             ..Default::default()
         };

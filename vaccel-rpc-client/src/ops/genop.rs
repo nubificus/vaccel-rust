@@ -10,7 +10,7 @@ use std::{ffi::c_int, ptr};
 use vaccel::{c_pointer_to_mut_slice, ffi, profiling::SessionProfiler, Arg, Handle, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::genop::{Arg as ProtoArg, GenopRequest};
+use vaccel_rpc_proto::genop::{Arg as ProtoArg, Request};
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
@@ -23,13 +23,11 @@ impl VaccelRpcClient {
     ) -> Result<Vec<ProtoArg>> {
         let ctx = ttrpc::context::Context::default();
         let sess_vaccel_id = VaccelId::try_from(sess_id)?;
-        let req = self.profile_fn(sess_vaccel_id, "genop > client > req create", || {
-            GenopRequest {
-                session_id: sess_id,
-                read_args,
-                write_args,
-                ..Default::default()
-            }
+        let req = self.profile_fn(sess_vaccel_id, "genop > client > req create", || Request {
+            session_id: sess_vaccel_id.into(),
+            read_args,
+            write_args,
+            ..Default::default()
         });
 
         let resp = self.profile_fn(

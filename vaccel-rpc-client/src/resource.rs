@@ -12,8 +12,7 @@ use vaccel::{c_pointer_to_slice, ffi, profiling::SessionProfiler, Blob, Handle, 
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{
-    Blob as ProtoBlob, RegisterResourceRequest, ResourceType, SyncResourceRequest,
-    UnregisterResourceRequest,
+    Blob as ProtoBlob, RegisterRequest, ResourceType, SyncRequest, UnregisterRequest,
 };
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
@@ -28,7 +27,7 @@ impl VaccelRpcClient {
         sess_id: i64,
     ) -> Result<i64> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = RegisterResourceRequest::new();
+        let mut req = RegisterRequest::new();
         req.paths = paths;
         req.blobs = blobs;
         req.resource_type = ResourceType::from_i32(res_type)
@@ -44,7 +43,7 @@ impl VaccelRpcClient {
 
     pub fn resource_unregister(&self, res_id: i64, sess_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = UnregisterResourceRequest::new();
+        let mut req = UnregisterRequest::new();
         req.resource_id = res_id;
         req.session_id = sess_id;
 
@@ -55,7 +54,7 @@ impl VaccelRpcClient {
 
     pub fn resource_sync(&self, res_id: i64) -> Result<Vec<ProtoBlob>> {
         let ctx = ttrpc::context::Context::default();
-        let mut req = SyncResourceRequest::new();
+        let mut req = SyncRequest::new();
         req.resource_id = res_id;
 
         let resp = self.execute(AgentServiceClient::sync_resource, ctx, &req)?;

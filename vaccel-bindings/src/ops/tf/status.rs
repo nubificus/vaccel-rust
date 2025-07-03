@@ -6,7 +6,7 @@ use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::error::VaccelStatus;
+use vaccel_rpc_proto::vaccel::Status as ProtoStatus;
 
 /// Wrapper for the `struct vaccel_tf_status` C object.
 #[derive(Debug, Display)]
@@ -84,10 +84,10 @@ impl_component_drop!(Status, vaccel_tf_status_delete, inner, owned);
 
 impl_component_handle!(Status, ffi::vaccel_tf_status, inner, owned);
 
-impl TryFrom<&VaccelStatus> for Status {
+impl TryFrom<&ProtoStatus> for Status {
     type Error = Error;
 
-    fn try_from(proto_status: &VaccelStatus) -> Result<Self> {
+    fn try_from(proto_status: &ProtoStatus) -> Result<Self> {
         Self::new(
             proto_status.code.try_into().map_err(|e| {
                 Error::ConversionFailed(format!("Could not convert `status.code` to `u8` [{}]", e))
@@ -97,19 +97,19 @@ impl TryFrom<&VaccelStatus> for Status {
     }
 }
 
-impl TryFrom<VaccelStatus> for Status {
+impl TryFrom<ProtoStatus> for Status {
     type Error = Error;
 
-    fn try_from(proto_status: VaccelStatus) -> Result<Self> {
+    fn try_from(proto_status: ProtoStatus) -> Result<Self> {
         Status::try_from(&proto_status)
     }
 }
 
-impl TryFrom<&Status> for VaccelStatus {
+impl TryFrom<&Status> for ProtoStatus {
     type Error = Error;
 
     fn try_from(status: &Status) -> Result<Self> {
-        Ok(VaccelStatus {
+        Ok(ProtoStatus {
             code: status.code().into(),
             message: status.message()?,
             ..Default::default()
@@ -117,11 +117,11 @@ impl TryFrom<&Status> for VaccelStatus {
     }
 }
 
-impl TryFrom<Status> for VaccelStatus {
+impl TryFrom<Status> for ProtoStatus {
     type Error = Error;
 
     fn try_from(status: Status) -> Result<Self> {
-        VaccelStatus::try_from(&status)
+        ProtoStatus::try_from(&status)
     }
 }
 

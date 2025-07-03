@@ -6,8 +6,8 @@ use std::sync::Arc;
 use thiserror::Error as ThisError;
 use vaccel::{self, profiling::ProfilerManager, Resource, Session, VaccelId};
 use vaccel_rpc_proto::{
-    error::VaccelError,
-    profiling::{ProfilingRequest, ProfilingResponse},
+    profiling::{Request, Response},
+    vaccel::Error as ProtoError,
 };
 
 #[derive(ThisError, Debug)]
@@ -40,11 +40,11 @@ impl From<AgentServiceError> for ttrpc::Error {
             AgentServiceError::Vaccel(e) => {
                 let mut ttrpc_status =
                     ttrpc::error::get_status(ttrpc::Code::INTERNAL, e.to_string());
-                let vaccel_error = VaccelError::from(e);
+                let proto_error = ProtoError::from(e);
 
-                let details = vaccel_error.write_to_bytes().unwrap();
+                let details = proto_error.write_to_bytes().unwrap();
                 let mut any = ttrpc::proto::Any::new();
-                any.set_type_url("type.googleapis.com/vaccel.VaccelError".to_string());
+                any.set_type_url("type.googleapis.com/vaccel.ProtoError".to_string());
                 any.set_value(details);
 
                 ttrpc_status.set_details(vec![any]);
@@ -88,8 +88,8 @@ impl AgentService {
         }
     }
 
-    pub(crate) fn do_get_profiler(&self, req: ProfilingRequest) -> Result<ProfilingResponse> {
-        let mut resp = ProfilingResponse::new();
+    pub(crate) fn do_get_profiler(&self, req: Request) -> Result<Response> {
+        let mut resp = Response::new();
         resp.profiler = self
             .profiler_manager
             .get(req.session_id.try_into()?)

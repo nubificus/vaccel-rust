@@ -3,20 +3,14 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
-use vaccel::ops::tf::lite as tflite;
+use vaccel::ops::tf::lite::DynTensor;
 use vaccel_rpc_proto::{
     empty::Empty,
-    tensorflow::{
-        TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest,
-        TensorflowLiteModelRunResponse, TensorflowLiteModelUnloadRequest,
-    },
+    tflite::{ModelLoadRequest, ModelRunRequest, ModelRunResponse, ModelUnloadRequest},
 };
 
 impl AgentService {
-    pub(crate) fn do_tflite_model_load(
-        &self,
-        req: TensorflowLiteModelLoadRequest,
-    ) -> Result<Empty> {
+    pub(crate) fn do_tflite_model_load(&self, req: ModelLoadRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.try_into()?)
@@ -41,10 +35,7 @@ impl AgentService {
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_tflite_model_unload(
-        &self,
-        req: TensorflowLiteModelUnloadRequest,
-    ) -> Result<Empty> {
+    pub(crate) fn do_tflite_model_unload(&self, req: ModelUnloadRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.try_into()?)
@@ -69,10 +60,7 @@ impl AgentService {
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_tflite_model_run(
-        &self,
-        req: TensorflowLiteModelRunRequest,
-    ) -> Result<TensorflowLiteModelRunResponse> {
+    pub(crate) fn do_tflite_model_run(&self, req: ModelRunRequest) -> Result<ModelRunResponse> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.try_into()?)
@@ -95,7 +83,7 @@ impl AgentService {
             .in_tensors
             .into_iter()
             .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<tflite::DynTensor>>>()?;
+            .collect::<vaccel::Result<Vec<DynTensor>>>()?;
 
         let nr_out_tensors = req
             .nr_out_tensors
@@ -109,7 +97,7 @@ impl AgentService {
         info!("session:{} TensorFlow Lite model run", &req.session_id);
         let (out_tensors, status) = sess.tflite_model_run(&mut res, &in_tensors, nr_out_tensors)?;
 
-        let mut resp = TensorflowLiteModelRunResponse::new();
+        let mut resp = ModelRunResponse::new();
         resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
         resp.status = Some(status.into()).into();
 

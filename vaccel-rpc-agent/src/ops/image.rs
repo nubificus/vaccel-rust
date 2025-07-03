@@ -2,13 +2,10 @@
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
-use vaccel_rpc_proto::image::{ImageClassificationRequest, ImageClassificationResponse};
+use vaccel_rpc_proto::image::{Request, Response};
 
 impl AgentService {
-    pub(crate) fn do_image_classification(
-        &self,
-        req: ImageClassificationRequest,
-    ) -> Result<ImageClassificationResponse> {
+    pub(crate) fn do_image_classification(&self, req: Request) -> Result<Response> {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.try_into()?)
@@ -21,7 +18,7 @@ impl AgentService {
         info!("session:{} Image classification", &req.session_id);
         let (tags, _) = sess.image_classification(&req.image)?;
 
-        let mut resp = ImageClassificationResponse::new();
+        let mut resp = Response::new();
         resp.tags = tags;
 
         Ok(resp)

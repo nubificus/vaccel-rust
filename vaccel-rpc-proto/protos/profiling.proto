@@ -2,9 +2,7 @@
 
 syntax = "proto3";
 
-package vaccel;
-
-import "error.proto";
+package vaccel.profiling;
 
 message Sample {
     uint64 start = 1;
@@ -20,10 +18,10 @@ message Profiler {
     map<string, Region> regions = 2;
 }
 
-message ProfilingRequest {
+message Request {
 	int64 session_id = 1;
 }
 
-message ProfilingResponse {
+message Response {
 	Profiler profiler = 1;
 }

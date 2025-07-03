@@ -4,7 +4,7 @@ use super::{DataType, DynTensor, TensorType};
 use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
 use protobuf::Enum;
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::tensorflow::{TFDataType, TFTensor};
+use vaccel_rpc_proto::tf::{DataType as ProtoDataType, Tensor as ProtoTensor};
 
 /// Typed wrapper for the `struct vaccel_tf_tensor` C object.
 #[derive(Debug, PartialEq)]
@@ -271,11 +271,11 @@ impl<T: TensorType> From<Tensor<T>> for DynTensor {
     }
 }
 
-impl<T: TensorType> From<&Tensor<T>> for TFTensor {
+impl<T: TensorType> From<&Tensor<T>> for ProtoTensor {
     fn from(tensor: &Tensor<T>) -> Self {
-        TFTensor {
+        ProtoTensor {
             dims: tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TFDataType::from_i32(u32::from(tensor.data_type()) as i32)
+            type_: ProtoDataType::from_i32(u32::from(tensor.data_type()) as i32)
                 .unwrap()
                 .into(),
             data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
@@ -284,8 +284,8 @@ impl<T: TensorType> From<&Tensor<T>> for TFTensor {
     }
 }
 
-impl<T: TensorType> From<Tensor<T>> for TFTensor {
+impl<T: TensorType> From<Tensor<T>> for ProtoTensor {
     fn from(tensor: Tensor<T>) -> Self {
-        TFTensor::from(&tensor)
+        ProtoTensor::from(&tensor)
     }
 }

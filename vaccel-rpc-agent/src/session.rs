@@ -5,22 +5,17 @@ use log::info;
 use vaccel::Session;
 use vaccel_rpc_proto::{
     empty::Empty,
-    session::{
-        CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
-    },
+    session::{CreateRequest, CreateResponse, DestroyRequest, UpdateRequest},
 };
 
 impl AgentService {
-    pub(crate) fn do_create_session(
-        &self,
-        req: CreateSessionRequest,
-    ) -> Result<CreateSessionResponse> {
+    pub(crate) fn do_create_session(&self, req: CreateRequest) -> Result<CreateResponse> {
         let sess = Session::with_flags(req.flags)?;
         let sess_id = sess.id().ok_or(AgentServiceError::Internal(
             "Invalid session ID".to_string(),
         ))?;
 
-        let mut resp = CreateSessionResponse::new();
+        let mut resp = CreateResponse::new();
         resp.session_id = sess_id.into();
 
         let e = self.sessions.insert(sess_id, Box::new(sess));
@@ -30,7 +25,7 @@ impl AgentService {
         Ok(resp)
     }
 
-    pub(crate) fn do_update_session(&self, req: UpdateSessionRequest) -> Result<Empty> {
+    pub(crate) fn do_update_session(&self, req: UpdateRequest) -> Result<Empty> {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.try_into()?)
@@ -46,7 +41,7 @@ impl AgentService {
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_destroy_session(&self, req: DestroySessionRequest) -> Result<Empty> {
+    pub(crate) fn do_destroy_session(&self, req: DestroyRequest) -> Result<Empty> {
         let (_, sess) = self
             .sessions
             .remove(&req.session_id.try_into()?)

@@ -7,7 +7,7 @@ use protobuf::Message;
 use std::ffi::c_int;
 use thiserror::Error;
 use vaccel::ffi;
-use vaccel_rpc_proto::error::VaccelError;
+use vaccel_rpc_proto::vaccel::Error as ProtoError;
 
 #[cfg(feature = "async")]
 pub mod asynchronous;
@@ -73,8 +73,8 @@ impl From<ttrpc::Error> for Error {
         if let ttrpc::Error::RpcStatus(ref rpc_status) = err {
             let details = rpc_status.details();
             if !details.is_empty() {
-                if let Ok(vaccel_error) = VaccelError::parse_from_bytes(details[0].value()) {
-                    return Error::HostVaccel(vaccel_error.into());
+                if let Ok(proto_error) = ProtoError::parse_from_bytes(details[0].value()) {
+                    return Error::HostVaccel(proto_error.into());
                 }
             }
         }
