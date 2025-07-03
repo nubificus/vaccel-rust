@@ -13,14 +13,14 @@ use std::{
 use vaccel::{ffi, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::image::ImageClassificationRequest;
+use vaccel_rpc_proto::image::Request;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
 impl VaccelRpcClient {
     pub fn image_classify(&self, sess_id: i64, img: Vec<u8>) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
-        let req = ImageClassificationRequest {
+        let req = Request {
             session_id: sess_id,
             image: img,
             ..Default::default()

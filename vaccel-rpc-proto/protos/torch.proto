@@ -2,14 +2,10 @@
 
 syntax = "proto3";
 
-package vaccel;
+package vaccel.torch;
 
-import "error.proto";
-
-enum TorchDataType {
-	// Add unused value here so that we are compatible
-	// with what vAccelRT returns us
-	UNUSED = 0;
+enum DataType {
+	UNUSED = 0; // For vAccel value compatibility
 	BYTE = 1;
 	CHAR = 2;
 	SHORT = 3;
@@ -19,39 +15,26 @@ enum TorchDataType {
 	FLOAT = 7;
 }
 
-message TorchTensor {
-	// Data of the tensor
+message Tensor {
 	bytes data = 1;
-
-	// Dimensions of the tensor
 	repeated int64 dims = 2;
-
-	// Data type
-	TorchDataType type = 3;
+	DataType type = 3;
 }
 
-// Load_model
-message TorchModelLoadRequest {
+message ModelLoadRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
 }
 
-// Model_run
-message TorchModelRunRequest {
+message ModelRunRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
 
-	// Run options
 	optional bytes run_options = 3;
-
-	// Input tensors
-	repeated TorchTensor in_tensors = 4;
-
-	// Number of output tensors
+	repeated Tensor in_tensors = 4;
 	uint64 nr_out_tensors = 5;
 }
 
-message TorchModelRunResponse {
-	// An inference result is a number of output tensors
-	repeated TorchTensor out_tensors = 1;
+message ModelRunResponse {
+	repeated Tensor out_tensors = 1;
 }

@@ -5,7 +5,7 @@ use crate::Result;
 use protobuf::Message;
 use ttrpc::asynchronous::ClientStreamSender;
 use vaccel::{profiling::SessionProfiler, VaccelId};
-use vaccel_rpc_proto::genop::{Arg, GenopRequest, GenopResponse};
+use vaccel_rpc_proto::genop::{Arg, Request, Response};
 
 impl VaccelRpcClient {
     const MAX_REQ_LEN: u64 = 4194304;
@@ -13,13 +13,13 @@ impl VaccelRpcClient {
     async fn genop_stream_send_args(
         &mut self,
         sess_id: i64,
-        stream: &ClientStreamSender<GenopRequest, GenopResponse>,
+        stream: &ClientStreamSender<Request, Response>,
         args: Vec<Arg>,
         is_read: bool,
     ) {
         let sess_vaccel_id = VaccelId::try_from(sess_id).unwrap();
 
-        let mut req = GenopRequest {
+        let mut req = Request {
             session_id: sess_vaccel_id.into(),
             ..Default::default()
         };
@@ -60,12 +60,12 @@ impl VaccelRpcClient {
                                     ..Default::default()
                                 };
                                 match is_read {
-                                    true => GenopRequest {
+                                    true => Request {
                                         session_id: sess_id,
                                         read_args: vec![arg],
                                         ..Default::default()
                                     },
-                                    false => GenopRequest {
+                                    false => Request {
                                         session_id: sess_id,
                                         write_args: vec![arg],
                                         ..Default::default()
@@ -82,7 +82,7 @@ impl VaccelRpcClient {
                     )
                     .await;
                 }
-                req = GenopRequest {
+                req = Request {
                     session_id: sess_id,
                     ..Default::default()
                 };

@@ -2,6 +2,6 @@
 
 syntax = "proto3";
 
-package vaccel;
+package vaccel.empty;
 
 message Empty {}

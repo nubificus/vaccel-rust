@@ -5,7 +5,7 @@ use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
 use protobuf::Enum;
 use std::convert::TryFrom;
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::tensorflow::{TFLiteDataType, TFLiteTensor};
+use vaccel_rpc_proto::tflite::{DataType as ProtoDataType, Tensor as ProtoTensor};
 
 /// Untyped wrapper for the `struct vaccel_tflite_tensor` C object.
 #[derive(Debug, PartialEq)]
@@ -310,11 +310,11 @@ impl<T: TensorType + Copy> TryFrom<DynTensor> for Tensor<T> {
     }
 }
 
-impl From<&DynTensor> for TFLiteTensor {
+impl From<&DynTensor> for ProtoTensor {
     fn from(dyn_tensor: &DynTensor) -> Self {
-        TFLiteTensor {
+        ProtoTensor {
             dims: dyn_tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TFLiteDataType::from_i32(u32::from(dyn_tensor.data_type()) as i32)
+            type_: ProtoDataType::from_i32(u32::from(dyn_tensor.data_type()) as i32)
                 .unwrap()
                 .into(),
             data: dyn_tensor.data().unwrap().unwrap_or(&[]).to_vec(),
@@ -323,16 +323,16 @@ impl From<&DynTensor> for TFLiteTensor {
     }
 }
 
-impl From<DynTensor> for TFLiteTensor {
+impl From<DynTensor> for ProtoTensor {
     fn from(dyn_tensor: DynTensor) -> Self {
-        TFLiteTensor::from(&dyn_tensor)
+        ProtoTensor::from(&dyn_tensor)
     }
 }
 
-impl TryFrom<&TFLiteTensor> for DynTensor {
+impl TryFrom<&ProtoTensor> for DynTensor {
     type Error = Error;
 
-    fn try_from(proto_tensor: &TFLiteTensor) -> Result<Self> {
+    fn try_from(proto_tensor: &ProtoTensor) -> Result<Self> {
         DynTensor::from_data_unchecked(
             &proto_tensor.dims,
             DataType::from(proto_tensor.type_.value() as u32),
@@ -341,10 +341,10 @@ impl TryFrom<&TFLiteTensor> for DynTensor {
     }
 }
 
-impl TryFrom<TFLiteTensor> for DynTensor {
+impl TryFrom<ProtoTensor> for DynTensor {
     type Error = Error;
 
-    fn try_from(proto_tensor: TFLiteTensor) -> Result<Self> {
+    fn try_from(proto_tensor: ProtoTensor) -> Result<Self> {
         DynTensor::from_data_unchecked(
             &proto_tensor.dims,
             DataType::from(proto_tensor.type_.value() as u32),

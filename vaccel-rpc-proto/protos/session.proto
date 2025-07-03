@@ -2,21 +2,21 @@
 
 syntax = "proto3";
 
-package vaccel;
+package vaccel.session;
 
-message CreateSessionRequest {
+message CreateRequest {
 	uint32 flags = 1;
 }
 
-message UpdateSessionRequest {
+message CreateResponse {
+	int64 session_id = 1;
+}
+
+message UpdateRequest {
 	int64 session_id = 1;
 	uint32 flags = 2;
 }
 
-message DestroySessionRequest {
-	int64 session_id = 1;
-}
-
-message CreateSessionResponse {
+message DestroyRequest {
 	int64 session_id = 1;
 }
