@@ -2,13 +2,13 @@
 
 syntax = "proto3";
 
-package vaccel;
+package vaccel.image;
 
-message ImageClassificationRequest {
+message Request {
 	int64 session_id = 1;
 	bytes image = 2;
 }
 
-message ImageClassificationResponse {
+message Response {
 	bytes tags = 1;
 }

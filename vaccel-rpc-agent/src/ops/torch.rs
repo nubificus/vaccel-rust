@@ -3,14 +3,14 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
-use vaccel::ops::torch;
+use vaccel::ops::torch::{Buffer, DynTensor};
 use vaccel_rpc_proto::{
     empty::Empty,
-    torch::{TorchModelLoadRequest, TorchModelRunRequest, TorchModelRunResponse},
+    torch::{ModelLoadRequest, ModelRunRequest, ModelRunResponse},
 };
 
 impl AgentService {
-    pub(crate) fn do_torch_model_load(&self, req: TorchModelLoadRequest) -> Result<Empty> {
+    pub(crate) fn do_torch_model_load(&self, req: ModelLoadRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.try_into()?)
@@ -35,16 +35,13 @@ impl AgentService {
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_torch_model_run(
-        &self,
-        req: TorchModelRunRequest,
-    ) -> Result<TorchModelRunResponse> {
+    pub(crate) fn do_torch_model_run(&self, req: ModelRunRequest) -> Result<ModelRunResponse> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
-                    format!("Unknown PyTorch model {}", &req.model_id).to_string(),
+                    format!("Unknown Py model {}", &req.model_id).to_string(),
                 )
             })?;
 
@@ -57,13 +54,13 @@ impl AgentService {
                 )
             })?;
 
-        let run_options = req.run_options.map(torch::Buffer::new).transpose()?;
+        let run_options = req.run_options.map(Buffer::new).transpose()?;
 
         let in_tensors = req
             .in_tensors
             .into_iter()
             .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<torch::DynTensor>>>()?;
+            .collect::<vaccel::Result<Vec<DynTensor>>>()?;
 
         let nr_out_tensors = req
             .nr_out_tensors
@@ -78,7 +75,7 @@ impl AgentService {
         let out_tensors =
             sess.torch_model_run(&mut res, run_options.as_ref(), &in_tensors, nr_out_tensors)?;
 
-        let mut resp = TorchModelRunResponse::new();
+        let mut resp = ModelRunResponse::new();
         resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
 
         Ok(resp)

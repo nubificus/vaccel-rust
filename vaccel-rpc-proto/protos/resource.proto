@@ -2,9 +2,7 @@
 
 syntax = "proto3";
 
-package vaccel;
-
-import "error.proto";
+package vaccel.resource;
 
 enum BlobType {
     FILE = 0;
@@ -25,7 +23,7 @@ enum ResourceType {
 	MODEL = 2;
 }
 
-message RegisterResourceRequest {
+message RegisterRequest {
 	repeated string paths = 1;
 	repeated Blob blobs = 2;
 	ResourceType resource_type = 3;
@@ -33,19 +31,19 @@ message RegisterResourceRequest {
 	int64 session_id = 5;
 }
 
-message RegisterResourceResponse {
+message RegisterResponse {
 	int64 resource_id = 1;
 }
 
-message UnregisterResourceRequest {
+message UnregisterRequest {
 	int64 resource_id = 1;
 	int64 session_id = 2;
 }
 
-message SyncResourceRequest {
+message SyncRequest {
 	int64 resource_id = 1;
 }
 
-message SyncResourceResponse {
+message SyncResponse {
 	repeated Blob blobs = 1;
 }

@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+import "vaccel.proto";
+
+package vaccel.tflite;
+
+enum DataType {
+	UNUSED = 0; // For vAccel value compatibility
+	NOTYPE = 1;
+	FLOAT32 = 2;
+	INT32 = 3;
+	UINT8 = 4;
+	INT64 = 5;
+	STRING = 6;
+	BOOL = 7;
+	INT16 = 8;
+	COMPLEX64 = 9;
+	INT8 = 10;
+	FLOAT16 = 11;
+	FLOAT64 = 12;
+	COMPLEX128 = 13;
+	UINT64 = 14;
+	RESOURCE = 15;
+	VARIANT = 16;
+	UINT32 = 17;
+	UINT16 = 18;
+	INT4 = 19;
+}
+
+message Tensor {
+	bytes data = 1;
+	repeated int32 dims = 2;
+	DataType type = 3;
+}
+
+message ModelRunRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+
+	repeated Tensor in_tensors = 3;
+	uint64 nr_out_tensors = 4;
+}
+
+message ModelLoadRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
+message ModelUnloadRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
+message ModelRunResponse {
+	repeated Tensor out_tensors = 1;
+	optional vaccel.Status status = 2;
+}

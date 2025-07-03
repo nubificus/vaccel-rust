@@ -9,7 +9,7 @@ use log::error;
 use std::ffi::c_int;
 use vaccel::{
     c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
-    ops::tf::{DataType, DynTensor, Node, Status as TfStatus},
+    ops::tf::{DataType, DynTensor, Node, Status},
     Handle, VaccelId,
 };
 #[cfg(feature = "async")]
@@ -17,17 +17,14 @@ use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::{
-    error::VaccelStatus,
-    tensorflow::{
-        TFNode, TFTensor, TensorflowModelLoadRequest, TensorflowModelRunRequest,
-        TensorflowModelUnloadRequest,
-    },
+    tf::{ModelLoadRequest, ModelRunRequest, ModelUnloadRequest, Node as ProtoNode, Tensor},
+    vaccel::Status as ProtoStatus,
 };
 
 impl VaccelRpcClient {
-    pub fn tf_model_load(&self, model_id: i64, session_id: i64) -> Result<(Vec<u8>, TfStatus)> {
+    pub fn tf_model_load(&self, model_id: i64, session_id: i64) -> Result<(Vec<u8>, Status)> {
         let ctx = ttrpc::context::Context::default();
-        let req = TensorflowModelLoadRequest {
+        let req = ModelLoadRequest {
             session_id,
             model_id,
             ..Default::default()
@@ -35,14 +32,14 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_load, ctx, &req)?;
 
-        let status = resp.status.unwrap_or(VaccelStatus::default());
+        let status = resp.status.unwrap_or(ProtoStatus::default());
 
         Ok((resp.graph_def, status.try_into()?))
     }
 
-    pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<TfStatus> {
+    pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<Status> {
         let ctx = ttrpc::context::Context::default();
-        let req = TensorflowModelUnloadRequest {
+        let req = ModelUnloadRequest {
             session_id,
             model_id,
             ..Default::default()
@@ -50,7 +47,7 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_unload, ctx, &req)?;
 
-        Ok(resp.status.unwrap_or(VaccelStatus::default()).try_into()?)
+        Ok(resp.status.unwrap_or(ProtoStatus::default()).try_into()?)
     }
 
     pub fn tf_model_run(
@@ -58,12 +55,12 @@ impl VaccelRpcClient {
         model_id: i64,
         session_id: i64,
         run_options: Option<Vec<u8>>,
-        in_nodes: Vec<TFNode>,
-        in_tensors: Vec<TFTensor>,
-        out_nodes: Vec<TFNode>,
-    ) -> Result<(Vec<*mut ffi::vaccel_tf_tensor>, TfStatus)> {
+        in_nodes: Vec<ProtoNode>,
+        in_tensors: Vec<Tensor>,
+        out_nodes: Vec<ProtoNode>,
+    ) -> Result<(Vec<*mut ffi::vaccel_tf_tensor>, Status)> {
         let ctx = ttrpc::context::Context::default();
-        let req = TensorflowModelRunRequest {
+        let req = ModelRunRequest {
             model_id,
             session_id,
             run_options,
@@ -88,20 +85,20 @@ impl VaccelRpcClient {
                 tensor.into_ptr()
             })
             .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tf_tensor>>>()?;
-        let status = resp.status.unwrap_or(VaccelStatus::default());
+        let status = resp.status.unwrap_or(ProtoStatus::default());
 
         Ok((out_tensors, status.try_into()?))
     }
 }
 
 impl Error {
-    fn to_tf_status(&self) -> Result<TfStatus> {
+    fn to_tf_status(&self) -> Result<Status> {
         match self {
             Error::HostVaccel(ref e) => match e.get_status() {
-                Some(status) => Ok(TfStatus::try_from(status)?),
-                None => Ok(TfStatus::new(u8::MAX, "Undefined error")?),
+                Some(status) => Ok(Status::try_from(status)?),
+                None => Ok(Status::new(u8::MAX, "Undefined error")?),
             },
-            err => Ok(TfStatus::new(u8::MAX, &err.to_string())?),
+            err => Ok(Status::new(u8::MAX, &err.to_string())?),
         }
     }
 }
@@ -277,7 +274,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
     let proto_in_nodes = match in_nodes
         .iter()
         .map(|ptr| Ok(Node::from_ref(ptr)?.try_into()?))
-        .collect::<Result<Vec<TFNode>>>()
+        .collect::<Result<Vec<ProtoNode>>>()
     {
         Ok(f) => f,
         Err(e) => {
@@ -290,10 +287,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
         Some(slice) => slice,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
-    let proto_in_tensors: Vec<TFTensor> = match in_tensors
+    let proto_in_tensors: Vec<Tensor> = match in_tensors
         .iter()
         .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
-        .collect::<Result<Vec<TFTensor>>>()
+        .collect::<Result<Vec<Tensor>>>()
     {
         Ok(f) => f,
         Err(e) => {
@@ -309,7 +306,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
     let proto_out_nodes = match out_nodes
         .iter()
         .map(|ptr| Ok(Node::from_ref(ptr)?.try_into()?))
-        .collect::<Result<Vec<TFNode>>>()
+        .collect::<Result<Vec<ProtoNode>>>()
     {
         Ok(f) => f,
         Err(e) => {

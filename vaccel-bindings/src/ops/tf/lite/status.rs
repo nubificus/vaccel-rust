@@ -2,7 +2,7 @@
 
 use crate::{error::Status as ErrorStatus, Error, Result};
 use derive_more::{From, Into};
-use vaccel_rpc_proto::error::VaccelStatus;
+use vaccel_rpc_proto::vaccel::Status as ProtoStatus;
 
 /// Wrapper for the TFLite status.
 #[derive(Debug, Clone, Copy, PartialEq, Default, From, Into)]
@@ -23,10 +23,10 @@ impl Status {
     }
 }
 
-impl TryFrom<&VaccelStatus> for Status {
+impl TryFrom<&ProtoStatus> for Status {
     type Error = Error;
 
-    fn try_from(proto_status: &VaccelStatus) -> Result<Self> {
+    fn try_from(proto_status: &ProtoStatus) -> Result<Self> {
         Ok(Status(
             proto_status
                 .code
@@ -36,26 +36,26 @@ impl TryFrom<&VaccelStatus> for Status {
     }
 }
 
-impl TryFrom<VaccelStatus> for Status {
+impl TryFrom<ProtoStatus> for Status {
     type Error = Error;
 
-    fn try_from(proto_status: VaccelStatus) -> Result<Self> {
+    fn try_from(proto_status: ProtoStatus) -> Result<Self> {
         Status::try_from(&proto_status)
     }
 }
 
-impl From<&Status> for VaccelStatus {
+impl From<&Status> for ProtoStatus {
     fn from(status: &Status) -> Self {
-        VaccelStatus {
+        ProtoStatus {
             code: u8::from(*status) as u32,
             ..Default::default()
         }
     }
 }
 
-impl From<Status> for VaccelStatus {
+impl From<Status> for ProtoStatus {
     fn from(status: Status) -> Self {
-        VaccelStatus {
+        ProtoStatus {
             code: u8::from(status) as u32,
             ..Default::default()
         }

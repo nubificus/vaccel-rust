@@ -3,7 +3,9 @@
 use crate::ffi;
 use derive_more::Display;
 use thiserror::Error as ThisError;
-use vaccel_rpc_proto::error::{VaccelError, VaccelErrorType, VaccelStatus};
+use vaccel_rpc_proto::vaccel::{
+    Error as ProtoError, ErrorType as ProtoErrorType, Status as ProtoStatus,
+};
 
 /// An error status to use with operations returning status objects.
 #[derive(Debug, Clone, Default, Display)]
@@ -22,7 +24,7 @@ impl Status {
     }
 }
 
-impl From<Status> for VaccelStatus {
+impl From<Status> for ProtoStatus {
     fn from(status: Status) -> Self {
         let mut vaccel_status = Self::new();
         vaccel_status.code = status.code as u32;
@@ -31,10 +33,10 @@ impl From<Status> for VaccelStatus {
     }
 }
 
-impl TryFrom<VaccelStatus> for Status {
+impl TryFrom<ProtoStatus> for Status {
     type Error = Error;
 
-    fn try_from(status: VaccelStatus) -> Result<Self> {
+    fn try_from(status: ProtoStatus) -> Result<Self> {
         Ok(Self::new(
             status
                 .code
@@ -79,11 +81,11 @@ impl Error {
     }
 }
 
-impl From<VaccelError> for Error {
-    fn from(err: VaccelError) -> Self {
+impl From<ProtoError> for Error {
+    fn from(err: ProtoError) -> Self {
         match err.type_.enum_value().ok() {
-            Some(VaccelErrorType::FFI) => Self::Ffi(err.ffi_error.unwrap_or(ffi::VACCEL_EBACKEND)),
-            Some(VaccelErrorType::FFI_WITH_STATUS) => {
+            Some(ProtoErrorType::FFI) => Self::Ffi(err.ffi_error.unwrap_or(ffi::VACCEL_EBACKEND)),
+            Some(ProtoErrorType::FFI_WITH_STATUS) => {
                 let status = match err.status.into_option() {
                     Some(s) => {
                         let code = u8::try_from(s.code).unwrap_or(u8::MAX);
@@ -97,7 +99,7 @@ impl From<VaccelError> for Error {
                     status,
                 }
             }
-            Some(VaccelErrorType::INVALID_ARGUMENT) => {
+            Some(ProtoErrorType::INVALID_ARGUMENT) => {
                 let message = match err.status.into_option() {
                     Some(s) => s.message,
                     None => String::new(),
@@ -105,10 +107,10 @@ impl From<VaccelError> for Error {
 
                 Self::InvalidArgument(message)
             }
-            Some(VaccelErrorType::UNINITIALIZED) => Self::Uninitialized,
-            Some(VaccelErrorType::OUT_OF_BOUNDS) => Self::OutOfBounds,
-            Some(VaccelErrorType::EMPTY_VALUE) => Self::EmptyValue,
-            Some(VaccelErrorType::CONVERSION_FAILED) => {
+            Some(ProtoErrorType::UNINITIALIZED) => Self::Uninitialized,
+            Some(ProtoErrorType::OUT_OF_BOUNDS) => Self::OutOfBounds,
+            Some(ProtoErrorType::EMPTY_VALUE) => Self::EmptyValue,
+            Some(ProtoErrorType::CONVERSION_FAILED) => {
                 let message = match err.status.into_option() {
                     Some(s) => s.message,
                     None => String::new(),
@@ -116,49 +118,47 @@ impl From<VaccelError> for Error {
 
                 Self::ConversionFailed(message)
             }
-            None => {
-                Self::ConversionFailed("Could not convert `Error` to `VaccelError`".to_string())
-            }
+            None => Self::ConversionFailed("Could not convert `Error` to `ProtoError`".to_string()),
         }
     }
 }
 
-impl From<Error> for VaccelError {
+impl From<Error> for ProtoError {
     fn from(err: Error) -> Self {
-        let mut vaccel_error = VaccelError::new();
+        let mut proto_error = ProtoError::new();
         match err {
             Error::Ffi(error) => {
-                vaccel_error.type_ = VaccelErrorType::FFI.into();
-                vaccel_error.ffi_error = Some(error);
+                proto_error.type_ = ProtoErrorType::FFI.into();
+                proto_error.ffi_error = Some(error);
             }
             Error::FfiWithStatus { error, status } => {
-                vaccel_error.type_ = VaccelErrorType::FFI_WITH_STATUS.into();
-                vaccel_error.ffi_error = Some(error);
-                vaccel_error.status = Some(status.into()).into();
+                proto_error.type_ = ProtoErrorType::FFI_WITH_STATUS.into();
+                proto_error.ffi_error = Some(error);
+                proto_error.status = Some(status.into()).into();
             }
             Error::InvalidArgument(message) => {
-                vaccel_error.type_ = VaccelErrorType::INVALID_ARGUMENT.into();
-                let mut status = VaccelStatus::new();
+                proto_error.type_ = ProtoErrorType::INVALID_ARGUMENT.into();
+                let mut status = ProtoStatus::new();
                 status.message = message;
-                vaccel_error.status = Some(status).into();
+                proto_error.status = Some(status).into();
             }
             Error::Uninitialized => {
-                vaccel_error.type_ = VaccelErrorType::UNINITIALIZED.into();
+                proto_error.type_ = ProtoErrorType::UNINITIALIZED.into();
             }
             Error::OutOfBounds => {
-                vaccel_error.type_ = VaccelErrorType::OUT_OF_BOUNDS.into();
+                proto_error.type_ = ProtoErrorType::OUT_OF_BOUNDS.into();
             }
             Error::EmptyValue => {
-                vaccel_error.type_ = VaccelErrorType::EMPTY_VALUE.into();
+                proto_error.type_ = ProtoErrorType::EMPTY_VALUE.into();
             }
             Error::ConversionFailed(message) => {
-                vaccel_error.type_ = VaccelErrorType::CONVERSION_FAILED.into();
-                let mut status = VaccelStatus::new();
+                proto_error.type_ = ProtoErrorType::CONVERSION_FAILED.into();
+                let mut status = ProtoStatus::new();
                 status.message = message;
-                vaccel_error.status = Some(status).into();
+                proto_error.status = Some(status).into();
             }
         }
-        vaccel_error
+        proto_error
     }
 }
 

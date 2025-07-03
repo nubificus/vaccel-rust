@@ -14,7 +14,7 @@ use vaccel::{
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::profiling::ProfilingRequest;
+use vaccel_rpc_proto::profiling::Request;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 
@@ -30,7 +30,7 @@ impl VaccelRpcClient {
     pub fn get_profiler(&mut self, sess_id: i64) -> Result<Profiler> {
         let ctx = ttrpc::context::Context::default();
 
-        let req = ProfilingRequest {
+        let req = Request {
             session_id: sess_id,
             ..Default::default()
         };

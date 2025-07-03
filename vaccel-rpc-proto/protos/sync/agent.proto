@@ -8,42 +8,43 @@ import "image.proto";
 import "profiling.proto";
 import "resource.proto";
 import "session.proto";
-import "tensorflow.proto";
+import "tf.proto";
+import "tflite.proto";
 import "torch.proto";
 
-package vaccel;
+package vaccel.sync.agent;
 
 service AgentService {
-	// Session handling
-	rpc CreateSession(CreateSessionRequest) returns (CreateSessionResponse);
-	rpc UpdateSession(UpdateSessionRequest) returns (Empty);
-	rpc DestroySession(DestroySessionRequest) returns (Empty);
+        // Session
+        rpc CreateSession(vaccel.session.CreateRequest) returns (vaccel.session.CreateResponse);
+        rpc UpdateSession(vaccel.session.UpdateRequest) returns (vaccel.empty.Empty);
+        rpc DestroySession(vaccel.session.DestroyRequest) returns (vaccel.empty.Empty);
 
-	// vAccel resource handling
-	rpc RegisterResource(RegisterResourceRequest) returns (RegisterResourceResponse);
-	rpc UnregisterResource(UnregisterResourceRequest) returns (Empty);
-	rpc SyncResource(SyncResourceRequest) returns (SyncResourceResponse);
+        // Resource
+        rpc RegisterResource(vaccel.resource.RegisterRequest) returns (vaccel.resource.RegisterResponse);
+        rpc UnregisterResource(vaccel.resource.UnregisterRequest) returns (vaccel.empty.Empty);
+	rpc SyncResource(vaccel.resource.SyncRequest) returns (vaccel.resource.SyncResponse);
 
-	// Image Classification API
-	rpc ImageClassification(ImageClassificationRequest) returns (ImageClassificationResponse);
+        // Image
+        rpc ImageClassification(vaccel.image.Request) returns (vaccel.image.Response);
 
-	// TensorFlow inference API
-	rpc TensorflowModelLoad(TensorflowModelLoadRequest) returns (TensorflowModelLoadResponse);
-	rpc TensorflowModelUnload(TensorflowModelUnloadRequest) returns (TensorflowModelUnloadResponse);
-	rpc TensorflowModelRun(TensorflowModelRunRequest) returns (TensorflowModelRunResponse);
+        // Tensorflow
+        rpc TensorflowModelLoad(vaccel.tf.ModelLoadRequest) returns (vaccel.tf.ModelLoadResponse);
+        rpc TensorflowModelUnload(vaccel.tf.ModelUnloadRequest) returns (vaccel.tf.ModelUnloadResponse);
+        rpc TensorflowModelRun(vaccel.tf.ModelRunRequest) returns (vaccel.tf.ModelRunResponse);
 
-	// TensorFlow Lite inference API
-	rpc TensorflowLiteModelLoad(TensorflowLiteModelLoadRequest) returns (Empty);
-	rpc TensorflowLiteModelUnload(TensorflowLiteModelUnloadRequest) returns (Empty);
-	rpc TensorflowLiteModelRun(TensorflowLiteModelRunRequest) returns (TensorflowLiteModelRunResponse);
+        // TensorFlow Lite
+        rpc TensorflowLiteModelLoad(vaccel.tflite.ModelLoadRequest) returns (vaccel.empty.Empty);
+        rpc TensorflowLiteModelUnload(vaccel.tflite.ModelUnloadRequest) returns (vaccel.empty.Empty);
+        rpc TensorflowLiteModelRun(vaccel.tflite.ModelRunRequest) returns (vaccel.tflite.ModelRunResponse);
 
-	// PyTorch inference API
-	rpc TorchModelLoad(TorchModelLoadRequest) returns (Empty);
-	rpc TorchModelRun(TorchModelRunRequest) returns (TorchModelRunResponse);
+        // PyTorch
+        rpc TorchModelLoad(vaccel.torch.ModelLoadRequest) returns (vaccel.empty.Empty);
+        rpc TorchModelRun(vaccel.torch.ModelRunRequest) returns (vaccel.torch.ModelRunResponse);
 
-	// Generic Operation API
-	rpc Genop(GenopRequest) returns (GenopResponse);
+        // Generic Operation
+        rpc Genop(vaccel.genop.Request) returns (vaccel.genop.Response);
 
-	// Profiling Operation API
-	rpc GetProfiler(ProfilingRequest) returns (ProfilingResponse);
+        // Profiling
+        rpc GetProfiler(vaccel.profiling.Request) returns (vaccel.profiling.Response);
 }

@@ -189,7 +189,12 @@ impl TryFrom<&Blob> for ProtoBlob {
                 .into(),
             name: blob.name()?,
             data: blob.data().unwrap_or(&[]).to_vec(),
-            size: blob.size() as u32,
+            size: blob.size().try_into().map_err(|e| {
+                Error::ConversionFailed(format!(
+                    "Could not convert blob `size` to proto `size` [{}]",
+                    e
+                ))
+            })?,
             ..Default::default()
         })
     }
