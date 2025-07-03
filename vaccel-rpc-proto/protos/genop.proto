@@ -2,9 +2,7 @@
 
 syntax = "proto3";
 
-package vaccel;
-
-import "error.proto";
+package vaccel.genop;
 
 message Arg {
 	uint32 argtype = 1;
@@ -14,13 +12,13 @@ message Arg {
 	uint32 part_no = 5;
 }
 
-message GenopRequest {
+message Request {
 	int64 session_id = 1;
 
 	repeated Arg read_args = 2;
 	repeated Arg write_args = 3;
 }
 
-message GenopResponse {
+message Response {
 	repeated Arg write_args = 1;
 }

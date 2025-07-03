@@ -16,7 +16,7 @@ use vaccel::{
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchTensor};
+use vaccel_rpc_proto::torch::{JitLoadForwardRequest, Tensor};
 
 impl VaccelRpcClient {
     pub fn torch_jitload_forward(
@@ -24,12 +24,12 @@ impl VaccelRpcClient {
         session_id: i64,
         model_id: i64,
         run_options: Option<Vec<u8>>,
-        in_tensors: Vec<TorchTensor>,
+        in_tensors: Vec<Tensor>,
         nr_out_tensors: u64,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
         let ctx = ttrpc::context::Context::default();
 
-        let req = TorchJitloadForwardRequest {
+        let req = JitLoadForwardRequest {
             session_id,
             model_id,
             run_options,
@@ -86,10 +86,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
         Some(slice) => slice,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
-    let proto_in_tensors: Vec<TorchTensor> = match in_tensors
+    let proto_in_tensors: Vec<Tensor> = match in_tensors
         .iter()
         .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
-        .collect::<Result<Vec<TorchTensor>>>()
+        .collect::<Result<Vec<Tensor>>>()
     {
         Ok(f) => f,
         Err(e) => {

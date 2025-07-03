@@ -2,38 +2,39 @@
 
 use crate::{agent_service::IntoTtrpcResult, AgentService};
 #[allow(unused_imports)]
-use vaccel_rpc_proto::tensorflow::{
-    TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest, TensorflowLiteModelRunResponse,
-    TensorflowLiteModelUnloadRequest, TensorflowModelLoadRequest, TensorflowModelLoadResponse,
-    TensorflowModelRunRequest, TensorflowModelRunResponse, TensorflowModelUnloadRequest,
-    TensorflowModelUnloadResponse,
+use vaccel_rpc_proto::tf::{
+    ModelLoadRequest as TFModelLoadRequest, ModelLoadResponse as TFModelLoadResponse,
+    ModelRunRequest as TFModelRunRequest, ModelRunResponse as TFModelRunResponse,
+    ModelUnloadRequest as TFModelUnloadRequest, ModelUnloadResponse as TFModelUnloadResponse,
 };
 use vaccel_rpc_proto::{
     empty::Empty,
-    genop::{GenopRequest, GenopResponse},
-    image::{ImageClassificationRequest, ImageClassificationResponse},
-    profiling::{ProfilingRequest, ProfilingResponse},
-    resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
-    session::{
-        CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
-    },
+    genop::{Request as GenopRequest, Response as GenopResponse},
+    image::{Request as ImageRequest, Response as ImageResponse},
+    profiling::{Request as ProfilingRequest, Response as ProfilingResponse},
+    resource::{RegisterRequest, RegisterResponse, UnregisterRequest},
+    session::{CreateRequest, CreateResponse, DestroyRequest, UpdateRequest},
     sync::agent_ttrpc,
-    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    tflite::{
+        ModelLoadRequest as TFLiteModelLoadRequest, ModelRunRequest as TFLiteModelRunRequest,
+        ModelRunResponse as TFLiteModelRunResponse, ModelUnloadRequest as TFLiteModelUnloadRequest,
+    },
+    torch::{JitLoadForwardRequest, JitLoadForwardResponse},
 };
 
 impl agent_ttrpc::AgentService for AgentService {
     fn create_session(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: CreateSessionRequest,
-    ) -> ttrpc::Result<CreateSessionResponse> {
+        req: CreateRequest,
+    ) -> ttrpc::Result<CreateResponse> {
         self.do_create_session(req).into_ttrpc()
     }
 
     fn update_session(
         &self,
         _ctx: &::ttrpc::TtrpcContext,
-        req: UpdateSessionRequest,
+        req: UpdateRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_update_session(req).into_ttrpc()
     }
@@ -41,7 +42,7 @@ impl agent_ttrpc::AgentService for AgentService {
     fn destroy_session(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: DestroySessionRequest,
+        req: DestroyRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_destroy_session(req).into_ttrpc()
     }
@@ -49,23 +50,23 @@ impl agent_ttrpc::AgentService for AgentService {
     fn image_classification(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: ImageClassificationRequest,
-    ) -> ttrpc::Result<ImageClassificationResponse> {
+        req: ImageRequest,
+    ) -> ttrpc::Result<ImageResponse> {
         self.do_image_classification(req).into_ttrpc()
     }
 
     fn register_resource(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: RegisterResourceRequest,
-    ) -> ttrpc::Result<RegisterResourceResponse> {
+        req: RegisterRequest,
+    ) -> ttrpc::Result<RegisterResponse> {
         self.do_register_resource(req).into_ttrpc()
     }
 
     fn unregister_resource(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: UnregisterResourceRequest,
+        req: UnregisterRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_unregister_resource(req).into_ttrpc()
     }
@@ -74,8 +75,8 @@ impl agent_ttrpc::AgentService for AgentService {
     fn tensorflow_model_load(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowModelLoadRequest,
-    ) -> ttrpc::Result<TensorflowModelLoadResponse> {
+        req: TFModelLoadRequest,
+    ) -> ttrpc::Result<TFModelLoadResponse> {
         self.do_tensorflow_model_load(req).into_ttrpc()
     }
 
@@ -83,8 +84,8 @@ impl agent_ttrpc::AgentService for AgentService {
     fn tensorflow_model_unload(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowModelUnloadRequest,
-    ) -> ttrpc::Result<TensorflowModelUnloadResponse> {
+        req: TFModelUnloadRequest,
+    ) -> ttrpc::Result<TFModelUnloadResponse> {
         self.do_tensorflow_model_unload(req).into_ttrpc()
     }
 
@@ -92,15 +93,15 @@ impl agent_ttrpc::AgentService for AgentService {
     fn tensorflow_model_run(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowModelRunRequest,
-    ) -> ttrpc::Result<TensorflowModelRunResponse> {
+        req: TFModelRunRequest,
+    ) -> ttrpc::Result<TFModelRunResponse> {
         self.do_tensorflow_model_run(req).into_ttrpc()
     }
 
     fn tensorflow_lite_model_load(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowLiteModelLoadRequest,
+        req: TFLiteModelLoadRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_tflite_model_load(req).into_ttrpc()
     }
@@ -108,7 +109,7 @@ impl agent_ttrpc::AgentService for AgentService {
     fn tensorflow_lite_model_unload(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowLiteModelUnloadRequest,
+        req: TFLiteModelUnloadRequest,
     ) -> ttrpc::Result<Empty> {
         self.do_tflite_model_unload(req).into_ttrpc()
     }
@@ -116,16 +117,16 @@ impl agent_ttrpc::AgentService for AgentService {
     fn tensorflow_lite_model_run(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TensorflowLiteModelRunRequest,
-    ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
+        req: TFLiteModelRunRequest,
+    ) -> ttrpc::Result<TFLiteModelRunResponse> {
         self.do_tflite_model_run(req).into_ttrpc()
     }
 
     fn torch_jitload_forward(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TorchJitloadForwardRequest,
-    ) -> ttrpc::Result<TorchJitloadForwardResponse> {
+        req: JitLoadForwardRequest,
+    ) -> ttrpc::Result<JitLoadForwardResponse> {
         self.do_torch_jitload_forward(req).into_ttrpc()
     }
 

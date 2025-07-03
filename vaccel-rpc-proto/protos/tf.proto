@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+import "vaccel.proto";
+
+package vaccel.tf;
+
+enum DataType {
+	UNUSED = 0; // For vAccel value compatibility
+	FLOAT = 1;
+	DOUBLE = 2;
+	INT32 = 3;
+	UINT8 = 4;
+	INT16 = 5;
+	INT8 = 6;
+	STRING = 7;
+	COMPLEX = 8;
+	INT64 = 9;
+	BOOL = 10;
+	QINT8 = 11;
+	QUINT8 = 12;
+	QINT32 = 13;
+	BFLOAT16 = 14;
+	QINT16 = 15;
+	QUINT16 = 16;
+	UINT16 = 17;
+	COMPLEX128 = 18;
+	HALF = 19;
+	RESOURCE = 20;
+	VARIANT = 21;
+	UINT32 = 22;
+	UINT64 = 23;
+}
+
+message Tensor {
+	bytes data = 1;
+	repeated int64 dims = 2;
+	DataType type = 3;
+}
+
+message Node {
+	string name = 1;
+	int32 id = 2;
+}
+
+message ModelLoadRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
+message ModelLoadResponse {
+	bytes graph_def = 1;
+	optional vaccel.Status status = 2;
+}
+
+message ModelUnloadRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
+message ModelUnloadResponse {
+	optional vaccel.Status status = 1;
+}
+
+message ModelRunRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+
+	optional bytes run_options = 3;
+	repeated Node in_nodes = 4;
+	repeated Node out_nodes = 5;
+	repeated Tensor in_tensors = 6;
+}
+
+message ModelRunResponse {
+	repeated Tensor out_tensors = 1;
+	optional vaccel.Status status = 2;
+}

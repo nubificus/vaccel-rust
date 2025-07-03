@@ -4,7 +4,7 @@ use super::{DataType, DynTensor, TensorType};
 use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
 use protobuf::Enum;
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
+use vaccel_rpc_proto::torch::{DataType as ProtoDataType, Tensor as ProtoTensor};
 
 /// Typed wrapper for the `struct vaccel_torch_tensor` C object.
 #[derive(Debug, PartialEq)]
@@ -271,11 +271,11 @@ impl<T: TensorType> From<Tensor<T>> for DynTensor {
     }
 }
 
-impl<T: TensorType> From<&Tensor<T>> for TorchTensor {
+impl<T: TensorType> From<&Tensor<T>> for ProtoTensor {
     fn from(tensor: &Tensor<T>) -> Self {
-        TorchTensor {
+        ProtoTensor {
             dims: tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: TorchDataType::from_i32(u32::from(tensor.data_type()) as i32)
+            type_: ProtoDataType::from_i32(u32::from(tensor.data_type()) as i32)
                 .unwrap()
                 .into(),
             data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
@@ -284,8 +284,8 @@ impl<T: TensorType> From<&Tensor<T>> for TorchTensor {
     }
 }
 
-impl<T: TensorType> From<Tensor<T>> for TorchTensor {
+impl<T: TensorType> From<Tensor<T>> for ProtoTensor {
     fn from(tensor: Tensor<T>) -> Self {
-        TorchTensor::from(&tensor)
+        ProtoTensor::from(&tensor)
     }
 }

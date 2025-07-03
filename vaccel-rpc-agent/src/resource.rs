@@ -3,18 +3,13 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use vaccel::{Blob, Resource, ResourceType, VaccelId};
-#[allow(unused_imports)]
 use vaccel_rpc_proto::{
     empty::Empty,
-    error::VaccelError,
-    resource::{RegisterResourceRequest, RegisterResourceResponse, UnregisterResourceRequest},
+    resource::{RegisterRequest, RegisterResponse, UnregisterRequest},
 };
 
 impl AgentService {
-    pub(crate) fn do_register_resource(
-        &self,
-        req: RegisterResourceRequest,
-    ) -> Result<RegisterResourceResponse> {
+    pub(crate) fn do_register_resource(&self, req: RegisterRequest) -> Result<RegisterResponse> {
         let mut sess = self
             .sessions
             .get_mut(&req.session_id.try_into()?)
@@ -25,7 +20,7 @@ impl AgentService {
             })?;
 
         let proto_res_id = VaccelId::from_ffi(req.resource_id)?;
-        let mut resp = RegisterResourceResponse::new();
+        let mut resp = RegisterResponse::new();
         if proto_res_id.is_none() {
             // If we got resource id == 0 we need to create a resource before registering
             info!("Creating new resource");
@@ -92,7 +87,7 @@ impl AgentService {
         Ok(resp)
     }
 
-    pub(crate) fn do_unregister_resource(&self, req: UnregisterResourceRequest) -> Result<Empty> {
+    pub(crate) fn do_unregister_resource(&self, req: UnregisterRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.resource_id.try_into()?)

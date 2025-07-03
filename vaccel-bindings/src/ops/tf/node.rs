@@ -6,7 +6,7 @@ use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::tensorflow::TFNode as ProtoNode;
+use vaccel_rpc_proto::tf::Node as ProtoNode;
 
 /// Wrapper for the `struct vaccel_tf_node` C object.
 #[derive(Debug, Display)]
