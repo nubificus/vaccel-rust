@@ -2,12 +2,10 @@
 
 use crate::{ffi, Error, Handle, Result};
 use num_enum::{FromPrimitive, IntoPrimitive};
-use protobuf::Enum;
 use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::resource::{Blob as ProtoBlob, BlobType as ProtoBlobType};
 
 /// The blob types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, FromPrimitive, IntoPrimitive)]
@@ -85,7 +83,7 @@ impl Blob {
 
     /// Sets the type of the `Blob`.
     #[doc(hidden)]
-    fn set_type(&mut self, ty: BlobType) {
+    pub fn set_type(&mut self, ty: BlobType) {
         unsafe { self.inner.as_mut().type_ = ty.into() };
     }
 
@@ -156,54 +154,3 @@ impl_component_handle!(
         _buffer: None,
     }
 );
-
-impl TryFrom<&ProtoBlob> for Blob {
-    type Error = Error;
-
-    fn try_from(proto_blob: &ProtoBlob) -> Result<Self> {
-        let mut blob = Self::from_buf(proto_blob.data.to_owned(), &proto_blob.name, None, false)?;
-
-        blob.set_type(BlobType::from(proto_blob.type_.value() as u32));
-        Ok(blob)
-    }
-}
-
-impl TryFrom<ProtoBlob> for Blob {
-    type Error = Error;
-
-    fn try_from(proto_blob: ProtoBlob) -> Result<Self> {
-        let mut blob = Self::from_buf(proto_blob.data, &proto_blob.name, None, false)?;
-
-        blob.set_type(BlobType::from(proto_blob.type_.value() as u32));
-        Ok(blob)
-    }
-}
-
-impl TryFrom<&Blob> for ProtoBlob {
-    type Error = Error;
-
-    fn try_from(blob: &Blob) -> Result<Self> {
-        Ok(ProtoBlob {
-            type_: ProtoBlobType::from_i32(u32::from(blob.type_()) as i32)
-                .unwrap()
-                .into(),
-            name: blob.name()?,
-            data: blob.data().unwrap_or(&[]).to_vec(),
-            size: blob.size().try_into().map_err(|e| {
-                Error::ConversionFailed(format!(
-                    "Could not convert blob `size` to proto `size` [{}]",
-                    e
-                ))
-            })?,
-            ..Default::default()
-        })
-    }
-}
-
-impl TryFrom<Blob> for ProtoBlob {
-    type Error = Error;
-
-    fn try_from(blob: Blob) -> Result<Self> {
-        ProtoBlob::try_from(&blob)
-    }
-}

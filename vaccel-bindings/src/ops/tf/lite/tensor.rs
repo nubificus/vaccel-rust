@@ -2,9 +2,7 @@
 
 use super::{DataType, DynTensor, TensorType};
 use crate::{ffi, ops::Tensor as TensorTrait, Error, Handle, Result};
-use protobuf::Enum;
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::tflite::{DataType as ProtoDataType, Tensor as ProtoTensor};
 
 /// Typed wrapper for the `struct vaccel_tflite_tensor` C object.
 #[derive(Debug, PartialEq)]
@@ -268,24 +266,5 @@ impl<T: TensorType> From<Tensor<T>> for DynTensor {
     fn from(tensor: Tensor<T>) -> Self {
         let (inner, owned, data) = tensor.into_raw_parts();
         DynTensor::from_raw_parts(inner, owned, data.map(|v| bytemuck::cast_vec(v)))
-    }
-}
-
-impl<T: TensorType> From<&Tensor<T>> for ProtoTensor {
-    fn from(tensor: &Tensor<T>) -> Self {
-        ProtoTensor {
-            dims: tensor.dims().unwrap_or(&[]).to_vec(),
-            type_: ProtoDataType::from_i32(u32::from(tensor.data_type()) as i32)
-                .unwrap()
-                .into(),
-            data: tensor.as_bytes().unwrap_or(&[]).to_vec(),
-            ..Default::default()
-        }
-    }
-}
-
-impl<T: TensorType> From<Tensor<T>> for ProtoTensor {
-    fn from(tensor: Tensor<T>) -> Self {
-        ProtoTensor::from(&tensor)
     }
 }

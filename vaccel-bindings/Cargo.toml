@@ -30,8 +30,6 @@ protobuf = "3.1"
 derive_more = { version = "2.0", features = ["display", "from", "into"] }
 thiserror = "1.0"
 
-vaccel-rpc-proto = { path = "../vaccel-rpc-proto" }
-
 [build-dependencies]
 libc = "0.2"
 bindgen = "0.69"

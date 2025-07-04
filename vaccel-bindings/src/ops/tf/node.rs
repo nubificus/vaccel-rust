@@ -6,7 +6,6 @@ use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::tf::Node as ProtoNode;
 
 /// Wrapper for the `struct vaccel_tf_node` C object.
 #[derive(Debug, Display)]
@@ -58,39 +57,3 @@ impl Node {
 impl_component_drop!(Node, vaccel_tf_node_delete, inner, owned);
 
 impl_component_handle!(Node, ffi::vaccel_tf_node, inner, owned);
-
-impl TryFrom<&ProtoNode> for Node {
-    type Error = Error;
-
-    fn try_from(node: &ProtoNode) -> Result<Self> {
-        Node::new(&node.name, node.id)
-    }
-}
-
-impl TryFrom<ProtoNode> for Node {
-    type Error = Error;
-
-    fn try_from(node: ProtoNode) -> Result<Self> {
-        Node::try_from(&node)
-    }
-}
-
-impl TryFrom<&Node> for ProtoNode {
-    type Error = Error;
-
-    fn try_from(node: &Node) -> Result<Self> {
-        Ok(ProtoNode {
-            name: node.name()?,
-            id: node.id(),
-            ..Default::default()
-        })
-    }
-}
-
-impl TryFrom<Node> for ProtoNode {
-    type Error = Error;
-
-    fn try_from(node: Node) -> Result<Self> {
-        ProtoNode::try_from(&node)
-    }
-}
