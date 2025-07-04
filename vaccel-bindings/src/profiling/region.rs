@@ -3,7 +3,6 @@
 use super::sample::{ActiveSample, Sample};
 use derive_more::Display;
 use std::time::Duration;
-use vaccel_rpc_proto::profiling::Region as ProtoRegion;
 
 /// Statistics for a collection of samples in a profiling region.
 #[derive(Debug, Default, Display, Clone, Copy)]
@@ -97,40 +96,5 @@ impl Region {
     /// Inserts pre-completed samples to the region samples.
     pub fn insert_samples(&mut self, samples: Vec<Sample>) {
         self.samples.extend(samples);
-    }
-}
-
-impl From<&ProtoRegion> for Region {
-    fn from(proto: &ProtoRegion) -> Self {
-        let samples: Vec<Sample> = proto.samples.iter().map(|s| s.into()).collect();
-
-        let mut region = Region::new();
-        region.insert_samples(samples);
-        region
-    }
-}
-
-impl From<ProtoRegion> for Region {
-    fn from(proto: ProtoRegion) -> Self {
-        let samples: Vec<Sample> = proto.samples.into_iter().map(|s| s.into()).collect();
-
-        let mut region = Region::new();
-        region.insert_samples(samples);
-        region
-    }
-}
-
-impl From<&Region> for ProtoRegion {
-    fn from(region: &Region) -> Self {
-        Self {
-            samples: region.samples().iter().map(|s| (*s).into()).collect(),
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Region> for ProtoRegion {
-    fn from(region: Region) -> Self {
-        Self::from(&region)
     }
 }

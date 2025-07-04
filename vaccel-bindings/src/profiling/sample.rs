@@ -3,7 +3,6 @@
 use super::timespec::Timespec;
 use crate::ffi;
 use std::time::Duration;
-use vaccel_rpc_proto::profiling::Sample as ProtoSample;
 
 /// Represents a completed profiling sample.
 ///
@@ -80,36 +79,5 @@ impl ActiveSample {
     /// Returns the current elapsed time (without finishing the sample).
     pub fn elapsed(&self) -> Duration {
         self.start.elapsed()
-    }
-}
-
-impl From<&ProtoSample> for Sample {
-    fn from(proto: &ProtoSample) -> Self {
-        Self::new(
-            Timespec::from_nanos(proto.start),
-            Duration::from_nanos(proto.time),
-        )
-    }
-}
-
-impl From<ProtoSample> for Sample {
-    fn from(proto: ProtoSample) -> Self {
-        Self::from(&proto)
-    }
-}
-
-impl From<&Sample> for ProtoSample {
-    fn from(sample: &Sample) -> Self {
-        Self {
-            start: sample.start_time().as_nanos() as u64,
-            time: sample.duration().as_nanos() as u64,
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Sample> for ProtoSample {
-    fn from(sample: Sample) -> Self {
-        Self::from(&sample)
     }
 }

@@ -6,12 +6,13 @@ pub mod profiler;
 pub mod profiler_manager;
 pub mod region;
 pub mod sample;
-mod timespec;
+pub mod timespec;
 
 pub use profiler::{Profiler, ProfilerScope};
 pub use profiler_manager::{ProfilerManager, ProfilerManagerScope, SessionProfiler};
 pub use region::{Region, RegionStats};
 pub use sample::Sample;
+pub use timespec::Timespec;
 
 const NSEC_PER_SEC: u32 = 1_000_000_000;
 
