@@ -13,5 +13,7 @@ async-trait = "0.1"
 protobuf = "3.1"
 ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel", features = ["async"] }
 
+vaccel = { path = "../vaccel-bindings" }
+
 [build-dependencies]
 ttrpc-codegen = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel" }

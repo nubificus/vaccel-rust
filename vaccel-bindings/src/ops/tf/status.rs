@@ -6,7 +6,6 @@ use std::{
     ffi::{CStr, CString},
     ptr::{self, NonNull},
 };
-use vaccel_rpc_proto::vaccel::Status as ProtoStatus;
 
 /// Wrapper for the `struct vaccel_tf_status` C object.
 #[derive(Debug, Display)]
@@ -84,47 +83,6 @@ impl_component_drop!(Status, vaccel_tf_status_delete, inner, owned);
 
 impl_component_handle!(Status, ffi::vaccel_tf_status, inner, owned);
 
-impl TryFrom<&ProtoStatus> for Status {
-    type Error = Error;
-
-    fn try_from(proto_status: &ProtoStatus) -> Result<Self> {
-        Self::new(
-            proto_status.code.try_into().map_err(|e| {
-                Error::ConversionFailed(format!("Could not convert `status.code` to `u8` [{}]", e))
-            })?,
-            &proto_status.message,
-        )
-    }
-}
-
-impl TryFrom<ProtoStatus> for Status {
-    type Error = Error;
-
-    fn try_from(proto_status: ProtoStatus) -> Result<Self> {
-        Status::try_from(&proto_status)
-    }
-}
-
-impl TryFrom<&Status> for ProtoStatus {
-    type Error = Error;
-
-    fn try_from(status: &Status) -> Result<Self> {
-        Ok(ProtoStatus {
-            code: status.code().into(),
-            message: status.message()?,
-            ..Default::default()
-        })
-    }
-}
-
-impl TryFrom<Status> for ProtoStatus {
-    type Error = Error;
-
-    fn try_from(status: Status) -> Result<Self> {
-        ProtoStatus::try_from(&status)
-    }
-}
-
 impl TryFrom<&ErrorStatus> for Status {
     type Error = Error;
 
@@ -137,7 +95,7 @@ impl TryFrom<ErrorStatus> for Status {
     type Error = Error;
 
     fn try_from(error_status: ErrorStatus) -> Result<Self> {
-        Status::try_from(&error_status)
+        Self::try_from(&error_status)
     }
 }
 
@@ -153,6 +111,6 @@ impl TryFrom<Status> for ErrorStatus {
     type Error = Error;
 
     fn try_from(status: Status) -> Result<Self> {
-        ErrorStatus::try_from(&status)
+        Self::try_from(&status)
     }
 }

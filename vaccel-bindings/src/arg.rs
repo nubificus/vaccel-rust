@@ -2,7 +2,6 @@
 
 use crate::{ffi, Error, Result};
 use std::ptr::{self, NonNull};
-use vaccel_rpc_proto::genop::Arg as ProtoArg;
 
 /// Wrapper for the `struct vaccel_arg` C object.
 #[derive(Debug)]
@@ -71,50 +70,3 @@ impl_component_handle!(
         _buffer: None,
     }
 );
-
-impl TryFrom<&ProtoArg> for Arg {
-    type Error = Error;
-
-    fn try_from(proto_arg: &ProtoArg) -> Result<Self> {
-        if proto_arg.size as usize != proto_arg.buf.len() {
-            return Err(Error::ConversionFailed(format!(
-                "Could not convert proto `Arg` to `Arg`: Incorrect size; expected {} got {}",
-                proto_arg.buf.len(),
-                proto_arg.size,
-            )));
-        }
-        Self::new(proto_arg.buf.to_owned(), proto_arg.argtype)
-    }
-}
-
-impl TryFrom<ProtoArg> for Arg {
-    type Error = Error;
-
-    fn try_from(proto_arg: ProtoArg) -> Result<Self> {
-        if proto_arg.size as usize != proto_arg.buf.len() {
-            return Err(Error::ConversionFailed(format!(
-                "Could not convert proto `Arg` to `Arg`: Incorrect size; expected {} got {}",
-                proto_arg.buf.len(),
-                proto_arg.size,
-            )));
-        }
-        Self::new(proto_arg.buf, proto_arg.argtype)
-    }
-}
-
-impl From<&Arg> for ProtoArg {
-    fn from(arg: &Arg) -> Self {
-        ProtoArg {
-            buf: arg.buf().unwrap_or(&[]).to_vec(),
-            size: arg.size() as u32,
-            argtype: arg.argtype(),
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Arg> for ProtoArg {
-    fn from(arg: Arg) -> Self {
-        ProtoArg::from(&arg)
-    }
-}
