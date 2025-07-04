@@ -3,10 +3,9 @@
 use super::{is_profiling_enabled, Region, RegionStats, Sample};
 use crate::ffi;
 use std::{
-    collections::{btree_map, BTreeMap, HashMap},
+    collections::{btree_map, BTreeMap},
     ops::Deref,
 };
-use vaccel_rpc_proto::profiling::{Profiler as ProtoProfiler, Region as ProtoRegion};
 
 /// A collection of profiling regions for a component.
 #[derive(Debug, Clone)]
@@ -237,68 +236,4 @@ macro_rules! profile {
     ($profiler:expr, $name:expr) => {
         let _scope = $crate::ProfilerScope::new($profiler, $name);
     };
-}
-
-impl From<&ProtoProfiler> for Profiler {
-    fn from(proto: &ProtoProfiler) -> Self {
-        let regions = proto
-            .regions
-            .iter()
-            .map(|(proto_region_name, proto_region)| {
-                let region: Region = proto_region.into();
-                (proto_region_name.to_string(), region)
-            });
-
-        let mut profiler = Profiler::new(proto.component_name.clone());
-        profiler.extend(regions);
-        profiler
-    }
-}
-
-impl From<ProtoProfiler> for Profiler {
-    fn from(proto: ProtoProfiler) -> Self {
-        let regions = proto
-            .regions
-            .into_iter()
-            .map(|(proto_region_name, proto_region)| {
-                let region: Region = proto_region.into();
-                (proto_region_name, region)
-            });
-
-        let mut profiler = Profiler::new(proto.component_name);
-        profiler.extend(regions);
-        profiler
-    }
-}
-
-impl From<&Profiler> for ProtoProfiler {
-    fn from(profiler: &Profiler) -> Self {
-        let component_name = profiler.component_name().to_string();
-        let regions: HashMap<String, ProtoRegion> = profiler
-            .iter()
-            .map(|(region_name, region)| (region_name.to_string(), region.into()))
-            .collect();
-
-        Self {
-            component_name,
-            regions,
-            ..Default::default()
-        }
-    }
-}
-
-impl From<Profiler> for ProtoProfiler {
-    fn from(profiler: Profiler) -> Self {
-        let component_name = profiler.component_name().to_string();
-        let regions: HashMap<String, ProtoRegion> = profiler
-            .into_iter()
-            .map(|(region_name, region)| (region_name, region.into()))
-            .collect();
-
-        Self {
-            component_name,
-            regions,
-            ..Default::default()
-        }
-    }
 }
