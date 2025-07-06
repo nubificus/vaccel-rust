@@ -4,7 +4,7 @@ use crate::{ffi, Config, Error, Handle, Result};
 use derive_more::Display;
 
 /// Wrapper for the `vaccel_id_t` C object.
-#[derive(PartialEq, Eq, Hash, Debug, Default, Display)]
+#[derive(Debug, Default, Display, Copy, Clone, Eq, PartialEq, Hash)]
 #[display("{}", inner.map_or("No value".to_string(), |v| v.to_string()))]
 pub struct VaccelId {
     inner: Option<ffi::vaccel_id_t>,
