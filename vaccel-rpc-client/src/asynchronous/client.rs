@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::Result;
-use dashmap::DashMap;
 use log::debug;
 use std::{future::Future, sync::Arc};
 use tokio::runtime::Runtime;
 use ttrpc::context::Context;
-use vaccel::profiling::ProfRegions;
+use vaccel::profiling::ProfilerManager;
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 
 #[repr(C)]
 pub struct VaccelRpcClient {
     pub ttrpc_client: AgentServiceClient,
-    pub timers: Arc<DashMap<i64, ProfRegions>>,
+    pub profiler_manager: ProfilerManager,
     pub runtime: Arc<Runtime>,
 }
 
@@ -28,7 +27,7 @@ impl VaccelRpcClient {
 
         Ok(VaccelRpcClient {
             ttrpc_client: AgentServiceClient::new(ttrpc_client),
-            timers: Arc::new(DashMap::new()),
+            profiler_manager: ProfilerManager::new(Self::TIMERS_PREFIX),
             runtime: Arc::new(r),
         })
     }

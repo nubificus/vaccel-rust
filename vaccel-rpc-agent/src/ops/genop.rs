@@ -2,7 +2,7 @@
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
-use vaccel::{profiling::ProfRegions, Arg};
+use vaccel::{profiling::SessionProfiler, Arg};
 use vaccel_rpc_proto::genop::{GenopRequest, GenopResponse};
 
 impl AgentService {
@@ -16,37 +16,29 @@ impl AgentService {
                 )
             })?;
 
-        let mut timers = self
-            .timers
-            .entry(req.session_id.into())
-            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
-        timers.start("genop > read_args");
-        let mut read_args = req
-            .read_args
-            .into_iter()
-            .map(|a| Ok(a.try_into()?))
-            .collect::<Result<Vec<Arg>>>()?;
-        timers.stop("genop > read_args");
+        let mut read_args = self.profile_fn(sess.id(), "genop > read_args", || {
+            req.read_args
+                .into_iter()
+                .map(|a| Ok(a.try_into()?))
+                .collect::<Result<Vec<Arg>>>()
+        })?;
 
-        timers.start("genop > write_args");
-        let mut write_args = req
-            .write_args
-            .into_iter()
-            .map(|a| Ok(a.try_into()?))
-            .collect::<Result<Vec<Arg>>>()?;
-        timers.stop("genop > write_args");
+        let mut write_args = self.profile_fn(sess.id(), "genop > write_args", || {
+            req.write_args
+                .into_iter()
+                .map(|a| Ok(a.try_into()?))
+                .collect::<Result<Vec<Arg>>>()
+        })?;
 
         info!("session:{} Genop", sess.id());
-        timers.start("genop > sess.genop");
-        sess.genop(
-            read_args.as_mut_slice(),
-            write_args.as_mut_slice(),
-            &mut timers,
-        )?;
+        self.profile_fn(sess.id(), "genop > sess.genop", || {
+            sess.genop(read_args.as_mut_slice(), write_args.as_mut_slice())
+        })?;
 
         let mut resp = GenopResponse::new();
-        resp.write_args = write_args.into_iter().map(|e| e.into()).collect();
-        timers.stop("genop > sess.genop");
+        resp.write_args = self.profile_fn(sess.id(), "genop > resp_write_args", || {
+            write_args.into_iter().map(|e| e.into()).collect()
+        });
 
         Ok(resp)
     }

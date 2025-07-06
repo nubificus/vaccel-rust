@@ -5,7 +5,6 @@ use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
 use crate::{IntoFfiResult, Result};
-use dashmap::mapref::entry::Entry;
 use log::error;
 use std::ffi::c_int;
 use vaccel::ffi;
@@ -108,13 +107,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
 
     (match client.session_release(sess_id) {
         Ok(()) => {
-            //#[cfg(feature = "async")]
-            //let mut timers = client.timers.lock().unwrap();
-            //#[cfg(not(feature = "async"))]
-            let timers = &mut client.timers;
-            if let Entry::Occupied(t) = timers.entry(sess_id) {
-                t.remove_entry();
-            }
+            client.profiler_manager.remove(sess_id.into());
             ffi::VACCEL_OK
         }
         Err(e) => {
