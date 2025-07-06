@@ -8,7 +8,7 @@ use crate::{Error, IntoFfiResult, Result};
 use log::error;
 use protobuf::Enum;
 use std::ffi::{c_char, c_int, CStr};
-use vaccel::{c_pointer_to_slice, ffi, Blob, Handle};
+use vaccel::{c_pointer_to_slice, ffi, profiling::SessionProfiler, Blob, Handle};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{
@@ -89,7 +89,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     let mut paths: Vec<String> = Vec::new();
     if id <= 0 {
         if !paths_ptr.is_null() {
-            client.timer_start(sess_id, "client_resource_register > paths");
+            let _scope = client.profile_scope(sess_id.into(), "client_resource_register > paths");
             let p_slice = match c_pointer_to_slice(paths_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
@@ -115,9 +115,8 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
                     return -(e.to_ffi() as ffi::vaccel_id_t);
                 }
             };
-            client.timer_stop(sess_id, "client_resource_register > paths");
         } else {
-            client.timer_start(sess_id, "client_resource_register > files");
+            let _scope = client.profile_scope(sess_id.into(), "client_resource_register > files");
             let blobs = match c_pointer_to_slice(blobs_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
@@ -133,7 +132,6 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
                     return -(e.to_ffi() as ffi::vaccel_id_t);
                 }
             };
-            client.timer_stop(sess_id, "client_resource_register > files");
         }
     }
 

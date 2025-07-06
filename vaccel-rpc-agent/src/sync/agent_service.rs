@@ -156,11 +156,11 @@ impl agent_ttrpc::AgentService for AgentService {
         self.do_genop(req).into_ttrpc()
     }
 
-    fn get_timers(
+    fn get_profiler(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
         req: ProfilingRequest,
     ) -> ttrpc::Result<ProfilingResponse> {
-        self.do_get_timers(req).into_ttrpc()
+        self.do_get_profiler(req).into_ttrpc()
     }
 }
