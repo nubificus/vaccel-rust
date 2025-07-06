@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
-use dashmap::mapref::entry::Entry;
 use log::info;
 use vaccel::Session;
 use vaccel_rpc_proto::{
@@ -54,9 +53,7 @@ impl AgentService {
                 )
             })?;
 
-        if let Entry::Occupied(t) = self.timers.entry(req.session_id.into()) {
-            t.remove_entry();
-        }
+        self.profiler_manager.remove(sess.id());
         drop(sess);
 
         info!("Destroyed session {}", req.session_id);

@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use protobuf::Message;
 use std::sync::Arc;
 use thiserror::Error as ThisError;
-use vaccel::{self, profiling::ProfRegions, Resource, Session, VaccelId};
+use vaccel::{self, profiling::ProfilerManager, Resource, Session, VaccelId};
 use vaccel_rpc_proto::{
     error::VaccelError,
     profiling::{ProfilingRequest, ProfilingResponse},
@@ -71,30 +71,36 @@ impl<T> IntoTtrpcResult<T> for Result<T> {
 pub struct AgentService {
     pub(crate) sessions: Arc<DashMap<VaccelId, Box<Session>>>,
     pub(crate) resources: Arc<DashMap<VaccelId, Box<Resource>>>,
-    pub(crate) timers: Arc<DashMap<VaccelId, ProfRegions>>,
+    pub(crate) profiler_manager: ProfilerManager,
 }
 
 unsafe impl Sync for AgentService {}
 unsafe impl Send for AgentService {}
 
 impl AgentService {
+    pub const TIMERS_PREFIX: &'static str = "vaccel-rpc-agent";
+
     pub(crate) fn new() -> Self {
         AgentService {
             sessions: Arc::new(DashMap::new()),
             resources: Arc::new(DashMap::new()),
-            timers: Arc::new(DashMap::new()),
+            profiler_manager: ProfilerManager::new(Self::TIMERS_PREFIX),
         }
     }
 
-    pub(crate) fn do_get_timers(&self, req: ProfilingRequest) -> Result<ProfilingResponse> {
-        let timers = self
-            .timers
-            .entry(req.session_id.into())
-            .or_insert_with(|| ProfRegions::new("vaccel-agent"));
-
+    pub(crate) fn do_get_profiler(&self, req: ProfilingRequest) -> Result<ProfilingResponse> {
         let mut resp = ProfilingResponse::new();
-        resp.timers = timers.clone().into();
-
+        resp.profiler = self
+            .profiler_manager
+            .get(req.session_id.into())
+            .map(|p| p.clone().into())
+            .into();
         Ok(resp)
+    }
+}
+
+impl AsRef<ProfilerManager> for AgentService {
+    fn as_ref(&self) -> &ProfilerManager {
+        &self.profiler_manager
     }
 }

@@ -6,13 +6,18 @@ package vaccel;
 
 import "error.proto";
 
-message ProfRegion {
-	message Sample {
-		uint64 start = 1;
-		uint64 time = 2;
-	}
-	string name = 1;
-	repeated Sample samples = 2;
+message Sample {
+    uint64 start = 1;
+    uint64 time = 2;
+}
+
+message Region {
+    repeated Sample samples = 1;
+}
+
+message Profiler {
+    string component_name = 1;
+    map<string, Region> regions = 2;
 }
 
 message ProfilingRequest {
@@ -20,5 +25,5 @@ message ProfilingRequest {
 }
 
 message ProfilingResponse {
-	repeated ProfRegion timers = 1;
+	Profiler profiler = 1;
 }

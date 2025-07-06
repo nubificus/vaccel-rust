@@ -46,5 +46,5 @@ service AgentService {
 	rpc GenopStream(stream GenopRequest) returns (GenopResponse);
 
 	// Profiling Operation API
-	rpc GetTimers(ProfilingRequest) returns (ProfilingResponse);
+	rpc GetProfiler(ProfilingRequest) returns (ProfilingResponse);
 }
