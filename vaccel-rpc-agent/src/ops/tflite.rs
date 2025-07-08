@@ -19,7 +19,7 @@ impl AgentService {
     ) -> Result<Empty> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -28,14 +28,14 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow Lite model load", sess.id());
+        info!("session:{} TensorFlow Lite model load", &req.session_id);
         sess.tflite_model_load(&mut res)?;
 
         Ok(Empty::new())
@@ -47,7 +47,7 @@ impl AgentService {
     ) -> Result<Empty> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -56,14 +56,14 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow Lite model unload", sess.id());
+        info!("session:{} TensorFlow Lite model unload", &req.session_id);
         sess.tflite_model_unload(&mut res)?;
 
         Ok(Empty::new())
@@ -75,7 +75,7 @@ impl AgentService {
     ) -> Result<TensorflowLiteModelRunResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -84,7 +84,7 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
@@ -106,7 +106,7 @@ impl AgentService {
                 )
             })?;
 
-        info!("session:{} TensorFlow Lite model run", sess.id());
+        info!("session:{} TensorFlow Lite model run", &req.session_id);
         let (out_tensors, status) = sess.tflite_model_run(&mut res, &in_tensors, nr_out_tensors)?;
 
         let mut resp = TensorflowLiteModelRunResponse::new();

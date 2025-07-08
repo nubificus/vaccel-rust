@@ -10,7 +10,7 @@ use std::ffi::c_int;
 use vaccel::{
     c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
     ops::torch::{DataType, DynTensor},
-    Handle,
+    Handle, VaccelId,
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
@@ -21,12 +21,14 @@ use vaccel_rpc_proto::torch::{TorchModelLoadRequest, TorchModelRunRequest, Torch
 impl VaccelRpcClient {
     pub fn torch_model_load(&self, session_id: i64, model_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
-
-        let mut req = TorchModelLoadRequest::new();
-        req.session_id = session_id;
-        req.model_id = model_id;
+        let req = TorchModelLoadRequest {
+            session_id,
+            model_id,
+            ..Default::default()
+        };
 
         self.execute(AgentServiceClient::torch_model_load, ctx, &req)?;
+
         Ok(())
     }
 
@@ -39,7 +41,6 @@ impl VaccelRpcClient {
         nr_out_tensors: u64,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
         let ctx = ttrpc::context::Context::default();
-
         let req = TorchModelRunRequest {
             session_id,
             model_id,
@@ -74,7 +75,7 @@ impl VaccelRpcClient {
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_torch_model_load(
     client_ptr: *const VaccelRpcClient,
-    sess_id: i64,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
 ) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
@@ -82,7 +83,25 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_load(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.torch_model_load(sess_id, model_id) {
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    (match client.torch_model_load(sess_vaccel_id.into(), model_vaccel_id.into()) {
         Ok(()) => ffi::VACCEL_OK,
         Err(e) => {
             error!("{}", e);
@@ -101,7 +120,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_load(
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
     client_ptr: *const VaccelRpcClient,
-    sess_id: i64,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
     run_options_ptr: *const ffi::vaccel_torch_buffer,
     in_tensors_ptr: *const *mut ffi::vaccel_torch_tensor,
@@ -109,6 +128,29 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
     out_tensors_ptr: *mut *mut ffi::vaccel_torch_tensor,
     nr_out_tensors: usize,
 ) -> c_int {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
     let run_options = unsafe {
         run_options_ptr.as_ref().map(|opts| {
             c_pointer_to_slice(opts.data as *mut u8, opts.size)
@@ -138,11 +180,6 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    let client = match unsafe { client_ptr.as_ref() } {
-        Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as c_int,
-    };
-
     let proto_nr_out_tensors = match nr_out_tensors.try_into() {
         Ok(num) => num,
         Err(e) => {
@@ -156,8 +193,8 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
     };
 
     (match client.torch_model_run(
-        sess_id,
-        model_id,
+        sess_vaccel_id.into(),
+        model_vaccel_id.into(),
         run_options,
         proto_in_tensors,
         proto_nr_out_tensors,

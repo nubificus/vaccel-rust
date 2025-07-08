@@ -4,11 +4,13 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::Result;
+use crate::{Error, Result};
+use log::error;
 use std::ptr;
 use vaccel::{
     c_pointer_to_mut_slice, ffi,
     profiling::{Profiler, ProfilerManager},
+    VaccelId,
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
@@ -56,11 +58,20 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_prof_regions(
         None => return 0,
     };
 
-    let _ret = match client.get_profiler(sess_id) {
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return 0;
+        }
+    };
+
+    let _ret = match client.get_profiler(sess_vaccel_id.into()) {
         Ok(agent_profiler) => {
             client
                 .profiler_manager
-                .merge_profiler(sess_id.into(), agent_profiler);
+                .merge_profiler(sess_vaccel_id, agent_profiler);
             ffi::VACCEL_OK
         }
         Err(_) => return 0,
@@ -68,7 +79,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_prof_regions(
 
     let regions_len = client
         .profiler_manager
-        .get(sess_id.into())
+        .get(sess_vaccel_id)
         .map_or(0, |p| p.len());
 
     if nr_regions == 0 {
@@ -79,7 +90,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_get_prof_regions(
 
     if let Some(client_profiler) = client
         .profiler_manager
-        .get(sess_id.into())
+        .get(sess_vaccel_id)
         .and_then(|p| p.to_ffi())
     {
         for (w, (rk, rv)) in regions_ref.iter_mut().zip(client_profiler.iter()) {

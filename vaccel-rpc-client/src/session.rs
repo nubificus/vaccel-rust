@@ -4,10 +4,10 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::{IntoFfiResult, Result};
+use crate::{Error, IntoFfiResult, Result};
 use log::error;
 use std::ffi::c_int;
-use vaccel::ffi;
+use vaccel::{ffi, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::session::{
@@ -27,7 +27,7 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::create_session, ctx, &req)?;
 
-        Ok(resp.session_id)
+        Ok(VaccelId::try_from(resp.session_id)?.into())
     }
 
     pub fn session_update(&self, sess_id: i64, flags: u32) -> Result<()> {
@@ -88,7 +88,18 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_update(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    client.session_update(sess_id, flags).into_ffi()
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    client
+        .session_update(sess_vaccel_id.into(), flags)
+        .into_ffi()
 }
 
 /// # Safety
@@ -105,9 +116,18 @@ pub unsafe extern "C" fn vaccel_rpc_client_session_release(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.session_release(sess_id) {
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    (match client.session_release(sess_vaccel_id.into()) {
         Ok(()) => {
-            client.profiler_manager.remove(sess_id.into());
+            client.profiler_manager.remove(sess_vaccel_id);
             ffi::VACCEL_OK
         }
         Err(e) => {

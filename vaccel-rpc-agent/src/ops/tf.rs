@@ -15,7 +15,7 @@ impl AgentService {
     ) -> Result<TensorflowModelLoadResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow model {}", &req.model_id).to_string(),
@@ -24,14 +24,14 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow model load", sess.id());
+        info!("session:{} TensorFlow model load", &req.session_id);
         let status = sess.tf_model_load(&mut res)?;
 
         let mut resp = TensorflowModelLoadResponse::new();
@@ -48,7 +48,7 @@ impl AgentService {
     ) -> Result<TensorflowModelUnloadResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow model {}", &req.model_id).to_string(),
@@ -57,14 +57,14 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow model unload", sess.id());
+        info!("session:{} TensorFlow model unload", &req.session_id);
         let status = sess.tf_model_unload(&mut res)?;
 
         let mut resp = TensorflowModelUnloadResponse::new();
@@ -79,7 +79,7 @@ impl AgentService {
     ) -> Result<TensorflowModelRunResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow model {}", &req.model_id).to_string(),
@@ -88,7 +88,7 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
@@ -114,7 +114,7 @@ impl AgentService {
             .map(|e| e.try_into())
             .collect::<vaccel::Result<Vec<tf::DynTensor>>>()?;
 
-        info!("session:{} TensorFlow model run", sess.id());
+        info!("session:{} TensorFlow model run", &req.session_id);
         let (out_tensors, status) = sess.tf_model_run(
             &mut res,
             run_options.as_ref(),
