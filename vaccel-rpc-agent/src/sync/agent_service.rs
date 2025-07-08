@@ -18,7 +18,7 @@ use vaccel_rpc_proto::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
     sync::agent_ttrpc,
-    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    torch::{TorchLoadModelRequest, TorchJitloadForwardRequest, TorchJitloadForwardResponse},
 };
 
 impl agent_ttrpc::AgentService for AgentService {
@@ -119,6 +119,14 @@ impl agent_ttrpc::AgentService for AgentService {
         req: TensorflowLiteModelRunRequest,
     ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
         self.do_tflite_model_run(req).into_ttrpc()
+    }
+
+    fn torch_load_model(
+        &self,
+        _ctx: &::ttrpc::sync::TtrpcContext,
+        req: TorchLoadModelRequest,
+    ) -> ttrpc::Result<Empty> {
+        self.do_torch_load_model(req).into_ttrpc()
     }
 
     fn torch_jitload_forward(

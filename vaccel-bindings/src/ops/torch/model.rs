@@ -3,7 +3,7 @@
 use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
-    ops::{ModelInitialize, ModelRun},
+    ops::{ModelInitialize, ModelRun, ModelLoadUnload},
     Error, Resource, Result, Session,
 };
 use log::warn;
@@ -60,6 +60,16 @@ impl Drop for InferenceArgs {
                 warn!("Could not delete Torch tensor: {}", ret);
             }
         }
+    }
+}
+
+pub struct LoadResult {
+    status: u32,
+}
+
+impl LoadResult {
+    pub fn new(status: u32) -> Self {
+        LoadResult { status }
     }
 }
 
@@ -150,6 +160,28 @@ impl<'a> ModelInitialize<'a> for Model<'a> {
             inner,
             _marker: PhantomPinned,
         })
+    }
+}
+
+impl<'a> ModelLoadUnload<'a> for Model<'a> {
+    type LoadUnloadResult = LoadResult;
+
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<LoadResult> {
+        let result = LoadResult::new(ffi::VACCEL_OK);
+        match unsafe {
+            ffi::vaccel_torch_load_model(
+                sess.inner_mut(),
+                self.inner_mut().inner_mut(),
+            ) as u32
+        } {
+            ffi::VACCEL_OK => Ok(result),
+            err => Err(Error::Ffi(err)),
+        }
+    }
+
+    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<LoadResult> {
+        let result = LoadResult::new(ffi::VACCEL_OK);
+        Ok(result)
     }
 }
 
