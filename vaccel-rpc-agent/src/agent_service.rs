@@ -92,7 +92,7 @@ impl AgentService {
         let mut resp = ProfilingResponse::new();
         resp.profiler = self
             .profiler_manager
-            .get(req.session_id.into())
+            .get(req.session_id.try_into()?)
             .map(|p| p.clone().into())
             .into();
         Ok(resp)

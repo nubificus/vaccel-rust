@@ -117,13 +117,13 @@ impl Resource {
     }
 
     /// Returns the ID of the `Resource`.
-    pub fn id(&self) -> VaccelId {
-        VaccelId::from(unsafe { self.inner.as_ref().id })
+    pub fn id(&self) -> Option<VaccelId> {
+        VaccelId::from_ffi(unsafe { self.inner.as_ref().id }).unwrap_or(None)
     }
 
     /// Returns the remote ID of the `Resource`.
-    pub fn remote_id(&self) -> VaccelId {
-        VaccelId::from(unsafe { self.inner.as_ref().remote_id })
+    pub fn remote_id(&self) -> Option<VaccelId> {
+        VaccelId::from_ffi(unsafe { self.inner.as_ref().remote_id }).unwrap_or(None)
     }
 
     /// Returns the type of the `Resource`.
@@ -144,7 +144,7 @@ impl Resource {
 
     /// Returns `true` if the `Resource` has been initialized.
     pub fn initialized(&self) -> bool {
-        self.id().has_id()
+        self.id().is_some()
     }
 
     /// Registers a `Resource` with a `Session`.

@@ -4,13 +4,13 @@
 use crate::asynchronous::client::VaccelRpcClient;
 #[cfg(not(feature = "async"))]
 use crate::sync::client::VaccelRpcClient;
-use crate::Result;
+use crate::{Error, Result};
 use log::error;
 use std::{
     ffi::{c_int, c_uchar},
     slice,
 };
-use vaccel::ffi;
+use vaccel::{ffi, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::image::ImageClassificationRequest;
@@ -41,21 +41,30 @@ impl VaccelRpcClient {
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_image_classify(
     client_ptr: *const VaccelRpcClient,
-    sess_id: i64,
+    sess_id: ffi::vaccel_id_t,
     img_ptr: *const c_uchar,
     img_len: usize,
     tags_ptr: *mut c_uchar,
     tags_len: usize,
 ) -> c_int {
-    let img = unsafe { slice::from_raw_parts(img_ptr, img_len) };
-    let tags = unsafe { slice::from_raw_parts_mut(tags_ptr, tags_len) };
-
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.image_classify(sess_id, img.to_vec()) {
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let img = unsafe { slice::from_raw_parts(img_ptr, img_len) };
+    let tags = unsafe { slice::from_raw_parts_mut(tags_ptr, tags_len) };
+
+    (match client.image_classify(sess_vaccel_id.into(), img.to_vec()) {
         Ok(ret) => {
             tags.copy_from_slice(&ret[..tags.len()]);
             ffi::VACCEL_OK

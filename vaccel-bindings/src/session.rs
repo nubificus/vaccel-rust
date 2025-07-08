@@ -29,8 +29,13 @@ impl Session {
     }
 
     /// Returns the ID of the `Session`.
-    pub fn id(&self) -> VaccelId {
-        VaccelId::from(unsafe { self.inner.as_ref().id })
+    pub fn id(&self) -> Option<VaccelId> {
+        VaccelId::from_ffi(unsafe { self.inner.as_ref().id }).unwrap_or(None)
+    }
+
+    /// Returns the remote ID of the `Session`.
+    pub fn remote_id(&self) -> Option<VaccelId> {
+        VaccelId::from_ffi(unsafe { self.inner.as_ref().remote_id }).unwrap_or(None)
     }
 
     /// Returns the flags set for the `Session`.
@@ -40,7 +45,7 @@ impl Session {
 
     /// Returns `true` if the `Session` has been initialized.
     pub fn initialized(&self) -> bool {
-        self.id().has_id()
+        self.id().is_some()
     }
 
     /// Updates the hint flags for the 'Session`.
