@@ -3,7 +3,7 @@
 use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
-    ops::{ModelInitialize, ModelRun},
+    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
 use log::warn;
@@ -153,6 +153,25 @@ impl<'a> ModelInitialize<'a> for Model<'a> {
     }
 }
 
+impl<'a> ModelLoadUnload<'a> for Model<'a> {
+    type LoadUnloadResult = ();
+
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
+        let result = ();
+        match unsafe {
+            ffi::vaccel_torch_model_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+        } {
+            ffi::VACCEL_OK => Ok(result),
+            err => Err(Error::Ffi(err)),
+        }
+    }
+
+    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
+        let result = ();
+        Ok(result)
+    }
+}
+
 impl<'a> ModelRun<'a> for Model<'a> {
     type RunArgs = InferenceArgs;
     type RunResult = InferenceResult;
@@ -164,7 +183,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
     ) -> Result<InferenceResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
         match unsafe {
-            ffi::vaccel_torch_jitload_forward(
+            ffi::vaccel_torch_model_run(
                 sess.inner_mut(),
                 self.inner_mut().inner_mut(),
                 args.run_options,
