@@ -30,8 +30,14 @@ message TorchTensor {
 	TorchDataType type = 3;
 }
 
-// Jitload_forward
-message TorchJitloadForwardRequest {
+// Load_model
+message TorchModelLoadRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
+// Model_run
+message TorchModelRunRequest {
 	int64 session_id = 1;
 	int64 model_id = 2;
 
@@ -45,7 +51,7 @@ message TorchJitloadForwardRequest {
 	int32 nr_outputs = 5;
 }
 
-message TorchJitloadForwardResponse {
+message TorchModelRunResponse {
 	// An inference result is a number of output tensors
 	repeated TorchTensor out_tensors = 1;
 }

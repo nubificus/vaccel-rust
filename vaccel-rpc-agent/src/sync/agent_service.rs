@@ -18,7 +18,7 @@ use vaccel_rpc_proto::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
     sync::agent_ttrpc,
-    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    torch::{TorchModelLoadRequest, TorchModelRunRequest, TorchModelRunResponse},
 };
 
 impl agent_ttrpc::AgentService for AgentService {
@@ -121,12 +121,20 @@ impl agent_ttrpc::AgentService for AgentService {
         self.do_tflite_model_run(req).into_ttrpc()
     }
 
-    fn torch_jitload_forward(
+    fn torch_model_load(
         &self,
         _ctx: &::ttrpc::sync::TtrpcContext,
-        req: TorchJitloadForwardRequest,
-    ) -> ttrpc::Result<TorchJitloadForwardResponse> {
-        self.do_torch_jitload_forward(req).into_ttrpc()
+        req: TorchModelLoadRequest,
+    ) -> ttrpc::Result<Empty> {
+        self.do_torch_model_load(req).into_ttrpc()
+    }
+
+    fn torch_model_run(
+        &self,
+        _ctx: &::ttrpc::sync::TtrpcContext,
+        req: TorchModelRunRequest,
+    ) -> ttrpc::Result<TorchModelRunResponse> {
+        self.do_torch_model_run(req).into_ttrpc()
     }
 
     fn genop(

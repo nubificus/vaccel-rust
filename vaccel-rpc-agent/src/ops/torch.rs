@@ -3,16 +3,43 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
+use vaccel::ops::ModelLoadUnload;
 use vaccel::ops::{torch, ModelInitialize, ModelRun};
-use vaccel_rpc_proto::torch::{
-    TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchTensor,
+use vaccel_rpc_proto::{
+    empty::Empty,
+    torch::{TorchModelLoadRequest, TorchModelRunRequest, TorchModelRunResponse, TorchTensor},
 };
 
 impl AgentService {
-    pub(crate) fn do_torch_jitload_forward(
+    pub(crate) fn do_torch_model_load(&self, req: TorchModelLoadRequest) -> Result<Empty> {
+        let mut res = self
+            .resources
+            .get_mut(&req.model_id.into())
+            .ok_or_else(|| {
+                AgentServiceError::NotFound(
+                    format!("Unknown PyTorch model {}", &req.model_id).to_string(),
+                )
+            })?;
+
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or_else(|| {
+                AgentServiceError::NotFound(
+                    format!("Unknown session {}", &req.session_id).to_string(),
+                )
+            })?;
+
+        info!("session:{} PyTorch load model", sess.id());
+        let mut model = torch::Model::new(res.as_mut());
+        model.as_mut().load(&mut sess)?;
+        Ok(Empty::new())
+    }
+
+    pub(crate) fn do_torch_model_run(
         &self,
-        req: TorchJitloadForwardRequest,
-    ) -> Result<TorchJitloadForwardResponse> {
+        req: TorchModelRunRequest,
+    ) -> Result<TorchModelRunResponse> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.into())
@@ -51,7 +78,7 @@ impl AgentService {
             )
         })?;
 
-        info!("session:{} PyTorch jitload forward", sess.id());
+        info!("session:{} PyTorch model run", sess.id());
         let mut model = torch::Model::new(res.as_mut());
         let result = model.as_mut().run(&mut sess, &mut sess_args)?;
 
@@ -60,7 +87,7 @@ impl AgentService {
             out_tensors.push(result.to_grpc_output(i)?);
         }
 
-        let mut resp = TorchJitloadForwardResponse::new();
+        let mut resp = TorchModelRunResponse::new();
         resp.out_tensors = out_tensors;
 
         Ok(resp)
