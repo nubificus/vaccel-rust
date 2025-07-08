@@ -20,5 +20,5 @@ fn main() {
         }
     };
 
-    info!("Initialized session {}", sess.id());
+    info!("Initialized session {}", sess.id().unwrap());
 }

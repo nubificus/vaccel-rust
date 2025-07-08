@@ -11,14 +11,14 @@ impl AgentService {
     ) -> Result<ImageClassificationResponse> {
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} Image classification", sess.id());
+        info!("session:{} Image classification", &req.session_id);
         let (tags, _) = sess.image_classification(&req.image)?;
 
         let mut resp = ImageClassificationResponse::new();

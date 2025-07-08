@@ -10,7 +10,7 @@ use std::ffi::c_int;
 use vaccel::{
     c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
     ops::tf::lite::{DataType, DynTensor, Status as TfliteStatus},
-    Handle,
+    Handle, VaccelId,
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
@@ -59,7 +59,6 @@ impl VaccelRpcClient {
         nr_out_tensors: u64,
     ) -> Result<(Vec<*mut ffi::vaccel_tflite_tensor>, TfliteStatus)> {
         let ctx = ttrpc::context::Context::default();
-
         let req = TensorflowLiteModelRunRequest {
             model_id,
             session_id,
@@ -108,15 +107,35 @@ impl Error {
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_load(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
 ) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    client.tflite_model_load(model_id, sess_id).into_ffi()
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    client
+        .tflite_model_load(model_vaccel_id.into(), sess_vaccel_id.into())
+        .into_ffi()
 }
 
 /// # Safety
@@ -126,15 +145,35 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_load(
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_unload(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
 ) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
         Some(client) => client,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    client.tflite_model_unload(model_id, sess_id).into_ffi()
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    client
+        .tflite_model_unload(model_vaccel_id.into(), sess_vaccel_id.into())
+        .into_ffi()
 }
 
 /// # Safety
@@ -146,14 +185,37 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_unload(
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
     in_tensors_ptr: *const *mut ffi::vaccel_tflite_tensor,
     nr_inputs: usize,
     out_tensors_ptr: *mut *mut ffi::vaccel_tflite_tensor,
     nr_out_tensors: usize,
     status_ptr: *mut u8,
 ) -> c_int {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
     let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
         Some(slice) => slice,
         None => return ffi::VACCEL_EINVAL as c_int,
@@ -175,11 +237,6 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    let client = match unsafe { client_ptr.as_ref() } {
-        Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as c_int,
-    };
-
     let proto_nr_out_tensors = match nr_out_tensors.try_into() {
         Ok(num) => num,
         Err(e) => {
@@ -193,7 +250,12 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
     };
 
     let (ret, status) = client
-        .tflite_model_run(model_id, sess_id, proto_in_tensors, proto_nr_out_tensors)
+        .tflite_model_run(
+            model_vaccel_id.into(),
+            sess_vaccel_id.into(),
+            proto_in_tensors,
+            proto_nr_out_tensors,
+        )
         .map_or_else(
             |e| {
                 error!("{}", e);

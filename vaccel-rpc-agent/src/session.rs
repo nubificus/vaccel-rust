@@ -16,11 +16,14 @@ impl AgentService {
         req: CreateSessionRequest,
     ) -> Result<CreateSessionResponse> {
         let sess = Session::with_flags(req.flags)?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
         let mut resp = CreateSessionResponse::new();
-        resp.session_id = sess.id().into();
+        resp.session_id = sess_id.into();
 
-        let e = self.sessions.insert(sess.id(), Box::new(sess));
+        let e = self.sessions.insert(sess_id, Box::new(sess));
         assert!(e.is_none());
 
         info!("Created session {}", resp.session_id);
@@ -30,7 +33,7 @@ impl AgentService {
     pub(crate) fn do_update_session(&self, req: UpdateSessionRequest) -> Result<Empty> {
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
@@ -46,14 +49,17 @@ impl AgentService {
     pub(crate) fn do_destroy_session(&self, req: DestroySessionRequest) -> Result<Empty> {
         let (_, sess) = self
             .sessions
-            .remove(&req.session_id.into())
+            .remove(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        self.profiler_manager.remove(sess.id());
+        self.profiler_manager
+            .remove(sess.id().ok_or(AgentServiceError::Internal(
+                "Invalid session ID".to_string(),
+            ))?);
         drop(sess);
 
         info!("Destroyed session {}", req.session_id);
