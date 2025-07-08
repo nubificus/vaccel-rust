@@ -2,51 +2,52 @@
 
 use crate::{ffi, Config, Error, Handle, Result};
 use derive_more::Display;
+use std::num::NonZeroI64;
 
 /// Wrapper for the `vaccel_id_t` C object.
-#[derive(Debug, Default, Display, Copy, Clone, Eq, PartialEq, Hash)]
-#[display("{}", inner.map_or("No value".to_string(), |v| v.to_string()))]
-pub struct VaccelId {
-    inner: Option<ffi::vaccel_id_t>,
-}
+#[derive(Debug, Display, Copy, Clone, Eq, PartialEq, Hash)]
+#[display("{}", self.0)]
+pub struct VaccelId(NonZeroI64);
 
 impl VaccelId {
-    /// Returns `true` if the `VaccelId` holds an actual ID.
-    pub fn has_id(&self) -> bool {
-        self.inner.is_some()
+    /// Creates a new `VaccelId` from a positive integer.
+    pub fn new(value: i64) -> Result<Self> {
+        Ok(VaccelId(NonZeroI64::new(value).ok_or(
+            Error::InvalidArgument("ID must be positive".to_string()),
+        )?))
+    }
+
+    /// Creates a new `VaccelId` from an FFI value, mapping 0 (uninitialized)
+    /// to None.
+    pub fn from_ffi(value: ffi::vaccel_id_t) -> Result<Option<Self>> {
+        match value {
+            0 => Ok(None),
+            x if x > 0 => Ok(Some(VaccelId(NonZeroI64::new(x).unwrap()))),
+            _ => Err(Error::InvalidArgument(format!("Invalid ID: {}", value))),
+        }
+    }
+
+    /// Returns the contained value as an integer.
+    pub fn get(&self) -> i64 {
+        self.0.get()
     }
 }
 
-impl From<ffi::vaccel_id_t> for VaccelId {
-    fn from(id: ffi::vaccel_id_t) -> Self {
-        if id <= 0 {
-            VaccelId { inner: None }
+impl TryFrom<i64> for VaccelId {
+    type Error = Error;
+
+    fn try_from(value: i64) -> Result<Self> {
+        if value > 0 {
+            Ok(VaccelId(NonZeroI64::new(value).unwrap()))
         } else {
-            VaccelId { inner: Some(id) }
+            Err(Error::InvalidArgument(format!("Invalid ID: {}", value)))
         }
     }
 }
 
-impl From<VaccelId> for ffi::vaccel_id_t {
+impl From<VaccelId> for i64 {
     fn from(id: VaccelId) -> Self {
-        id.inner.unwrap_or(0)
-    }
-}
-
-impl From<VaccelId> for u32 {
-    fn from(id: VaccelId) -> Self {
-        match id.inner {
-            None => 0,
-            Some(id) => id as u32,
-        }
-    }
-}
-
-impl From<u32> for VaccelId {
-    fn from(id: u32) -> Self {
-        VaccelId {
-            inner: Some(id.into()),
-        }
+        id.get()
     }
 }
 

@@ -4,7 +4,7 @@ use super::client::VaccelRpcClient;
 use crate::Result;
 use protobuf::Message;
 use ttrpc::asynchronous::ClientStreamSender;
-use vaccel::profiling::SessionProfiler;
+use vaccel::{profiling::SessionProfiler, VaccelId};
 use vaccel_rpc_proto::genop::{Arg, GenopRequest, GenopResponse};
 
 impl VaccelRpcClient {
@@ -17,15 +17,17 @@ impl VaccelRpcClient {
         args: Vec<Arg>,
         is_read: bool,
     ) {
+        let sess_vaccel_id = VaccelId::try_from(sess_id).unwrap();
+
         let mut req = GenopRequest {
-            session_id: sess_id,
+            session_id: sess_vaccel_id.into(),
             ..Default::default()
         };
 
         for a in args {
             if req.compute_size() + a.compute_size() < Self::MAX_REQ_LEN {
                 self.profile_fn(
-                    sess_id.into(),
+                    sess_vaccel_id,
                     "genop > client > ttrpc_client.genop > req create",
                     || match is_read {
                         true => req.read_args.push(a),
@@ -34,7 +36,7 @@ impl VaccelRpcClient {
                 );
             } else {
                 self.profile_async_fn(
-                    sess_id.into(),
+                    sess_vaccel_id,
                     "genop > client > ttrpc_client.genop > stream",
                     || async { stream.send(&req).await.unwrap() },
                 )
@@ -47,7 +49,7 @@ impl VaccelRpcClient {
                 for (no, c) in chunks.enumerate() {
                     let req = self
                         .profile_async_fn(
-                            sess_id.into(),
+                            sess_vaccel_id,
                             "genop > client > ttrpc_client.genop > req create",
                             || async {
                                 let arg = Arg {
@@ -74,7 +76,7 @@ impl VaccelRpcClient {
                         .await;
 
                     self.profile_async_fn(
-                        sess_id.into(),
+                        sess_vaccel_id,
                         "genop > client > ttrpc_client.genop > stream",
                         || async { stream.send(&req).await.unwrap() },
                     )
@@ -93,7 +95,7 @@ impl VaccelRpcClient {
         };
         if args_len > 0 {
             self.profile_async_fn(
-                sess_id.into(),
+                sess_vaccel_id,
                 "genop > client > ttrpc_client.genop > stream",
                 || async { stream.send(&req).await.unwrap() },
             )
@@ -108,34 +110,39 @@ impl VaccelRpcClient {
         write_args: Vec<Arg>,
     ) -> Result<Vec<Arg>> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(sess_id)?;
 
-        self.start_profiling(sess_id.into(), "genop > client > ttrpc_client.genop");
+        self.start_profiling(sess_vaccel_id, "genop > client > ttrpc_client.genop");
 
         let tc = self.ttrpc_client.clone();
         let runtime = self.runtime.clone();
-        let resp = runtime.block_on(async {
-            let mut stream = self
-                .profile_async_fn(
-                    sess_id.into(),
+        let resp = runtime
+            .block_on(async {
+                let mut stream = self
+                    .profile_async_fn(
+                        sess_vaccel_id,
+                        "genop > client > ttrpc_client.genop > stream",
+                        || async { tc.genop_stream(ctx).await.unwrap() },
+                    )
+                    .await;
+
+                self.genop_stream_send_args(sess_id, &stream, read_args, true)
+                    .await;
+                self.genop_stream_send_args(sess_id, &stream, write_args, false)
+                    .await;
+
+                self.profile_async_fn(
+                    sess_vaccel_id,
                     "genop > client > ttrpc_client.genop > stream",
-                    || async { tc.genop_stream(ctx).await.unwrap() },
+                    || async { stream.close_and_recv().await },
                 )
-                .await;
+                .await
+            })
+            .inspect_err(|_| {
+                self.stop_profiling(sess_vaccel_id, "genop > client > ttrpc_client.genop");
+            })?;
 
-            self.genop_stream_send_args(sess_id, &stream, read_args, true)
-                .await;
-            self.genop_stream_send_args(sess_id, &stream, write_args, false)
-                .await;
-
-            self.profile_async_fn(
-                sess_id.into(),
-                "genop > client > ttrpc_client.genop > stream",
-                || async { stream.close_and_recv().await },
-            )
-            .await
-        })?;
-
-        self.stop_profiling(sess_id.into(), "genop > client > ttrpc_client.genop");
+        self.stop_profiling(sess_vaccel_id, "genop > client > ttrpc_client.genop");
 
         Ok(resp.write_args)
     }

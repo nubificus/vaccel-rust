@@ -8,7 +8,7 @@ use crate::{Error, IntoFfiResult, Result};
 use log::error;
 use protobuf::Enum;
 use std::ffi::{c_char, c_int, CStr};
-use vaccel::{c_pointer_to_slice, ffi, profiling::SessionProfiler, Blob, Handle};
+use vaccel::{c_pointer_to_slice, ffi, profiling::SessionProfiler, Blob, Handle, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::resource::{
@@ -38,7 +38,7 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::register_resource, ctx, &req)?;
 
-        Ok(resp.resource_id)
+        Ok(VaccelId::try_from(resp.resource_id)?.into())
     }
 
     pub fn resource_unregister(&self, res_id: i64, sess_id: i64) -> Result<()> {
@@ -66,7 +66,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     blobs_ptr: *mut *mut ffi::vaccel_blob,
     nr_elems: usize,
     r#type: u32,
-    id: ffi::vaccel_id_t,
+    res_id: ffi::vaccel_id_t,
     sess_id: ffi::vaccel_id_t,
 ) -> ffi::vaccel_id_t {
     let client = match unsafe { client_ptr.as_mut() } {
@@ -74,11 +74,29 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
         None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
     };
 
+    let res_vaccel_id = match VaccelId::from_ffi(res_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return -(err.to_ffi() as ffi::vaccel_id_t);
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return -(err.to_ffi() as ffi::vaccel_id_t);
+        }
+    };
+
     let mut proto_blobs: Vec<ProtoBlob> = Vec::new();
     let mut paths: Vec<String> = Vec::new();
-    if id < 0 {
+    if res_vaccel_id.is_none() {
         if !paths_ptr.is_null() {
-            let _scope = client.profile_scope(sess_id.into(), "client_resource_register > paths");
+            let _scope = client.profile_scope(sess_vaccel_id, "client_resource_register > paths");
             let p_slice = match c_pointer_to_slice(paths_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
@@ -105,7 +123,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
                 }
             };
         } else {
-            let _scope = client.profile_scope(sess_id.into(), "client_resource_register > files");
+            let _scope = client.profile_scope(sess_vaccel_id, "client_resource_register > files");
             let blobs = match c_pointer_to_slice(blobs_ptr, nr_elems) {
                 Some(slice) => slice,
                 None => return -(ffi::VACCEL_EINVAL as ffi::vaccel_id_t),
@@ -125,7 +143,13 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
     }
 
     client
-        .resource_register(paths, proto_blobs, r#type as i32, id, sess_id)
+        .resource_register(
+            paths,
+            proto_blobs,
+            r#type as i32,
+            res_vaccel_id.map_or(0, |id| id.into()),
+            sess_vaccel_id.into(),
+        )
         .into_ffi()
 }
 
@@ -144,5 +168,25 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_unregister(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    client.resource_unregister(res_id, sess_id).into_ffi()
+    let res_vaccel_id = match VaccelId::try_from(res_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    client
+        .resource_unregister(res_vaccel_id.into(), sess_vaccel_id.into())
+        .into_ffi()
 }

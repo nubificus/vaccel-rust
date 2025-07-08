@@ -13,7 +13,7 @@ impl AgentService {
     ) -> Result<TorchJitloadForwardResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown PyTorch model {}", &req.model_id).to_string(),
@@ -22,7 +22,7 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
@@ -46,7 +46,7 @@ impl AgentService {
                 )
             })?;
 
-        info!("session:{} PyTorch jitload forward", sess.id());
+        info!("session:{} PyTorch jitload forward", &req.session_id);
         let out_tensors = sess.torch_jitload_forward(
             &mut res,
             run_options.as_ref(),
