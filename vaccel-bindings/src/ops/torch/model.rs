@@ -3,7 +3,7 @@
 use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
 use crate::{
     ffi,
-    ops::{ModelInitialize, ModelRun, ModelLoadUnload},
+    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
     Error, Resource, Result, Session,
 };
 use log::warn;
@@ -169,10 +169,7 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<LoadResult> {
         let result = LoadResult::new(ffi::VACCEL_OK);
         match unsafe {
-            ffi::vaccel_torch_load_model(
-                sess.inner_mut(),
-                self.inner_mut().inner_mut(),
-            ) as u32
+            ffi::vaccel_torch_load_model(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(result),
             err => Err(Error::Ffi(err)),

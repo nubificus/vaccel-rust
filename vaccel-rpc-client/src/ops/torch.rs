@@ -12,14 +12,10 @@ use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::torch::{TorchLoadModelRequest, TorchJitloadForwardRequest, TorchTensor};
+use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchLoadModelRequest, TorchTensor};
 
 impl VaccelRpcClient {
-    pub fn torch_load_model(
-        &self,
-        session_id: i64,
-        model_id: i64,
-    ) -> Result<()> {
+    pub fn torch_load_model(&self, session_id: i64, model_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
 
         let mut req = TorchLoadModelRequest::new();
@@ -174,13 +170,10 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_load_model(
     };
 
     (match client.torch_load_model(model_id, sess_id) {
-        Ok(()) => {
-            ffi::VACCEL_OK
-        }
+        Ok(()) => ffi::VACCEL_OK,
         Err(e) => {
             error!("{}", e);
             e.to_ffi()
         }
     }) as c_int
-
 }

@@ -18,7 +18,7 @@ use vaccel_rpc_proto::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
     sync::agent_ttrpc,
-    torch::{TorchLoadModelRequest, TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchLoadModelRequest},
 };
 
 impl agent_ttrpc::AgentService for AgentService {

@@ -3,19 +3,17 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
+use vaccel::ops::ModelLoadUnload;
 use vaccel::ops::{torch, ModelInitialize, ModelRun};
 use vaccel_rpc_proto::{
     empty::Empty,
     torch::{
-        TorchLoadModelRequest, TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchTensor,}
+        TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchLoadModelRequest, TorchTensor,
+    },
 };
-use vaccel::ops::ModelLoadUnload;
 
 impl AgentService {
-    pub(crate) fn do_torch_load_model(
-        &self,
-        req: TorchLoadModelRequest,
-    ) -> Result<Empty> {
+    pub(crate) fn do_torch_load_model(&self, req: TorchLoadModelRequest) -> Result<Empty> {
         let mut res = self
             .resources
             .get_mut(&req.model_id.into())

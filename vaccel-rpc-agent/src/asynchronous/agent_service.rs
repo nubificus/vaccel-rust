@@ -20,7 +20,7 @@ use vaccel_rpc_proto::{
     session::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
-    torch::{TorchLoadModelRequest, TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchLoadModelRequest},
 };
 //use tracing::{info, instrument, Instrument};
 use log::debug;
