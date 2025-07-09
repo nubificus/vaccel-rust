@@ -3,12 +3,41 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
+use vaccel::ops::ModelLoadUnload;
 use vaccel::ops::{torch, ModelInitialize, ModelRun};
-use vaccel_rpc_proto::torch::{
-    TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchTensor,
+use vaccel_rpc_proto::{
+    empty::Empty,
+    torch::{
+        TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchLoadModelRequest, TorchTensor,
+    },
 };
 
 impl AgentService {
+    pub(crate) fn do_torch_load_model(&self, req: TorchLoadModelRequest) -> Result<Empty> {
+        let mut res = self
+            .resources
+            .get_mut(&req.model_id.into())
+            .ok_or_else(|| {
+                AgentServiceError::NotFound(
+                    format!("Unknown PyTorch model {}", &req.model_id).to_string(),
+                )
+            })?;
+
+        let mut sess = self
+            .sessions
+            .get_mut(&req.session_id.into())
+            .ok_or_else(|| {
+                AgentServiceError::NotFound(
+                    format!("Unknown session {}", &req.session_id).to_string(),
+                )
+            })?;
+
+        info!("session:{} PyTorch load model", sess.id());
+        let mut model = torch::Model::new(res.as_mut());
+        model.as_mut().load(&mut sess)?;
+        Ok(Empty::new())
+    }
+
     pub(crate) fn do_torch_jitload_forward(
         &self,
         req: TorchJitloadForwardRequest,

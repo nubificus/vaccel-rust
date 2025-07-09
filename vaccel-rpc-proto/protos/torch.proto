@@ -30,6 +30,12 @@ message TorchTensor {
 	TorchDataType type = 3;
 }
 
+// Load_model
+message TorchLoadModelRequest {
+	int64 session_id = 1;
+	int64 model_id = 2;
+}
+
 // Jitload_forward
 message TorchJitloadForwardRequest {
 	int64 session_id = 1;

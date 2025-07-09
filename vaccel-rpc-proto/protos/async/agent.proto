@@ -37,6 +37,7 @@ service AgentService {
 	rpc TensorflowLiteModelRun(TensorflowLiteModelRunRequest) returns (TensorflowLiteModelRunResponse);
 
 	// PyTorch inference API
+	rpc TorchLoadModel(TorchLoadModelRequest) returns (Empty);
 	rpc TorchJitloadForward(TorchJitloadForwardRequest) returns (TorchJitloadForwardResponse);
 
 	// Generic Operation API

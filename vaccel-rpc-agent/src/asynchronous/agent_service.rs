@@ -20,7 +20,7 @@ use vaccel_rpc_proto::{
     session::{
         CreateSessionRequest, CreateSessionResponse, DestroySessionRequest, UpdateSessionRequest,
     },
-    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse},
+    torch::{TorchJitloadForwardRequest, TorchJitloadForwardResponse, TorchLoadModelRequest},
 };
 //use tracing::{info, instrument, Instrument};
 use log::debug;
@@ -124,6 +124,14 @@ impl agent_ttrpc::AgentService for AgentService {
         req: TensorflowLiteModelRunRequest,
     ) -> ttrpc::Result<TensorflowLiteModelRunResponse> {
         self.do_tflite_model_run(req).into_ttrpc()
+    }
+
+    async fn torch_load_model(
+        &self,
+        _ctx: &::ttrpc::asynchronous::TtrpcContext,
+        req: TorchLoadModelRequest,
+    ) -> ttrpc::Result<Empty> {
+        self.do_torch_load_model(req).into_ttrpc()
     }
 
     async fn torch_jitload_forward(

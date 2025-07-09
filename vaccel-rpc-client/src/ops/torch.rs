@@ -12,9 +12,20 @@ use vaccel::{c_pointer_to_mut_slice, c_pointer_to_slice, ffi};
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
-use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchTensor};
+use vaccel_rpc_proto::torch::{TorchJitloadForwardRequest, TorchLoadModelRequest, TorchTensor};
 
 impl VaccelRpcClient {
+    pub fn torch_load_model(&self, session_id: i64, model_id: i64) -> Result<()> {
+        let ctx = ttrpc::context::Context::default();
+
+        let mut req = TorchLoadModelRequest::new();
+        req.session_id = session_id;
+        req.model_id = model_id;
+
+        self.execute(AgentServiceClient::torch_load_model, ctx, &req)?;
+        Ok(())
+    }
+
     pub fn torch_jitload_forward(
         &self,
         session_id: i64,
@@ -136,6 +147,30 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_jitload_forward(
             out_tensors.copy_from_slice(&results);
             ffi::VACCEL_OK
         }
+        Err(e) => {
+            error!("{}", e);
+            e.to_ffi()
+        }
+    }) as c_int
+}
+
+/// # Safety
+///
+/// `client_ptr` must be a valid pointer to an object obtained by
+/// `create_client()`.
+#[no_mangle]
+pub unsafe extern "C" fn vaccel_rpc_client_torch_load_model(
+    client_ptr: *const VaccelRpcClient,
+    sess_id: i64,
+    model_id: ffi::vaccel_id_t,
+) -> c_int {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+
+    (match client.torch_load_model(model_id, sess_id) {
+        Ok(()) => ffi::VACCEL_OK,
         Err(e) => {
             error!("{}", e);
             e.to_ffi()
