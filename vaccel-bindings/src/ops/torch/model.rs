@@ -63,16 +63,6 @@ impl Drop for InferenceArgs {
     }
 }
 
-pub struct LoadResult {
-    status: u32,
-}
-
-impl LoadResult {
-    pub fn new(status: u32) -> Self {
-        LoadResult { status }
-    }
-}
-
 pub struct InferenceResult {
     out_tensors: Vec<*mut ffi::vaccel_torch_tensor>,
     // TODO: Do we need a torch::status here?
@@ -164,10 +154,10 @@ impl<'a> ModelInitialize<'a> for Model<'a> {
 }
 
 impl<'a> ModelLoadUnload<'a> for Model<'a> {
-    type LoadUnloadResult = LoadResult;
+    type LoadUnloadResult = ();
 
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<LoadResult> {
-        let result = LoadResult::new(ffi::VACCEL_OK);
+    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
+        let result = ();
         match unsafe {
             ffi::vaccel_torch_load_model(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
@@ -176,8 +166,8 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
         }
     }
 
-    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<LoadResult> {
-        let result = LoadResult::new(ffi::VACCEL_OK);
+    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
+        let result = ();
         Ok(result)
     }
 }
