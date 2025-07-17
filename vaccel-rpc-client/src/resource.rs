@@ -70,7 +70,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_resource_register(
 
     let mut blobs: Vec<Blob> = Vec::new();
     let mut paths: Vec<String> = Vec::new();
-    if id < 0 {
+    if id <= 0 {
         // FIXME: error reporting
         if !paths_ptr.is_null() {
             client.timer_start(sess_id, "client_resource_register > paths");
