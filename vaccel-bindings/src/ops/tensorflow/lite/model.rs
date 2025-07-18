@@ -156,7 +156,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
     ) -> Result<Self::RunResult> {
         let mut result = InferenceResult::new(args.in_tensors.len());
         match unsafe {
-            ffi::vaccel_tflite_session_run(
+            ffi::vaccel_tflite_model_run(
                 sess.inner_mut(),
                 self.inner_mut().inner_mut(),
                 args.in_tensors.as_ptr() as *const *mut ffi::vaccel_tflite_tensor,
@@ -184,7 +184,7 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
 
     fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
-            ffi::vaccel_tflite_session_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+            ffi::vaccel_tflite_model_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Ffi(err)),
@@ -193,7 +193,7 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
 
     fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         match unsafe {
-            ffi::vaccel_tflite_session_delete(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
+            ffi::vaccel_tflite_model_unload(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
         } {
             ffi::VACCEL_OK => Ok(()),
             err => Err(Error::Ffi(err)),

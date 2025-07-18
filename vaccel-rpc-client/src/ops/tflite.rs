@@ -119,7 +119,7 @@ impl Error {
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_load(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_load(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
@@ -137,7 +137,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_load(
 /// `client_ptr` must be a valid pointer to an object obtained by
 /// `create_client()`.
 #[no_mangle]
-pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_delete(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_unload(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
@@ -157,7 +157,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_delete(
 /// `in_tensors_ptr` and `out_tensors_ptr` are expected to be valid pointers to
 /// objects allocated manually or by the respective vAccel functions.
 #[no_mangle]
-pub unsafe extern "C" fn vaccel_rpc_client_tflite_session_run(
+pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
     client_ptr: *const VaccelRpcClient,
     model_id: ffi::vaccel_id_t,
     sess_id: i64,
