@@ -174,7 +174,7 @@ impl<'a> ModelRun<'a> for Model<'a> {
     ) -> Result<Self::RunResult> {
         let mut result = InferenceResult::new(args.out_nodes.len());
         match unsafe {
-            ffi::vaccel_tf_session_run(
+            ffi::vaccel_tf_model_run(
                 sess.inner_mut(),
                 self.inner_mut().inner_mut(),
                 args.run_options,
@@ -217,7 +217,7 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         let mut status = Status::default();
         match unsafe {
-            ffi::vaccel_tf_session_load(
+            ffi::vaccel_tf_model_load(
                 sess.inner_mut(),
                 self.inner_mut().inner_mut(),
                 status.inner_mut(),
@@ -238,7 +238,7 @@ impl<'a> ModelLoadUnload<'a> for Model<'a> {
     fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult> {
         let mut status = Status::default();
         match unsafe {
-            ffi::vaccel_tf_session_delete(
+            ffi::vaccel_tf_model_unload(
                 sess.inner_mut(),
                 self.inner_mut().inner_mut(),
                 status.inner_mut(),
