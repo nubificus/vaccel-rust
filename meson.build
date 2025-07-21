@@ -16,8 +16,33 @@ from pathlib import Path
 files = filter(lambda p: p.suffix in "@1@".split(","), Path('@0@').glob("**/*"))
 for f in files: print(f)
 '''
+glob_dir = '''
+from pathlib import Path
+files = filter(lambda p: p.is_dir() and p.stem.startswith("@1@"), Path("@0@").glob("*"))
+for f in files: print(f)
+'''
 pymod = import('python')
 python = pymod.find_installation()
+
+cc = meson.get_compiler('c')
+cc_print = run_command(cc.cmd_array(), '-print-search-dirs',
+  check: false).stdout().strip().split('\n')
+cc_lib_dirs = []
+foreach l : cc_print
+  if l.contains('libraries')
+    cc_lib_dirs = l.split('=')[1].split(':')
+  endif
+endforeach
+llvm_lib_dirs = []
+foreach d : cc_lib_dirs
+  dir = run_command(python, '-c',
+    glob_dir.format(d, 'llvm-'),
+    check: true).stdout().strip()
+  if dir != ''
+    llvm_lib_dirs += dir / 'lib'
+  endif
+endforeach
+libclang_dep = cc.find_library('clang', dirs : llvm_lib_dirs)
 
 libvaccel_dep = dependency('vaccel', version : '>=0.7.0')
 vaccel_sources = run_command(python, '-c',
@@ -78,7 +103,6 @@ if opt_rpc_client.enabled()
       cargo_toml, '*vaccel*client.*', '@OUTDIR@',
       features, features_client, '-p', 'vaccel-rpc-client'])
 
-  cc = meson.get_compiler('c')
   m_dep = cc.find_library('m')
   rt_dep = cc.find_library('rt')
   vaccel_rpc_client_deps = [
