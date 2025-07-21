@@ -12,7 +12,7 @@ fn main() {
     info!("Starting vAccel session handling example");
 
     info!("Creating new vAccel session");
-    let mut sess = match Session::new(0) {
+    let sess = match Session::new() {
         Ok(sess) => sess,
         Err(e) => {
             error!("Error: {}", e);
@@ -20,11 +20,5 @@ fn main() {
         }
     };
 
-    info!("Initialized session {}", sess.id());
-
-    info!("Releasing session {}", sess.id());
-    match sess.release() {
-        Ok(()) => info!("Done"),
-        Err(e) => info!("Error: {}", e),
-    }
+    info!("Initialized session {}", sess.id().unwrap());
 }

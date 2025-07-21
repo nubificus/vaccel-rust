@@ -8,24 +8,23 @@ use crate::{Error, Result};
 use log::error;
 use std::ffi::c_int;
 use vaccel::{
-    c_pointer_to_mut_slice, c_pointer_to_slice, ffi, ops::tensorflow::Status as TfStatus,
+    c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
+    ops::tf::{DataType, DynTensor, Node, Status},
+    Handle, VaccelId,
 };
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 #[cfg(not(feature = "async"))]
 use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::{
-    error::VaccelStatus,
-    tensorflow::{
-        TFNode, TFTensor, TensorflowModelLoadRequest, TensorflowModelRunRequest,
-        TensorflowModelUnloadRequest,
-    },
+    tf::{ModelLoadRequest, ModelRunRequest, ModelUnloadRequest, Node as ProtoNode, Tensor},
+    vaccel::Status as ProtoStatus,
 };
 
 impl VaccelRpcClient {
-    pub fn tf_model_load(&self, model_id: i64, session_id: i64) -> Result<(Vec<u8>, TfStatus)> {
+    pub fn tf_model_load(&self, model_id: i64, session_id: i64) -> Result<(Vec<u8>, Status)> {
         let ctx = ttrpc::context::Context::default();
-        let req = TensorflowModelLoadRequest {
+        let req = ModelLoadRequest {
             session_id,
             model_id,
             ..Default::default()
@@ -33,14 +32,14 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_load, ctx, &req)?;
 
-        let status = resp.status.unwrap_or(VaccelStatus::default());
+        let status = resp.status.unwrap_or(ProtoStatus::default());
 
         Ok((resp.graph_def, status.try_into()?))
     }
 
-    pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<TfStatus> {
+    pub fn tf_model_unload(&self, model_id: i64, session_id: i64) -> Result<Status> {
         let ctx = ttrpc::context::Context::default();
-        let req = TensorflowModelUnloadRequest {
+        let req = ModelUnloadRequest {
             session_id,
             model_id,
             ..Default::default()
@@ -48,7 +47,7 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_unload, ctx, &req)?;
 
-        Ok(resp.status.unwrap_or(VaccelStatus::default()).try_into()?)
+        Ok(resp.status.unwrap_or(ProtoStatus::default()).try_into()?)
     }
 
     pub fn tf_model_run(
@@ -56,13 +55,12 @@ impl VaccelRpcClient {
         model_id: i64,
         session_id: i64,
         run_options: Option<Vec<u8>>,
-        in_nodes: Vec<TFNode>,
-        in_tensors: Vec<TFTensor>,
-        out_nodes: Vec<TFNode>,
-    ) -> Result<(Vec<*mut ffi::vaccel_tf_tensor>, TfStatus)> {
+        in_nodes: Vec<ProtoNode>,
+        in_tensors: Vec<Tensor>,
+        out_nodes: Vec<ProtoNode>,
+    ) -> Result<(Vec<*mut ffi::vaccel_tf_tensor>, Status)> {
         let ctx = ttrpc::context::Context::default();
-
-        let req = TensorflowModelRunRequest {
+        let req = ModelRunRequest {
             model_id,
             session_id,
             run_options,
@@ -74,48 +72,33 @@ impl VaccelRpcClient {
 
         let resp = self.execute(AgentServiceClient::tensorflow_model_run, ctx, &req)?;
 
-        let out_tensors: Vec<*mut ffi::vaccel_tf_tensor> = resp
+        let out_tensors = resp
             .out_tensors
             .into_iter()
-            .map(|e| unsafe {
-                let dims = e.dims;
-                let data_type = e.type_.value();
-                let data = e.data;
-
-                let mut tensor = std::ptr::null_mut();
-                match ffi::vaccel_tf_tensor_allocate(
-                    &mut tensor,
-                    dims.len() as i32,
-                    dims.as_ptr() as *mut i64,
-                    data_type as u32,
-                    data.len(),
-                ) as u32
-                {
-                    ffi::VACCEL_OK => (),
-                    err => return Err(vaccel::Error::Ffi(err)),
-                }
-                assert!(!tensor.is_null());
-
-                std::ptr::copy_nonoverlapping(data.as_ptr(), (*tensor).data as *mut u8, data.len());
-                (*tensor).size = data.len();
-
-                Ok(tensor)
+            .map(|e| {
+                let tensor = DynTensor::new_unchecked(
+                    &e.dims,
+                    DataType::from(e.type_.value() as u32),
+                    e.data.len(),
+                )?
+                .with_data(&e.data)?;
+                tensor.into_ptr()
             })
             .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tf_tensor>>>()?;
-        let status = resp.status.unwrap_or(VaccelStatus::default());
+        let status = resp.status.unwrap_or(ProtoStatus::default());
 
         Ok((out_tensors, status.try_into()?))
     }
 }
 
 impl Error {
-    fn to_tf_status(&self) -> TfStatus {
+    fn to_tf_status(&self) -> Result<Status> {
         match self {
             Error::HostVaccel(ref e) => match e.get_status() {
-                Some(status) => TfStatus::try_from(status).unwrap_or_default(),
-                None => TfStatus::new(u8::MAX, "Undefined error").unwrap_or_default(),
+                Some(status) => Ok(Status::try_from(status)?),
+                None => Ok(Status::new(u8::MAX, "Undefined error")?),
             },
-            err => TfStatus::new(u8::MAX, &err.to_string()).unwrap_or_default(),
+            err => Ok(Status::new(u8::MAX, &err.to_string())?),
         }
     }
 }
@@ -127,8 +110,8 @@ impl Error {
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tf_model_load(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
     status_ptr: *mut ffi::vaccel_tf_status,
 ) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
@@ -136,17 +119,44 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_load(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.tf_model_load(model_id, sess_id) {
-        Ok((_, status)) => {
-            status.populate_ffi(status_ptr);
-            ffi::VACCEL_OK
-        }
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
         Err(e) => {
-            error!("{}", e);
-            e.to_tf_status().populate_ffi(status_ptr);
-            e.to_ffi()
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
         }
-    }) as c_int
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let (ret, status) = client
+        .tf_model_load(model_vaccel_id.into(), sess_vaccel_id.into())
+        .map_or_else(
+            |e| {
+                error!("{}", e);
+                (e.to_ffi(), e.to_tf_status())
+            },
+            |(_, status)| (ffi::VACCEL_OK, Ok(status)),
+        );
+
+    match status {
+        Ok(s) => {
+            if let Err(e) = s.populate_ptr(status_ptr) {
+                error!("Could not populate status: {}", e);
+            }
+        }
+        Err(e) => error!("Could not create status from error: {}", e),
+    };
+
+    ret as c_int
 }
 
 /// # Safety
@@ -156,8 +166,8 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_load(
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tf_model_unload(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
     status_ptr: *mut ffi::vaccel_tf_status,
 ) -> c_int {
     let client = match unsafe { client_ptr.as_ref() } {
@@ -165,17 +175,44 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_unload(
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    (match client.tf_model_unload(model_id, sess_id) {
-        Ok(status) => {
-            status.populate_ffi(status_ptr);
-            ffi::VACCEL_OK
-        }
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
         Err(e) => {
-            error!("{}", e);
-            e.to_tf_status().populate_ffi(status_ptr);
-            e.to_ffi()
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
         }
-    }) as c_int
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let (ret, status) = client
+        .tf_model_unload(model_vaccel_id.into(), sess_vaccel_id.into())
+        .map_or_else(
+            |e| {
+                error!("{}", e);
+                (e.to_ffi(), e.to_tf_status())
+            },
+            |status| (ffi::VACCEL_OK, Ok(status)),
+        );
+
+    match status {
+        Ok(s) => {
+            if let Err(e) = s.populate_ptr(status_ptr) {
+                error!("Could not populate status: {}", e);
+            }
+        }
+        Err(e) => error!("Could not create status from error: {}", e),
+    };
+
+    ret as c_int
 }
 
 /// # Safety
@@ -188,17 +225,40 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_unload(
 #[no_mangle]
 pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
     client_ptr: *const VaccelRpcClient,
+    sess_id: ffi::vaccel_id_t,
     model_id: ffi::vaccel_id_t,
-    sess_id: i64,
     run_options_ptr: *const ffi::vaccel_tf_buffer,
     in_nodes_ptr: *const ffi::vaccel_tf_node,
     in_tensors_ptr: *const *mut ffi::vaccel_tf_tensor,
-    nr_inputs: c_int,
+    nr_inputs: usize,
     out_nodes_ptr: *const ffi::vaccel_tf_node,
     out_tensors_ptr: *mut *mut ffi::vaccel_tf_tensor,
-    nr_outputs: c_int,
+    nr_outputs: usize,
     status_ptr: *mut ffi::vaccel_tf_status,
 ) -> c_int {
+    let client = match unsafe { client_ptr.as_ref() } {
+        Some(client) => client,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+
+    let model_vaccel_id = match VaccelId::try_from(model_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
+    let sess_vaccel_id = match VaccelId::try_from(sess_id) {
+        Ok(id) => id,
+        Err(e) => {
+            let err = Error::from(e);
+            error!("{}", err);
+            return err.to_ffi() as c_int;
+        }
+    };
+
     let run_options = unsafe {
         run_options_ptr.as_ref().map(|opts| {
             c_pointer_to_slice(opts.data as *mut u8, opts.size)
@@ -207,55 +267,87 @@ pub unsafe extern "C" fn vaccel_rpc_client_tf_model_run(
         })
     };
 
-    let in_nodes: Vec<TFNode> =
-        match c_pointer_to_slice(in_nodes_ptr, nr_inputs.try_into().unwrap()) {
-            Some(slice) => slice.iter().map(|e| e.into()).collect(),
-            None => return ffi::VACCEL_EINVAL as c_int,
-        };
-
-    let in_tensors: Vec<TFTensor> =
-        match c_pointer_to_slice(in_tensors_ptr, nr_inputs.try_into().unwrap()) {
-            Some(slice) => slice
-                .iter()
-                .map(|e| unsafe { e.as_ref().unwrap().into() })
-                .collect(),
-            None => return ffi::VACCEL_EINVAL as c_int,
-        };
-
-    let out_nodes: Vec<TFNode> =
-        match c_pointer_to_slice(out_nodes_ptr, nr_outputs.try_into().unwrap()) {
-            Some(vec) => vec.iter().map(|e| e.into()).collect(),
-            None => return ffi::VACCEL_EINVAL as c_int,
-        };
-
-    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs.try_into().unwrap())
+    let in_nodes = match c_pointer_to_slice(in_nodes_ptr, nr_inputs) {
+        Some(slice) => slice,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_in_nodes = match in_nodes
+        .iter()
+        .map(|ptr| Ok(Node::from_ref(ptr)?.try_into()?))
+        .collect::<Result<Vec<ProtoNode>>>()
     {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
+    };
+
+    let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
+        Some(slice) => slice,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_in_tensors: Vec<Tensor> = match in_tensors
+        .iter()
+        .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
+        .collect::<Result<Vec<Tensor>>>()
+    {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
+    };
+
+    let out_nodes = match c_pointer_to_slice(out_nodes_ptr, nr_outputs) {
+        Some(slice) => slice,
+        None => return ffi::VACCEL_EINVAL as c_int,
+    };
+    let proto_out_nodes = match out_nodes
+        .iter()
+        .map(|ptr| Ok(Node::from_ref(ptr)?.try_into()?))
+        .collect::<Result<Vec<ProtoNode>>>()
+    {
+        Ok(f) => f,
+        Err(e) => {
+            error!("{}", e);
+            return e.to_ffi() as c_int;
+        }
+    };
+
+    let out_tensors = match c_pointer_to_mut_slice(out_tensors_ptr, nr_outputs) {
         Some(vec) => vec,
         None => return ffi::VACCEL_EINVAL as c_int,
     };
 
-    let client = match unsafe { client_ptr.as_ref() } {
-        Some(client) => client,
-        None => return ffi::VACCEL_EINVAL as c_int,
+    let (ret, status) = client
+        .tf_model_run(
+            model_vaccel_id.into(),
+            sess_vaccel_id.into(),
+            run_options,
+            proto_in_nodes,
+            proto_in_tensors,
+            proto_out_nodes,
+        )
+        .map_or_else(
+            |e| {
+                error!("{}", e);
+                (e.to_ffi(), e.to_tf_status())
+            },
+            |(tensors, status)| {
+                out_tensors.copy_from_slice(&tensors);
+                (ffi::VACCEL_OK, Ok(status))
+            },
+        );
+
+    match status {
+        Ok(s) => {
+            if let Err(e) = s.populate_ptr(status_ptr) {
+                error!("Could not populate status: {}", e);
+            }
+        }
+        Err(e) => error!("Could not create status from error: {}", e),
     };
 
-    (match client.tf_model_run(
-        model_id,
-        sess_id,
-        run_options,
-        in_nodes,
-        in_tensors,
-        out_nodes,
-    ) {
-        Ok((tensors, status)) => {
-            out_tensors.copy_from_slice(&tensors);
-            status.populate_ffi(status_ptr);
-            ffi::VACCEL_OK
-        }
-        Err(e) => {
-            error!("{}", e);
-            e.to_tf_status().populate_ffi(status_ptr);
-            e.to_ffi()
-        }
-    }) as c_int
+    ret as c_int
 }

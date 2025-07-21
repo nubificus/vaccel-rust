@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
-use log::{debug, info};
+use log::info;
 use std::num::TryFromIntError;
-use vaccel::ops::{tensorflow::lite as tflite, ModelInitialize, ModelLoadUnload, ModelRun};
+use vaccel::ops::tf::lite::DynTensor;
 use vaccel_rpc_proto::{
     empty::Empty,
-    tensorflow::{
-        TFLiteTensor, TensorflowLiteModelLoadRequest, TensorflowLiteModelRunRequest,
-        TensorflowLiteModelRunResponse, TensorflowLiteModelUnloadRequest,
-    },
+    tflite::{ModelLoadRequest, ModelRunRequest, ModelRunResponse, ModelUnloadRequest},
 };
 
 impl AgentService {
-    pub(crate) fn do_tflite_model_load(
-        &self,
-        req: TensorflowLiteModelLoadRequest,
-    ) -> Result<Empty> {
+    pub(crate) fn do_tflite_model_load(&self, req: ModelLoadRequest) -> Result<Empty> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -28,27 +22,23 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow Lite model load", sess.id());
-        let mut model = tflite::Model::new(res.as_mut());
-        model.as_mut().load(&mut sess)?;
+        info!("session:{} TensorFlow Lite model load", &req.session_id);
+        sess.tflite_model_load(&mut res)?;
 
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_tflite_model_unload(
-        &self,
-        req: TensorflowLiteModelUnloadRequest,
-    ) -> Result<Empty> {
+    pub(crate) fn do_tflite_model_unload(&self, req: ModelUnloadRequest) -> Result<Empty> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -57,27 +47,23 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        info!("session:{} TensorFlow Lite model unload", sess.id());
-        let mut model = tflite::Model::new(res.as_mut());
-        model.as_mut().unload(&mut sess)?;
+        info!("session:{} TensorFlow Lite model unload", &req.session_id);
+        sess.tflite_model_unload(&mut res)?;
 
         Ok(Empty::new())
     }
 
-    pub(crate) fn do_tflite_model_run(
-        &self,
-        req: TensorflowLiteModelRunRequest,
-    ) -> Result<TensorflowLiteModelRunResponse> {
+    pub(crate) fn do_tflite_model_run(&self, req: ModelRunRequest) -> Result<ModelRunResponse> {
         let mut res = self
             .resources
-            .get_mut(&req.model_id.into())
+            .get_mut(&req.model_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown TensorFlow Lite model {}", &req.model_id).to_string(),
@@ -86,40 +72,34 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        let mut sess_args = tflite::InferenceArgs::new();
+        let in_tensors = req
+            .in_tensors
+            .into_iter()
+            .map(|e| e.try_into())
+            .collect::<vaccel::Result<Vec<DynTensor>>>()?;
 
-        let in_tensors = req.in_tensors;
-        for tensor in in_tensors.iter() {
-            debug!("tensor.dim: {:?}", tensor.dims);
-            sess_args.add_input(tensor)?;
-        }
+        let nr_out_tensors = req
+            .nr_out_tensors
+            .try_into()
+            .map_err(|e: TryFromIntError| {
+                AgentServiceError::Internal(
+                    format!("Could not convert `nr_out_tensors` to `usize`: {}", e).to_string(),
+                )
+            })?;
 
-        sess_args.set_nr_outputs(req.nr_outputs);
-        let num_outputs: usize = req.nr_outputs.try_into().map_err(|e: TryFromIntError| {
-            AgentServiceError::Internal(
-                format!("Could not convert `nr_outputs` to usize: {}", e).to_string(),
-            )
-        })?;
+        info!("session:{} TensorFlow Lite model run", &req.session_id);
+        let (out_tensors, status) = sess.tflite_model_run(&mut res, &in_tensors, nr_out_tensors)?;
 
-        info!("session:{} TensorFlow Lite model run", sess.id());
-        let mut model = tflite::Model::new(res.as_mut());
-        let result = model.as_mut().run(&mut sess, &mut sess_args)?;
-
-        let mut out_tensors: Vec<TFLiteTensor> = Vec::with_capacity(num_outputs);
-        for i in 0..num_outputs {
-            out_tensors.push(result.to_grpc_output(i)?);
-        }
-
-        let mut resp = TensorflowLiteModelRunResponse::new();
-        resp.out_tensors = out_tensors;
-        resp.status = Some(result.status.into()).into();
+        let mut resp = ModelRunResponse::new();
+        resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
+        resp.status = Some(status.into()).into();
 
         Ok(resp)
     }

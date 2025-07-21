@@ -1,37 +1,65 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Resource, Result, Session};
-use std::pin::Pin;
+use crate::{Handle, Result, Session};
+
+#[macro_use]
+mod macros;
 
 pub mod genop;
 pub mod image;
 pub mod noop;
-pub mod tensorflow;
+pub mod tf;
 pub mod torch;
 
-pub trait ModelInitialize<'a> {
-    /// Initialize a Resource of type Model
-    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>>;
+pub trait Tensor {
+    type Data;
+    type DataType;
+    type ShapeType;
+
+    /// Returns the number of dimensions of the tensor.
+    fn nr_dims(&self) -> usize;
+
+    /// Returns the dimensions of the tensor.
+    fn dims(&self) -> Result<&[Self::ShapeType]>;
+
+    /// Returns the shape of the tensor.
+    /// This is equivalent to calling the `dims` method.
+    fn shape(&self) -> Result<&[Self::ShapeType]> {
+        self.dims()
+    }
+
+    /// Returns the dimension at the specified index from the tensor dimensions.
+    fn dim(&self, idx: usize) -> Result<Self::ShapeType>;
+
+    /// Returns the data of the tensor.
+    /// This is equivalent to calling the `as_slice` method.
+    fn data(&self) -> Result<Option<&[Self::Data]>>;
+
+    /// Returns the data of the tensor as a slice of bytes.
+    fn as_bytes(&self) -> Option<&[u8]>;
+
+    /// Returns the type of the tensor data.
+    fn data_type(&self) -> Self::DataType;
 }
 
-pub trait ModelRun<'a>: ModelInitialize<'a> {
-    type RunArgs;
-    type RunResult;
+pub trait Model<'a> {
+    type TensorHandle;
 
-    /// Run inference on model
-    fn run(
-        self: Pin<&mut Self>,
-        sess: &mut Session,
-        args: &mut Self::RunArgs,
-    ) -> Result<Self::RunResult>;
-    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource>;
-}
+    /// Creates and loads a new model.
+    fn load<P>(path: P, session: &'a mut Session) -> Result<Self>
+    where
+        P: AsRef<str>,
+        Self: Sized;
 
-pub trait ModelLoadUnload<'a>: ModelRun<'a> {
-    type LoadUnloadResult;
+    /// Unloads the model.
+    fn unload(&mut self) -> Result<()>;
 
-    /// Load an inference session for model
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult>;
-    /// Unload an inference session for model
-    fn unload(self: Pin<&mut Self>, sess: &mut Session) -> Result<Self::LoadUnloadResult>;
+    /// Runs inference on the model.
+    fn run<T: Tensor + Handle<CType = Self::TensorHandle>>(
+        &mut self,
+        in_tensors: &[T],
+    ) -> Result<Vec<T>>;
+
+    /// Returns `true` if the model is loaded.
+    fn is_loaded(&self) -> bool;
 }

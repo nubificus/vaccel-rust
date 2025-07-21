@@ -2,37 +2,32 @@
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
-use vaccel::{Blob, Resource, VaccelId};
-use vaccel_rpc_proto::resource::Blob as RpcBlob;
-#[allow(unused_imports)]
+use vaccel::{Blob, Resource, ResourceType, VaccelId};
 use vaccel_rpc_proto::{
     empty::Empty,
-    error::VaccelError,
     resource::{
-        RegisterResourceRequest, RegisterResourceResponse, SyncResourceRequest,
-        SyncResourceResponse, UnregisterResourceRequest,
+        Blob as ProtoBlob, RegisterRequest, RegisterResponse, SyncRequest, SyncResponse,
+        UnregisterRequest,
     },
 };
 
 impl AgentService {
-    pub(crate) fn do_register_resource(
-        &self,
-        req: RegisterResourceRequest,
-    ) -> Result<RegisterResourceResponse> {
+    pub(crate) fn do_register_resource(&self, req: RegisterRequest) -> Result<RegisterResponse> {
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
-        let res_id = VaccelId::from(req.resource_id);
-        let mut resp = RegisterResourceResponse::new();
-        if !res_id.has_id() {
-            // If we got resource id <= 0 we need to create a resource before registering
+        let proto_res_id = VaccelId::from_ffi(req.resource_id)?;
+        let mut resp = RegisterResponse::new();
+        if proto_res_id.is_none() {
+            // If we got resource id == 0 we need to create a resource before registering
             info!("Creating new resource");
+            let res_type = ResourceType::from(req.resource_type.value() as u32);
             let mut res = match req.blobs.is_empty() {
                 false => {
                     let blobs = req
@@ -41,7 +36,7 @@ impl AgentService {
                         .map(|f| Ok(f.try_into()?))
                         .collect::<Result<Vec<Blob>>>()?;
 
-                    Resource::from_blobs(blobs, req.resource_type)?
+                    Resource::from_blobs(blobs, res_type)?
                 }
                 true => {
                     if req.paths.is_empty() {
@@ -50,44 +45,55 @@ impl AgentService {
                         ));
                     }
 
-                    Resource::new(&req.paths, req.resource_type)?
+                    Resource::new(&req.paths, res_type)?
                 }
             };
 
+            let res_id = res.id().ok_or(AgentServiceError::Internal(
+                "Invalid resource ID".to_string(),
+            ))?;
+
             info!(
                 "Registering resource {} with session {}",
-                res.as_ref().id(),
-                req.session_id
+                res_id, req.session_id
             );
-            res.as_mut().register(&mut sess)?;
+            res.register(&mut sess)?;
 
-            resp.resource_id = res.as_ref().id().into();
+            resp.resource_id = res_id.into();
 
-            let e = self.resources.insert(res.as_ref().id(), res);
+            let e = self.resources.insert(res_id, Box::new(res));
             assert!(e.is_none());
         } else {
             // If we got resource id > 0 simply register the resource
-            let mut res = self.resources.get_mut(&res_id).ok_or_else(|| {
-                AgentServiceError::NotFound(format!("Unknown resource {}", &res_id).to_string())
-            })?;
+            let mut res = self
+                .resources
+                .get_mut(&proto_res_id.unwrap())
+                .ok_or_else(|| {
+                    AgentServiceError::NotFound(
+                        format!("Unknown resource {}", &proto_res_id.unwrap()).to_string(),
+                    )
+                })?;
+
+            let res_id = res.id().ok_or(AgentServiceError::Internal(
+                "Invalid resource ID".to_string(),
+            ))?;
 
             info!(
                 "Registering resource {} with session {}",
-                res.as_ref().id(),
-                req.session_id
+                res_id, req.session_id
             );
-            res.as_mut().register(&mut sess)?;
+            res.register(&mut sess)?;
 
-            resp.resource_id = res.as_ref().id().into();
+            resp.resource_id = res_id.into();
         }
 
         Ok(resp)
     }
 
-    pub(crate) fn do_unregister_resource(&self, req: UnregisterResourceRequest) -> Result<Empty> {
+    pub(crate) fn do_unregister_resource(&self, req: UnregisterRequest) -> Result<Empty> {
         let mut res = self
             .resources
-            .get_mut(&req.resource_id.into())
+            .get_mut(&req.resource_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown resource {}", &req.resource_id).to_string(),
@@ -96,71 +102,73 @@ impl AgentService {
 
         let mut sess = self
             .sessions
-            .get_mut(&req.session_id.into())
+            .get_mut(&req.session_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
 
+        let res_id = res.id().ok_or(AgentServiceError::Internal(
+            "Invalid resource ID".to_string(),
+        ))?;
+
         info!(
             "Unregistering resource {} from session {}",
-            res.as_ref().id(),
-            req.session_id
+            res_id, req.session_id
         );
-        res.as_mut().unregister(&mut sess)?;
+        res.unregister(&mut sess)?;
 
         // If resource in registered to other sessions do not destroy
-        let refcount = res.as_ref().refcount()?;
+        let refcount = res.refcount()?;
         if refcount > 0 {
             return Ok(Empty::new());
         }
 
-        info!("Destroying resource {}", res.as_ref().id());
-        res.as_mut().release()?;
-
+        info!("Destroying resource {}", res_id);
         drop(res);
-        self.resources
-            .remove(&req.resource_id.into())
+
+        self.resources.remove(&res_id).ok_or_else(|| {
+            AgentServiceError::NotFound(format!("Unknown resource {}", &res_id).to_string())
+        })?;
+
+        Ok(Empty::new())
+    }
+
+    pub(crate) fn do_sync_resource(&self, req: SyncRequest) -> Result<SyncResponse> {
+        let res = self
+            .resources
+            .get(&req.resource_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown resource {}", &req.resource_id).to_string(),
                 )
             })?;
 
-        Ok(Empty::new())
-    }
+        info!("Synchronizing resource {}", &req.resource_id);
 
-    pub(crate) fn do_sync_resource(
-        &self,
-        req: SyncResourceRequest,
-    ) -> Result<SyncResourceResponse> {
-        let res_id = VaccelId::from(req.resource_id);
-        let mut resp = SyncResourceResponse::new();
+        let blobs = res
+            .blobs()
+            .ok_or(AgentServiceError::Internal("No blobs found".to_string()))?;
 
-        let res = self.resources.get_mut(&res_id).ok_or_else(|| {
-            AgentServiceError::NotFound(format!("Unknown resource {}", &res_id).to_string())
-        })?;
+        let proto_blobs = blobs
+            .iter()
+            .map(|blob| {
+                let data = blob
+                    .data()
+                    .map(|d| d.to_vec())
+                    .ok_or(AgentServiceError::Internal("Blob has no data".to_string()))?;
 
-        info!("Synchronizing resource {}", res.as_ref().id(),);
+                Ok(ProtoBlob {
+                    data,
+                    size: blob.size() as u32,
+                    ..Default::default()
+                })
+            })
+            .collect::<Result<Vec<ProtoBlob>>>()?;
 
-        let blobs = match res.as_ref().get_ref().blobs() {
-            Some(blobs) => blobs,
-            None => return Err(AgentServiceError::Internal("No blobs found".into())),
-        };
-
-        for blob in blobs.iter() {
-            let data = match blob.data()? {
-                Some(slice) => slice.to_vec(),
-                None => return Err(AgentServiceError::Internal("Blob has no data".into())),
-            };
-
-            resp.blobs.push(RpcBlob {
-                data,
-                size: blob.size()? as u32,
-                ..Default::default()
-            });
-        }
+        let mut resp = SyncResponse::new();
+        resp.blobs = proto_blobs;
 
         Ok(resp)
     }

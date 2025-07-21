@@ -1,204 +1,175 @@
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Buffer, DataType, Tensor, TensorAny, TensorType};
+use super::Buffer;
 use crate::{
     ffi,
-    ops::{ModelInitialize, ModelLoadUnload, ModelRun},
-    Error, Resource, Result, Session,
+    ops::{Model as ModelTrait, Tensor},
+    Error, Handle, Resource, ResourceType, Result, Session,
 };
 use log::warn;
-use protobuf::Enum;
-use std::{marker::PhantomPinned, pin::Pin};
-use vaccel_rpc_proto::torch::{TorchDataType, TorchTensor};
 
-pub struct InferenceArgs {
-    run_options: *const ffi::vaccel_torch_buffer,
-    in_tensors: Vec<*const ffi::vaccel_torch_tensor>,
-    nr_outputs: i32,
-}
-
-impl Default for InferenceArgs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl InferenceArgs {
-    pub fn new() -> Self {
-        InferenceArgs {
-            run_options: std::ptr::null::<ffi::vaccel_torch_buffer>(),
-            in_tensors: vec![],
-            nr_outputs: 0,
+impl Session {
+    /// Loads the model.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    pub fn torch_model_load(&mut self, resource: &mut Resource) -> Result<()> {
+        match unsafe {
+            ffi::vaccel_torch_model_load(self.as_mut_ptr(), resource.as_mut_ptr()) as u32
+        } {
+            ffi::VACCEL_OK => Ok(()),
+            err => Err(Error::Ffi(err)),
         }
     }
 
-    pub fn set_run_options(&mut self, run_opts: Option<&Buffer>) {
-        if let Some(opts) = run_opts {
-            self.run_options = opts.inner();
+    /// Runs inference using the model.
+    ///
+    /// This requires that the model has previously been loaded using `load()`.
+    ///
+    /// The inner `Resource` must be registered to the provided `Session`.
+    pub fn torch_model_run<T: Tensor + Handle<CType = ffi::vaccel_torch_tensor>>(
+        &mut self,
+        resource: &mut Resource,
+        run_options: Option<&Buffer>,
+        in_tensors: &[T],
+        nr_out_tensors: usize,
+    ) -> Result<Vec<T>> {
+        if nr_out_tensors < 1 {
+            return Err(Error::InvalidArgument(
+                "Number of output tensors cannot be < 1".to_string(),
+            ));
+        }
+
+        let c_run_options = run_options
+            .map(|opts| opts.as_ptr())
+            .unwrap_or(std::ptr::null());
+
+        let c_in_tensors: Vec<*mut ffi::vaccel_torch_tensor> =
+            in_tensors.iter().map(|n| n.as_ptr() as *mut _).collect();
+
+        let mut c_out_tensors = vec![std::ptr::null_mut(); nr_out_tensors];
+        match unsafe {
+            ffi::vaccel_torch_model_run(
+                self.as_mut_ptr(),
+                resource.as_mut_ptr(),
+                c_run_options,
+                c_in_tensors.as_ptr(),
+                c_in_tensors.len() as i32,
+                c_out_tensors.as_mut_ptr(),
+                nr_out_tensors as i32,
+            ) as u32
+        } {
+            ffi::VACCEL_OK => Ok(c_out_tensors
+                .into_iter()
+                .map(|ptr| unsafe { T::from_ptr(ptr) })
+                .collect::<Result<Vec<_>>>()?),
+            err => Err(Error::Ffi(err)),
         }
     }
+}
 
-    // TODO: &TorchTensor -> TensorAny
-    pub fn add_input(&mut self, tensor: &dyn TensorAny) -> Result<()> {
-        self.in_tensors.push(tensor.inner()?);
+/// A model abstraction for user-friendly inference operations.
+pub struct Model<'a> {
+    resource: Resource,
+    session: Option<&'a mut Session>,
+    loaded: bool,
+    run_options: Option<Buffer>,
+    nr_out_tensors: usize,
+}
+
+impl<'a> Model<'a> {
+    /// Sets the model run options.
+    pub fn set_run_options(&mut self, opts: Buffer) -> &mut Self {
+        self.run_options = Some(opts);
+        self
+    }
+
+    /// Sets the model number of output tensors.
+    pub fn set_nr_out_tensors(&mut self, val: usize) -> &mut Self {
+        self.nr_out_tensors = val;
+        self
+    }
+
+    /// Sets the model run options (for chaining with `new()`).
+    pub fn with_run_options(mut self, opts: Buffer) -> Self {
+        self.run_options = Some(opts);
+        self
+    }
+
+    /// Sets the model number of output tensors (for chaining with `new()`).
+    pub fn with_nr_out_tensors(mut self, val: usize) -> Self {
+        self.nr_out_tensors = val;
+        self
+    }
+}
+
+impl<'a> ModelTrait<'a> for Model<'a> {
+    type TensorHandle = ffi::vaccel_torch_tensor;
+
+    fn load<P: AsRef<str>>(path: P, session: &'a mut Session) -> Result<Self> {
+        let mut resource = Resource::new([path], ResourceType::Model)?;
+        resource.register(session)?;
+
+        session.torch_model_load(&mut resource)?;
+
+        Ok(Model {
+            resource,
+            session: Some(session),
+            loaded: true,
+            run_options: None,
+            nr_out_tensors: 1,
+        })
+    }
+
+    fn unload(&mut self) -> Result<()> {
+        if !self.loaded {
+            return Err(Error::Uninitialized);
+        }
+
+        let session = self
+            .session
+            .take()
+            .ok_or(Error::InvalidArgument("Session not set".to_string()))?;
+
+        self.resource.unregister(session)?;
+        self.loaded = false;
+
         Ok(())
     }
 
-    pub fn set_nr_outputs(&mut self, nr_outputs: i32) {
-        self.nr_outputs = nr_outputs;
+    fn run<T: Tensor + Handle<CType = Self::TensorHandle>>(
+        &mut self,
+        in_tensors: &[T],
+    ) -> Result<Vec<T>> {
+        if !self.loaded {
+            return Err(Error::Uninitialized);
+        }
+
+        let session = self
+            .session
+            .as_mut()
+            .ok_or(Error::InvalidArgument("Session not set".to_string()))?;
+
+        let out_tensors = session.torch_model_run(
+            &mut self.resource,
+            self.run_options.as_ref(),
+            in_tensors,
+            self.nr_out_tensors,
+        )?;
+
+        Ok(out_tensors)
+    }
+
+    fn is_loaded(&self) -> bool {
+        self.loaded
     }
 }
 
-impl Drop for InferenceArgs {
+impl<'a> Drop for Model<'a> {
     fn drop(&mut self) {
-        while let Some(tensor_ptr) = self.in_tensors.pop() {
-            if tensor_ptr.is_null() {
-                continue;
-            }
-            let ret = unsafe { ffi::vaccel_torch_tensor_delete(tensor_ptr as *mut _) } as u32;
-            if ret != ffi::VACCEL_OK {
-                warn!("Could not delete Torch tensor: {}", ret);
+        if self.loaded {
+            if let Err(e) = self.unload() {
+                warn!("Could not unload model: {}", e);
             }
         }
-    }
-}
-
-pub struct InferenceResult {
-    out_tensors: Vec<*mut ffi::vaccel_torch_tensor>,
-    // TODO: Do we need a torch::status here?
-}
-
-impl InferenceResult {
-    pub fn new(len: usize) -> Self {
-        let out_tensors = vec![std::ptr::null_mut(); len];
-
-        InferenceResult { out_tensors }
-    }
-
-    pub fn from_vec(tensors: Vec<*mut ffi::vaccel_torch_tensor>) -> Self {
-        InferenceResult {
-            out_tensors: tensors,
-        }
-    }
-
-    pub fn take_output<T: TensorType>(&mut self, id: usize) -> Result<Tensor<T>> {
-        if id >= self.out_tensors.len() {
-            return Err(Error::OutOfBounds);
-        }
-
-        let t = self.out_tensors[id];
-        if t.is_null() {
-            return Err(Error::EmptyValue);
-        }
-
-        if unsafe { DataType::from_int((*t).data_type) } != T::data_type() {
-            return Err(Error::InvalidArgument("Invalid `data_type`".to_string()));
-        }
-
-        let tensor: Tensor<T> = unsafe { Tensor::from_ffi(t)? };
-        self.out_tensors[id] = std::ptr::null_mut();
-
-        Ok(tensor)
-    }
-
-    pub fn to_grpc_output(&self, id: usize) -> Result<TorchTensor> {
-        if id >= self.out_tensors.len() {
-            return Err(Error::OutOfBounds);
-        }
-
-        let t = self.out_tensors[id];
-        if t.is_null() {
-            return Err(Error::EmptyValue);
-        }
-
-        unsafe {
-            Ok(TorchTensor {
-                dims: std::slice::from_raw_parts((*t).dims as *mut _, (*t).nr_dims as usize)
-                    .to_owned(),
-                type_: TorchDataType::from_i32((*t).data_type as i32)
-                    .unwrap()
-                    .into(),
-                data: std::slice::from_raw_parts((*t).data as *mut u8, (*t).size).to_owned(),
-                ..Default::default()
-            })
-        }
-    }
-}
-
-impl Drop for InferenceResult {
-    fn drop(&mut self) {
-        while let Some(tensor_ptr) = self.out_tensors.pop() {
-            if tensor_ptr.is_null() {
-                continue;
-            }
-            let ret = unsafe { ffi::vaccel_torch_tensor_delete(tensor_ptr as *mut _) } as u32;
-            if ret != ffi::VACCEL_OK {
-                warn!("Could not delete Torch tensor: {}", ret);
-            }
-        }
-    }
-}
-
-pub struct Model<'a> {
-    inner: Pin<&'a mut Resource>,
-    _marker: PhantomPinned,
-}
-
-impl<'a> ModelInitialize<'a> for Model<'a> {
-    fn new(inner: Pin<&'a mut Resource>) -> Pin<Box<Self>> {
-        Box::pin(Self {
-            inner,
-            _marker: PhantomPinned,
-        })
-    }
-}
-
-impl<'a> ModelLoadUnload<'a> for Model<'a> {
-    type LoadUnloadResult = ();
-
-    fn load(self: Pin<&mut Self>, sess: &mut Session) -> Result<()> {
-        let result = ();
-        match unsafe {
-            ffi::vaccel_torch_model_load(sess.inner_mut(), self.inner_mut().inner_mut()) as u32
-        } {
-            ffi::VACCEL_OK => Ok(result),
-            err => Err(Error::Ffi(err)),
-        }
-    }
-
-    fn unload(self: Pin<&mut Self>, _sess: &mut Session) -> Result<()> {
-        let result = ();
-        Ok(result)
-    }
-}
-
-impl<'a> ModelRun<'a> for Model<'a> {
-    type RunArgs = InferenceArgs;
-    type RunResult = InferenceResult;
-
-    fn run(
-        self: Pin<&mut Self>,
-        sess: &mut Session,
-        args: &mut InferenceArgs,
-    ) -> Result<InferenceResult> {
-        let mut result = InferenceResult::new(args.in_tensors.len());
-        match unsafe {
-            ffi::vaccel_torch_model_run(
-                sess.inner_mut(),
-                self.inner_mut().inner_mut(),
-                args.run_options,
-                args.in_tensors.as_ptr() as *mut *mut ffi::vaccel_torch_tensor,
-                args.in_tensors.len() as i32,
-                result.out_tensors.as_mut_ptr(),
-                args.nr_outputs,
-            ) as u32
-        } {
-            ffi::VACCEL_OK => Ok(result),
-            err => Err(Error::Ffi(err)),
-        }
-    }
-
-    fn inner_mut(self: Pin<&mut Self>) -> Pin<&mut Resource> {
-        unsafe { self.get_unchecked_mut().inner.as_mut() }
     }
 }

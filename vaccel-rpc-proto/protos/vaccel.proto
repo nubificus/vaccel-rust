@@ -4,12 +4,12 @@ syntax = "proto3";
 
 package vaccel;
 
-message VaccelStatus {
+message Status {
 	uint32 code = 3;
 	string message = 4;
 }
 
-enum VaccelErrorType {
+enum ErrorType {
 	FFI = 0;
 	FFI_WITH_STATUS = 1;
 	INVALID_ARGUMENT = 2;
@@ -19,8 +19,8 @@ enum VaccelErrorType {
 	CONVERSION_FAILED = 6;
 }
 
-message VaccelError {
-	VaccelErrorType type = 1;
+message Error {
+	ErrorType type = 1;
 	optional uint32 ffi_error = 2;
-	optional VaccelStatus status = 3;
+	optional Status status = 3;
 }
