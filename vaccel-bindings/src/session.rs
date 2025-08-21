@@ -54,8 +54,8 @@ impl Session {
     }
 
     /// Returns `true` if the `Resource` is registered with the `Session`.
-    pub fn has_resource(&self, resource: &Resource) -> bool {
-        unsafe { ffi::vaccel_session_has_resource(self.inner.as_ptr(), resource.as_ptr()) }
+    pub fn has_resource(&self, resource: &mut Resource) -> bool {
+        unsafe { ffi::vaccel_session_has_resource(self.inner.as_ptr(), resource.as_mut_ptr()) }
     }
 }
 
