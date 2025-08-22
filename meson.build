@@ -35,12 +35,14 @@ foreach l : cc_print
 endforeach
 llvm_lib_dirs = []
 foreach d : cc_lib_dirs
-  dir = run_command(python, '-c',
+  llvm_dirs = run_command(python, '-c',
     glob_dir.format(d, 'llvm-'),
-    check: true).stdout().strip()
-  if dir != ''
-    llvm_lib_dirs += dir / 'lib'
-  endif
+    check: true).stdout().split('\n')
+  foreach ldir : llvm_dirs
+    if ldir != ''
+      llvm_lib_dirs += ldir / 'lib'
+    endif
+  endforeach
 endforeach
 libclang_dep = cc.find_library('clang', dirs : llvm_lib_dirs)
 
