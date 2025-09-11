@@ -22,7 +22,7 @@ pub mod resource;
 pub mod session;
 pub mod vaccel;
 
-pub use arg::Arg;
+pub use arg::{Arg, ArgType};
 pub use blob::{Blob, BlobType};
 pub use config::Config;
 pub use error::{Error, Result};

@@ -3,7 +3,7 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use vaccel::{profiling::SessionProfiler, Arg};
-use vaccel_rpc_proto::genop::{Request, Response};
+use vaccel_rpc_proto::genop::{Arg as ProtoArg, Request, Response};
 
 impl AgentService {
     pub(crate) fn do_genop(&self, req: Request) -> Result<Response> {
@@ -40,8 +40,11 @@ impl AgentService {
 
         let mut resp = Response::new();
         resp.write_args = self.profile_fn(sess_id, "genop > resp_write_args", || {
-            write_args.into_iter().map(|e| e.into()).collect()
-        });
+            write_args
+                .into_iter()
+                .map(|e| Ok(e.try_into()?))
+                .collect::<Result<Vec<ProtoArg>>>()
+        })?;
 
         Ok(resp)
     }

@@ -78,7 +78,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
         };
         match read_args
             .iter_mut()
-            .map(|a| Ok(Arg::from_ref(a)?.into()))
+            .map(|a| Ok(Arg::from_ref(a)?.try_into()?))
             .collect::<Result<Vec<ProtoArg>>>()
         {
             Ok(arg) => arg,
@@ -95,7 +95,7 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
         let write_args = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
         let proto_write_args = match write_args
             .iter_mut()
-            .map(|a| Ok(Arg::from_ref(a)?.into()))
+            .map(|a| Ok(Arg::from_ref(a)?.try_into()?))
             .collect::<Result<Vec<ProtoArg>>>()
         {
             Ok(arg) => arg,
