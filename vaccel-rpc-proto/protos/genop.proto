@@ -4,12 +4,46 @@ syntax = "proto3";
 
 package vaccel.genop;
 
+enum ArgType {
+    RAW = 0;
+    INT8 = 1;
+    INT8_ARRAY = 2;
+    INT16 = 3;
+    INT16_ARRAY = 4;
+    INT32 = 5;
+    INT32_ARRAY = 6;
+    INT64 = 7;
+    INT64_ARRAY = 8;
+    UINT8 = 9;
+    UINT8_ARRAY = 10;
+    UINT16 = 11;
+    UINT16_ARRAY = 12;
+    UINT32 = 13;
+    UINT32_ARRAY = 14;
+    UINT64 = 15;
+    UINT64_ARRAY = 16;
+    FLOAT32 = 17;
+    FLOAT32_ARRAY = 18;
+    FLOAT64 = 19;
+    FLOAT64_ARRAY = 20;
+    BOOL = 21;
+    BOOL_ARRAY = 22;
+    CHAR = 23;
+    CHAR_ARRAY = 24;
+    UCHAR = 25;
+    UCHAR_ARRAY = 26;
+    STRING = 27;
+    BUFFER = 28;
+    CUSTOM = 29;
+}
+
 message Arg {
-	uint32 argtype = 1;
+	bytes buf = 1;
 	uint32 size = 2;
-	bytes buf = 3;
-	uint32 parts = 4;
-	uint32 part_no = 5;
+	ArgType arg_type = 3;
+	uint32 custom_type_id = 4;
+	uint32 parts = 5;
+	uint32 part_no = 6;
 }
 
 message Request {
