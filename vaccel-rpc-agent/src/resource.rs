@@ -136,9 +136,9 @@ impl AgentService {
     }
 
     pub(crate) fn do_sync_resource(&self, req: SyncRequest) -> Result<SyncResponse> {
-        let res = self
+        let mut res = self
             .resources
-            .get(&req.resource_id.try_into()?)
+            .get_mut(&req.resource_id.try_into()?)
             .ok_or_else(|| {
                 AgentServiceError::NotFound(
                     format!("Unknown resource {}", &req.resource_id).to_string(),
@@ -147,11 +147,8 @@ impl AgentService {
 
         info!("Synchronizing resource {}", &req.resource_id);
 
-        let blobs = res
-            .blobs()
-            .ok_or(AgentServiceError::Internal("No blobs found".to_string()))?;
-
-        let proto_blobs = blobs
+        let proto_blobs = res
+            .blobs()?
             .iter()
             .map(|blob| {
                 let data = blob
