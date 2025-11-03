@@ -132,14 +132,25 @@ impl Resource {
     }
 
     /// Returns the blobs of the `Resource`.
-    pub fn blobs(&self) -> Option<&[Blob]> {
-        let inner = unsafe { self.inner.as_ref() };
+    pub fn blobs(&mut self) -> Result<&[Blob]> {
+        if self.blobs.is_none() {
+            let inner = unsafe { self.inner.as_ref() };
 
-        if inner.blobs.is_null() || inner.nr_blobs == 0 {
-            None
-        } else {
-            Some(unsafe { std::slice::from_raw_parts(inner.blobs as *const _, inner.nr_blobs) })
+            if inner.blobs.is_null() || inner.nr_blobs == 0 {
+                return Err(Error::EmptyValue);
+            }
+
+            let blob_ptrs =
+                unsafe { std::slice::from_raw_parts_mut(inner.blobs as *mut _, inner.nr_blobs) };
+            let blobs = blob_ptrs
+                .iter_mut()
+                .map(|p| unsafe { Blob::from_ptr(p) })
+                .collect::<Result<Vec<Blob>>>()?;
+
+            self.blobs = Some(blobs);
         }
+
+        Ok(self.blobs.as_ref().unwrap())
     }
 
     /// Returns `true` if the `Resource` has been initialized.
