@@ -103,6 +103,8 @@ impl agent_ttrpc::AgentService for AgentService {
                 } else {
                     r_arg[0].buf.append(&mut data.read_args[0].buf);
                     r_arg[0].size = data.read_args[0].size;
+                    r_arg[0].arg_type = data.read_args[0].arg_type;
+                    r_arg[0].custom_type_id = data.read_args[0].custom_type_id;
                     req.read_args.append(&mut r_arg);
                     r_arg = vec![Arg::new()];
                 }
@@ -112,6 +114,8 @@ impl agent_ttrpc::AgentService for AgentService {
                 } else {
                     w_arg[0].buf.append(&mut data.write_args[0].buf);
                     w_arg[0].size = data.write_args[0].size;
+                    w_arg[0].arg_type = data.write_args[0].arg_type;
+                    w_arg[0].custom_type_id = data.write_args[0].custom_type_id;
                     req.write_args.append(&mut w_arg);
                     w_arg = vec![Arg::new()];
                 }
