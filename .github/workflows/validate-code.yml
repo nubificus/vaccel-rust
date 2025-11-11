@@ -48,7 +48,7 @@ jobs:
       CXX: g++-12
     steps:
       - name: Checkout .github directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
@@ -109,7 +109,7 @@ jobs:
       CXX: g++-12
     steps:
       - name: Checkout .github directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
@@ -141,7 +141,7 @@ jobs:
       statuses: write
     steps:
       - name: Checkout .github directory
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
