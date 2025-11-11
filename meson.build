@@ -61,8 +61,8 @@ vaccel_rpc_proto_sources = run_command(python, '-c',
 common_sources = workspace_sources + vaccel_bindings_sources + vaccel_rpc_proto_sources
 common_sources += vaccel_sources
 
-opt_async = get_option('async')
 opt_async_stream = get_option('async-stream')
+opt_async = get_option('async').enable_if(opt_async_stream.enabled())
 opt_rpc_client = get_option('rpc-client')
 opt_rpc_agent = get_option('rpc-agent')
 
