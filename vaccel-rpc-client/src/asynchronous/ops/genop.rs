@@ -55,6 +55,8 @@ impl VaccelRpcClient {
                                 let arg = Arg {
                                     buf: c.to_vec(),
                                     size: a.buf.len() as u32,
+                                    arg_type: a.arg_type,
+                                    custom_type_id: a.custom_type_id,
                                     parts: parts as u32,
                                     part_no: (no + 1) as u32,
                                     ..Default::default()
