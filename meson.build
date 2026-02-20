@@ -3,9 +3,10 @@ project('vaccel-rust', 'c', 'rust',
   license : 'Apache-2.0',
   license_files : 'LICENSE',
   version : run_command('sh', '-c',
-    'git submodule update --init >/dev/null && ' +
-    'scripts/common/generate-version.sh . --no-dirty',
-    check: false).stdout().strip())
+    '(git submodule update --init >/dev/null 2>&1 || true) && ' +
+    'scripts/common/generate-version.sh',
+    env: {'SH_SCRIPTS_DIR': meson.project_source_root() / 'scripts' / 'common'},
+    check: true).stdout().strip())
 
 cargo_bin = find_program('cargo', version : '>=1.64.0', required : true)
 cargo_meson_sh = files(meson.project_source_root() + '/scripts/common/cargo.sh')
@@ -156,36 +157,33 @@ summary({
   section : 'Configuration',
   bool_yn : true)
 
-# only build binary dist/deb for vaccel-rpc-agent,
-# we ship the client lib with the plugin.
-if opt_rpc_agent.enabled() and not meson.is_subproject()
+version_only = meson.is_subproject() ? '--version-only' : ''
+
+# Build rpc agent/client as separate packages
+if opt_rpc_agent.enabled()
   meson.add_dist_script(
     'scripts/common/dist.sh',
-    'vaccel-rpc-agent',
-    get_option('buildtype'),
-    'async',
-    opt_async.enabled() ? 'enabled' : 'disabled',
-    'async-stream',
-    opt_async_stream.enabled() ? 'enabled' : 'disabled',
-    'rpc-client',
-    'disabled',
-    'rpc-agent',
-    'enabled',
-    )
+    '-n', 'vaccel-rpc-agent',
+    '-v', meson.project_version(),
+    '-t', get_option('buildtype'),
+    '--pkg-config-path', ':'.join(get_option('pkg_config_path')),
+    '-a', 'async=' + (opt_async.enabled() ? 'enabled' : 'disabled'),
+    '-a', 'async-stream=' + (opt_async_stream.enabled() ? 'enabled' : 'disabled'),
+    '-a', 'rpc-client=disabled',
+    '-a', 'rpc-agent=enabled',
+    version_only)
 endif
 
-if opt_rpc_client.enabled() and not meson.is_subproject()
+if opt_rpc_client.enabled()
   meson.add_dist_script(
     'scripts/common/dist.sh',
-    'vaccel-rpc-client',
-    get_option('buildtype'),
-    'async',
-    opt_async.enabled() ? 'enabled' : 'disabled',
-    'async-stream',
-    opt_async_stream.enabled() ? 'enabled' : 'disabled',
-    'rpc-client',
-    'enabled',
-    'rpc-agent',
-    'disabled',
-    )
+    '-n', 'vaccel-rpc-client',
+    '-v', meson.project_version(),
+    '-t', get_option('buildtype'),
+    '--pkg-config-path', ':'.join(get_option('pkg_config_path')),
+    '-a', 'async=' + (opt_async.enabled() ? 'enabled' : 'disabled'),
+    '-a', 'async-stream=' + (opt_async_stream.enabled() ? 'enabled' : 'disabled'),
+    '-a', 'rpc-client=enabled',
+    '-a', 'rpc-agent=disabled',
+    version_only)
 endif
