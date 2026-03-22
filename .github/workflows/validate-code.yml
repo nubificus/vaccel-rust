@@ -6,7 +6,7 @@ on:
       actions-repo:
         type: string
         default: 'nubificus/vaccel'
-      actions-rev:
+      actions-ref:
         type: string
         default: 'main'
       runner:
@@ -29,10 +29,13 @@ on:
       AWS_SECRET_ACCESS_KEY:
         required: false
 
+permissions: read-all
+
 jobs:
   linter-rust-clippy:
     name: Lint Rust (rust-clippy)
-    runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
+    runs-on: >-
+      ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
       matrix:
         arch: ["${{ fromJSON(inputs.runner-archs) }}"]
@@ -40,9 +43,9 @@ jobs:
       fail-fast: false
     env:
       ARCH: ${{ fromJson(inputs.runner-arch-map)[0][matrix.arch] }}
-      DOWNLOAD_PATH: ${{github.workspace}}/artifacts/downloads/${{fromJson(inputs.runner-arch-map)[0][matrix.arch]}}/${{matrix.build-type}}
-      CC: gcc-12
-      CXX: g++-12
+      DOWNLOAD_PATH: >-
+        ${{ format('{0}/artifacts/downloads/{1}/{2}', github.workspace,
+          fromJson(inputs.runner-arch-map)[0][matrix.arch], matrix.build-type) }}
     steps:
       - name: Parse repository names
         id: parse-repos
@@ -68,11 +71,11 @@ jobs:
           permission-contents: read
 
       - name: Checkout .github directory
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
-          ref: ${{ inputs.actions-rev }}
+          ref: ${{ inputs.actions-ref }}
           token: ${{ steps.generate-init-token.outputs.token || github.token }}
 
       - name: Initialize workspace
@@ -85,10 +88,12 @@ jobs:
 
       - name: Download artifacts from s3
         id: download-artifacts
-        if: ${{ inputs.actions-repo != github.repository }}
+        if: inputs.actions-repo != github.repository
         uses: ./.github/actions/download-from-s3
         with:
-          branch: ${{ steps.initialize-workspace.outputs.remote-branch }}
+          ref: >-
+            ${{ steps.initialize-workspace.outputs.remote-tag ||
+              steps.initialize-workspace.outputs.remote-branch }}
           build-type: ${{ matrix.build-type }}
           arch: ${{ env.ARCH }}
           access-key: ${{ secrets.AWS_ACCESS_KEY }}
@@ -108,23 +113,23 @@ jobs:
         shell: bash
 
       - name: Clean-up
-        if: ${{ always() }}
+        if: always()
+        env:
+          INSTALLED: ${{ steps.download-artifacts.outputs.installed }}
         run: |
-          sudo apt-get purge -y \
-            ${{ steps.download-artifacts.outputs.installed }} || echo
+          sudo rm -rf target*
+          sudo apt-get purge -y "$INSTALLED" || true
         shell: bash
 
   linter-rust-fmt:
     name: Lint Rust (rust-fmt)
-    runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
+    runs-on: >-
+      ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
       matrix:
         arch: ["${{ fromJSON(inputs.runner-archs) }}"]
         build-type: [release]
       fail-fast: false
-    env:
-      CC: gcc-12
-      CXX: g++-12
     steps:
       - name: Parse repository names
         id: parse-repos
@@ -150,11 +155,11 @@ jobs:
           permission-contents: read
 
       - name: Checkout .github directory
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
-          ref: ${{ inputs.actions-rev }}
+          ref: ${{ inputs.actions-ref }}
           token: ${{ steps.generate-init-token.outputs.token || github.token }}
 
       - name: Initialize workspace
@@ -171,7 +176,8 @@ jobs:
 
   linter-super-linter:
     name: Lint Shell/GHActions/Markdown/YAML
-    runs-on: ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
+    runs-on: >-
+      ${{ format('{0}-{1}', join(fromJSON(inputs.runner), '-'), matrix.arch) }}
     strategy:
       matrix:
         arch: ["${{ fromJSON(inputs.runner-archs) }}"]
@@ -202,11 +208,11 @@ jobs:
           permission-contents: read
 
       - name: Checkout .github directory
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           sparse-checkout: .github
           repository: ${{ inputs.actions-repo }}
-          ref: ${{ inputs.actions-rev }}
+          ref: ${{ inputs.actions-ref }}
           token: ${{ steps.generate-init-token.outputs.token || github.token }}
 
       - name: Initialize workspace
@@ -233,7 +239,7 @@ jobs:
         env:
           GITHUB_TOKEN: >-
             ${{ steps.generate-linter-token.outputs.token || github.token }}
-          ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: false
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_BASH: true
           VALIDATE_SHELL_SHFMT: true
