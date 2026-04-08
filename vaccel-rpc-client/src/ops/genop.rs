@@ -95,7 +95,14 @@ pub unsafe extern "C" fn vaccel_rpc_client_genop(
         let write_args = c_pointer_to_mut_slice(write_args_ptr, nr_write_args).unwrap_or(&mut []);
         let proto_write_args = match write_args
             .iter_mut()
-            .map(|a| Ok(Arg::from_ref(a)?.try_into()?))
+            .map(|a| {
+                let arg = Arg::from_ref(a)?;
+                if client.send_write {
+                    Ok(arg.try_into()?)
+                } else {
+                    Ok(ProtoArg::try_from_vaccel_unallocated(&arg)?)
+                }
+            })
             .collect::<Result<Vec<ProtoArg>>>()
         {
             Ok(arg) => arg,

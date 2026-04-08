@@ -10,6 +10,7 @@ use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 pub struct VaccelRpcClient {
     pub ttrpc_client: AgentServiceClient,
     pub profiler_manager: ProfilerManager,
+    pub send_write: bool,
 }
 
 impl VaccelRpcClient {
@@ -22,6 +23,7 @@ impl VaccelRpcClient {
         Ok(VaccelRpcClient {
             ttrpc_client: AgentServiceClient::new(ttrpc_client),
             profiler_manager: ProfilerManager::new(Self::TIMERS_PREFIX),
+            send_write: Self::get_env_send_write(),
         })
     }
 
