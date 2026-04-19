@@ -1,0 +1,51 @@
+name: Renovate Updates
+
+on:
+  schedule:
+    - cron: '0 4 1 * *'
+  push:
+    branches: ["main"]
+  issues:
+    types: [edited]
+  pull_request:
+    types: [edited]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'issues' &&
+        github.event.issue.title == 'Dependency Dashboard') ||
+      (github.event_name == 'pull_request' &&
+        startsWith(github.event.pull_request.title, 'build(deps):'))
+    runs-on: base-dind-2204-amd64
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Generate vaccel-bot token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.VACCEL_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.VACCEL_BOT_PRIVATE_KEY }}
+          permission-metadata: read
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@v46.1.9
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          configurationFile: .github/renovate.json

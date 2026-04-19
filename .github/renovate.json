@@ -1,0 +1,23 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "configMigration": true,
+  "extends": [
+    "config:recommended",
+    ":gitSignOff",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(build)",
+    ":semanticCommitScope(deps)"
+  ],
+  "prHourlyLimit": 5,
+  "labels": ["dependencies", "cargo"],
+  "commitMessageLowerCase": "never",
+  "commitBodyTable": true,
+  "enabledManagers": ["cargo"],
+  "packageRules": [
+    {
+      "groupName": "Cargo",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["*"]
+    }
+  ]
+}
