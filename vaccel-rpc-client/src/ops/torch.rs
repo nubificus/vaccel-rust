@@ -10,6 +10,7 @@ use std::ffi::c_int;
 use vaccel::{
     c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
     ops::torch::{DataType, DynTensor},
+    profiling::SessionProfiler,
     Handle, VaccelId,
 };
 #[cfg(feature = "async")]
@@ -21,13 +22,18 @@ use vaccel_rpc_proto::torch::{ModelLoadRequest, ModelRunRequest, Tensor};
 impl VaccelRpcClient {
     pub fn torch_model_load(&self, session_id: i64, model_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(session_id)?;
         let req = ModelLoadRequest {
             session_id,
             model_id,
             ..Default::default()
         };
 
-        self.execute(AgentServiceClient::torch_model_load, ctx, &req)?;
+        self.profile_fn(
+            sess_vaccel_id,
+            "torch_model_load > client > ttrpc_client.torch_model_load",
+            || self.execute(AgentServiceClient::torch_model_load, ctx, &req),
+        )?;
 
         Ok(())
     }
@@ -41,6 +47,7 @@ impl VaccelRpcClient {
         nr_out_tensors: u64,
     ) -> Result<Vec<*mut ffi::vaccel_torch_tensor>> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(session_id)?;
         let req = ModelRunRequest {
             session_id,
             model_id,
@@ -50,21 +57,32 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let resp = self.execute(AgentServiceClient::torch_model_run, ctx, &req)?;
+        let resp = self.profile_fn(
+            sess_vaccel_id,
+            "torch_model_run > client > ttrpc_client.torch_model_run",
+            || self.execute(AgentServiceClient::torch_model_run, ctx, &req),
+        )?;
 
-        Ok(resp
-            .out_tensors
-            .into_iter()
-            .map(|e| {
-                let tensor = DynTensor::new_unchecked(
-                    &e.dims,
-                    DataType::from(e.type_.value() as u32),
-                    e.data.len(),
-                )?
-                .with_data(&e.data)?;
-                tensor.into_ptr()
-            })
-            .collect::<vaccel::Result<Vec<*mut ffi::vaccel_torch_tensor>>>()?)
+        let out_tensors = self.profile_fn(
+            sess_vaccel_id,
+            "torch_model_run > client > resp_out_tensors",
+            || {
+                resp.out_tensors
+                    .into_iter()
+                    .map(|e| {
+                        let tensor = DynTensor::new_unchecked(
+                            &e.dims,
+                            DataType::from(e.type_.value() as u32),
+                            e.data.len(),
+                        )?
+                        .with_data(&e.data)?;
+                        tensor.into_ptr()
+                    })
+                    .collect::<vaccel::Result<Vec<*mut ffi::vaccel_torch_tensor>>>()
+            },
+        )?;
+
+        Ok(out_tensors)
     }
 }
 
@@ -101,13 +119,17 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_load(
         }
     };
 
-    (match client.torch_model_load(sess_vaccel_id.into(), model_vaccel_id.into()) {
-        Ok(()) => ffi::VACCEL_OK,
-        Err(e) => {
-            error!("{}", e);
-            e.to_ffi()
-        }
-    }) as c_int
+    client.profile_fn(
+        sess_vaccel_id,
+        "torch_model_load > client.torch_model_load",
+        || match client.torch_model_load(sess_vaccel_id.into(), model_vaccel_id.into()) {
+            Ok(()) => ffi::VACCEL_OK,
+            Err(e) => {
+                error!("{}", e);
+                e.to_ffi()
+            }
+        },
+    ) as c_int
 }
 
 /// # Safety
@@ -151,27 +173,32 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
         }
     };
 
-    let run_options = unsafe {
-        run_options_ptr.as_ref().map(|opts| {
-            c_pointer_to_slice(opts.data as *mut u8, opts.size)
-                .unwrap_or(&[])
-                .to_owned()
-        })
-    };
+    let run_options =
+        client.profile_fn(sess_vaccel_id, "torch_model_run > run_options", || unsafe {
+            run_options_ptr.as_ref().map(|opts| {
+                c_pointer_to_slice(opts.data as *mut u8, opts.size)
+                    .unwrap_or(&[])
+                    .to_owned()
+            })
+        });
 
-    let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
-        Some(slice) => slice,
-        None => return ffi::VACCEL_EINVAL as c_int,
-    };
-    let proto_in_tensors: Vec<Tensor> = match in_tensors
-        .iter()
-        .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
-        .collect::<Result<Vec<Tensor>>>()
-    {
-        Ok(f) => f,
-        Err(e) => {
-            error!("{}", e);
-            return e.to_ffi() as c_int;
+    let proto_in_tensors: Vec<Tensor> = {
+        let _scope = client.profile_scope(sess_vaccel_id, "torch_model_run > in_tensors");
+
+        let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
+            Some(slice) => slice,
+            None => return ffi::VACCEL_EINVAL as c_int,
+        };
+        match in_tensors
+            .iter()
+            .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
+            .collect::<Result<Vec<Tensor>>>()
+        {
+            Ok(f) => f,
+            Err(e) => {
+                error!("{}", e);
+                return e.to_ffi() as c_int;
+            }
         }
     };
 
@@ -192,20 +219,27 @@ pub unsafe extern "C" fn vaccel_rpc_client_torch_model_run(
         }
     };
 
-    (match client.torch_model_run(
-        sess_vaccel_id.into(),
-        model_vaccel_id.into(),
-        run_options,
-        proto_in_tensors,
-        proto_nr_out_tensors,
-    ) {
-        Ok(results) => {
-            out_tensors.copy_from_slice(&results);
-            ffi::VACCEL_OK
-        }
-        Err(e) => {
-            error!("{}", e);
-            e.to_ffi()
-        }
-    }) as c_int
+    client.profile_fn(
+        sess_vaccel_id,
+        "torch_model_run > client.torch_model_run",
+        || match client.torch_model_run(
+            sess_vaccel_id.into(),
+            model_vaccel_id.into(),
+            run_options,
+            proto_in_tensors,
+            proto_nr_out_tensors,
+        ) {
+            Ok(results) => {
+                client.profile_fn(sess_vaccel_id, "torch_model_run > out_tensors copy", || {
+                    out_tensors.copy_from_slice(&results);
+                });
+
+                ffi::VACCEL_OK
+            }
+            Err(e) => {
+                error!("{}", e);
+                e.to_ffi()
+            }
+        },
+    ) as c_int
 }

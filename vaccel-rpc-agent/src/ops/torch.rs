@@ -3,7 +3,10 @@
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
 use std::num::TryFromIntError;
-use vaccel::ops::torch::{Buffer, DynTensor};
+use vaccel::{
+    ops::torch::{Buffer, DynTensor},
+    profiling::SessionProfiler,
+};
 use vaccel_rpc_proto::{
     empty::Empty,
     torch::{ModelLoadRequest, ModelRunRequest, ModelRunResponse},
@@ -28,9 +31,14 @@ impl AgentService {
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
-        info!("session:{} PyTorch model load", &req.session_id);
-        sess.torch_model_load(&mut res)?;
+        info!("session:{} PyTorch model load", sess_id);
+        self.profile_fn(sess_id, "torch_model_load > sess.torch_model_load", || {
+            sess.torch_model_load(&mut res)
+        })?;
 
         Ok(Empty::new())
     }
@@ -53,14 +61,20 @@ impl AgentService {
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
-        let run_options = req.run_options.map(Buffer::new).transpose()?;
+        let run_options = self.profile_fn(sess_id, "torch_model_run > run_options", || {
+            req.run_options.map(Buffer::new).transpose()
+        })?;
 
-        let in_tensors = req
-            .in_tensors
-            .into_iter()
-            .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<DynTensor>>>()?;
+        let in_tensors = self.profile_fn(sess_id, "torch_model_run > in_tensors", || {
+            req.in_tensors
+                .into_iter()
+                .map(|e| e.try_into())
+                .collect::<vaccel::Result<Vec<DynTensor>>>()
+        })?;
 
         let nr_out_tensors = req
             .nr_out_tensors
@@ -71,12 +85,16 @@ impl AgentService {
                 )
             })?;
 
-        info!("session:{} PyTorch model run", &req.session_id);
+        info!("session:{} PyTorch model run", sess_id);
         let out_tensors =
-            sess.torch_model_run(&mut res, run_options.as_ref(), &in_tensors, nr_out_tensors)?;
+            self.profile_fn(sess_id, "torch_model_run > sess.torch_model_run", || {
+                sess.torch_model_run(&mut res, run_options.as_ref(), &in_tensors, nr_out_tensors)
+            })?;
 
         let mut resp = ModelRunResponse::new();
-        resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
+        resp.out_tensors = self.profile_fn(sess_id, "torch_model_run > resp_out_tensors", || {
+            out_tensors.into_iter().map(Into::into).collect()
+        });
 
         Ok(resp)
     }

@@ -10,7 +10,7 @@ use std::{
     ffi::{c_int, c_uchar},
     slice,
 };
-use vaccel::{ffi, VaccelId};
+use vaccel::{ffi, profiling::SessionProfiler, VaccelId};
 #[cfg(feature = "async")]
 use vaccel_rpc_proto::asynchronous::agent_ttrpc::AgentServiceClient;
 use vaccel_rpc_proto::image::Request;
@@ -20,13 +20,18 @@ use vaccel_rpc_proto::sync::agent_ttrpc::AgentServiceClient;
 impl VaccelRpcClient {
     pub fn image_classify(&self, sess_id: i64, img: Vec<u8>) -> Result<Vec<u8>> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(sess_id)?;
         let req = Request {
             session_id: sess_id,
             image: img,
             ..Default::default()
         };
 
-        let resp = self.execute(AgentServiceClient::image_classification, ctx, &req)?;
+        let resp = self.profile_fn(
+            sess_vaccel_id,
+            "image_classification > client > ttrpc_client.image_classification",
+            || self.execute(AgentServiceClient::image_classification, ctx, &req),
+        )?;
 
         Ok(resp.tags)
     }
@@ -64,14 +69,24 @@ pub unsafe extern "C" fn vaccel_rpc_client_image_classify(
     let img = unsafe { slice::from_raw_parts(img_ptr, img_len) };
     let tags = unsafe { slice::from_raw_parts_mut(tags_ptr, tags_len) };
 
-    (match client.image_classify(sess_vaccel_id.into(), img.to_vec()) {
-        Ok(ret) => {
-            tags.copy_from_slice(&ret[..tags.len()]);
-            ffi::VACCEL_OK
-        }
-        Err(e) => {
-            error!("{}", e);
-            e.to_ffi()
-        }
-    }) as c_int
+    let img_vec = client.profile_fn(sess_vaccel_id, "image_classification > img copy", || {
+        img.to_vec()
+    });
+
+    client.profile_fn(
+        sess_vaccel_id,
+        "image_classification > client.image_classify",
+        || match client.image_classify(sess_vaccel_id.into(), img_vec) {
+            Ok(ret) => {
+                client.profile_fn(sess_vaccel_id, "image_classification > tags copy", || {
+                    tags.copy_from_slice(&ret[..tags.len()]);
+                });
+                ffi::VACCEL_OK
+            }
+            Err(e) => {
+                error!("{}", e);
+                e.to_ffi()
+            }
+        },
+    ) as c_int
 }

@@ -10,6 +10,7 @@ use std::ffi::c_int;
 use vaccel::{
     c_pointer_to_mut_slice, c_pointer_to_slice, ffi,
     ops::tf::lite::{DataType, DynTensor, Status},
+    profiling::SessionProfiler,
     Handle, VaccelId,
 };
 #[cfg(feature = "async")]
@@ -24,26 +25,36 @@ use vaccel_rpc_proto::{
 impl VaccelRpcClient {
     pub fn tflite_model_load(&self, model_id: i64, session_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(session_id)?;
         let req = ModelLoadRequest {
             session_id,
             model_id,
             ..Default::default()
         };
 
-        self.execute(AgentServiceClient::tensorflow_lite_model_load, ctx, &req)?;
+        self.profile_fn(
+            sess_vaccel_id,
+            "tflite_model_load > client > ttrpc_client.tensorflow_lite_model_load",
+            || self.execute(AgentServiceClient::tensorflow_lite_model_load, ctx, &req),
+        )?;
 
         Ok(())
     }
 
     pub fn tflite_model_unload(&self, model_id: i64, session_id: i64) -> Result<()> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(session_id)?;
         let req = ModelUnloadRequest {
             session_id,
             model_id,
             ..Default::default()
         };
 
-        self.execute(AgentServiceClient::tensorflow_lite_model_unload, ctx, &req)?;
+        self.profile_fn(
+            sess_vaccel_id,
+            "tflite_model_unload > client > ttrpc_client.tensorflow_lite_model_unload",
+            || self.execute(AgentServiceClient::tensorflow_lite_model_unload, ctx, &req),
+        )?;
 
         Ok(())
     }
@@ -56,6 +67,7 @@ impl VaccelRpcClient {
         nr_out_tensors: u64,
     ) -> Result<(Vec<*mut ffi::vaccel_tflite_tensor>, Status)> {
         let ctx = ttrpc::context::Context::default();
+        let sess_vaccel_id = VaccelId::try_from(session_id)?;
         let req = ModelRunRequest {
             model_id,
             session_id,
@@ -64,21 +76,30 @@ impl VaccelRpcClient {
             ..Default::default()
         };
 
-        let resp = self.execute(AgentServiceClient::tensorflow_lite_model_run, ctx, &req)?;
+        let resp = self.profile_fn(
+            sess_vaccel_id,
+            "tflite_model_run > client > ttrpc_client.tensorflow_lite_model_run",
+            || self.execute(AgentServiceClient::tensorflow_lite_model_run, ctx, &req),
+        )?;
 
-        let out_tensors = resp
-            .out_tensors
-            .into_iter()
-            .map(|e| {
-                let tensor = DynTensor::new_unchecked(
-                    &e.dims,
-                    DataType::from(e.type_.value() as u32),
-                    e.data.len(),
-                )?
-                .with_data(&e.data)?;
-                tensor.into_ptr()
-            })
-            .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tflite_tensor>>>()?;
+        let out_tensors = self.profile_fn(
+            sess_vaccel_id,
+            "tflite_model_run > client > resp_out_tensors",
+            || {
+                resp.out_tensors
+                    .into_iter()
+                    .map(|e| {
+                        let tensor = DynTensor::new_unchecked(
+                            &e.dims,
+                            DataType::from(e.type_.value() as u32),
+                            e.data.len(),
+                        )?
+                        .with_data(&e.data)?;
+                        tensor.into_ptr()
+                    })
+                    .collect::<vaccel::Result<Vec<*mut ffi::vaccel_tflite_tensor>>>()
+            },
+        )?;
         let status = resp.status.unwrap_or(ProtoStatus::default());
 
         Ok((out_tensors, status.try_into()?))
@@ -130,9 +151,15 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_load(
         }
     };
 
-    client
-        .tflite_model_load(model_vaccel_id.into(), sess_vaccel_id.into())
-        .into_ffi()
+    client.profile_fn(
+        sess_vaccel_id,
+        "tflite_model_load > client.tflite_model_load",
+        || {
+            client
+                .tflite_model_load(model_vaccel_id.into(), sess_vaccel_id.into())
+                .into_ffi()
+        },
+    )
 }
 
 /// # Safety
@@ -168,9 +195,15 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_unload(
         }
     };
 
-    client
-        .tflite_model_unload(model_vaccel_id.into(), sess_vaccel_id.into())
-        .into_ffi()
+    client.profile_fn(
+        sess_vaccel_id,
+        "tflite_model_unload > client.tflite_model_unload",
+        || {
+            client
+                .tflite_model_unload(model_vaccel_id.into(), sess_vaccel_id.into())
+                .into_ffi()
+        },
+    )
 }
 
 /// # Safety
@@ -213,19 +246,23 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
         }
     };
 
-    let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
-        Some(slice) => slice,
-        None => return ffi::VACCEL_EINVAL as c_int,
-    };
-    let proto_in_tensors: Vec<Tensor> = match in_tensors
-        .iter()
-        .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
-        .collect::<Result<Vec<Tensor>>>()
-    {
-        Ok(f) => f,
-        Err(e) => {
-            error!("{}", e);
-            return e.to_ffi() as c_int;
+    let proto_in_tensors: Vec<Tensor> = {
+        let _scope = client.profile_scope(sess_vaccel_id, "tflite_model_run > in_tensors");
+
+        let in_tensors = match c_pointer_to_slice(in_tensors_ptr, nr_inputs) {
+            Some(slice) => slice,
+            None => return ffi::VACCEL_EINVAL as c_int,
+        };
+        match in_tensors
+            .iter()
+            .map(|ptr| Ok(DynTensor::from_ptr(*ptr as *mut _)?.into()))
+            .collect::<Result<Vec<Tensor>>>()
+        {
+            Ok(f) => f,
+            Err(e) => {
+                error!("{}", e);
+                return e.to_ffi() as c_int;
+            }
         }
     };
 
@@ -246,23 +283,35 @@ pub unsafe extern "C" fn vaccel_rpc_client_tflite_model_run(
         }
     };
 
-    let (ret, status) = client
-        .tflite_model_run(
-            model_vaccel_id.into(),
-            sess_vaccel_id.into(),
-            proto_in_tensors,
-            proto_nr_out_tensors,
-        )
-        .map_or_else(
-            |e| {
-                error!("{}", e);
-                (e.to_ffi(), e.to_tflite_status())
-            },
-            |(tensors, status)| {
-                out_tensors.copy_from_slice(&tensors);
-                (ffi::VACCEL_OK, status)
-            },
-        );
+    let (ret, status) = client.profile_fn(
+        sess_vaccel_id,
+        "tflite_model_run > client.tflite_model_run",
+        || {
+            client
+                .tflite_model_run(
+                    model_vaccel_id.into(),
+                    sess_vaccel_id.into(),
+                    proto_in_tensors,
+                    proto_nr_out_tensors,
+                )
+                .map_or_else(
+                    |e| {
+                        error!("{}", e);
+                        (e.to_ffi(), e.to_tflite_status())
+                    },
+                    |(tensors, status)| {
+                        client.profile_fn(
+                            sess_vaccel_id,
+                            "tflite_model_run > out_tensors copy",
+                            || {
+                                out_tensors.copy_from_slice(&tensors);
+                            },
+                        );
+                        (ffi::VACCEL_OK, status)
+                    },
+                )
+        },
+    );
 
     if let Err(e) = status.populate_ptr(status_ptr) {
         error!("Could not populate status: {}", e);

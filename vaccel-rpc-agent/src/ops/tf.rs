@@ -2,7 +2,10 @@
 
 use crate::agent_service::{AgentService, AgentServiceError, Result};
 use log::info;
-use vaccel::ops::tf::{Buffer, DynTensor, Node};
+use vaccel::{
+    ops::tf::{Buffer, DynTensor, Node},
+    profiling::SessionProfiler,
+};
 use vaccel_rpc_proto::tf::{
     ModelLoadRequest, ModelLoadResponse, ModelRunRequest, ModelRunResponse, ModelUnloadRequest,
     ModelUnloadResponse,
@@ -30,9 +33,14 @@ impl AgentService {
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
-        info!("session:{} TensorFlow model load", &req.session_id);
-        let status = sess.tf_model_load(&mut res)?;
+        info!("session:{} TensorFlow model load", sess_id);
+        let status = self.profile_fn(sess_id, "tf_model_load > sess.tf_model_load", || {
+            sess.tf_model_load(&mut res)
+        })?;
 
         let mut resp = ModelLoadResponse::new();
         // FIXME: Either remove this or properly return graph_def
@@ -63,9 +71,14 @@ impl AgentService {
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
-        info!("session:{} TensorFlow model unload", &req.session_id);
-        let status = sess.tf_model_unload(&mut res)?;
+        info!("session:{} TensorFlow model unload", sess_id);
+        let status = self.profile_fn(sess_id, "tf_model_unload > sess.tf_model_unload", || {
+            sess.tf_model_unload(&mut res)
+        })?;
 
         let mut resp = ModelUnloadResponse::new();
         resp.status = Some(status.try_into()?).into();
@@ -91,37 +104,50 @@ impl AgentService {
                     format!("Unknown session {}", &req.session_id).to_string(),
                 )
             })?;
+        let sess_id = sess.id().ok_or(AgentServiceError::Internal(
+            "Invalid session ID".to_string(),
+        ))?;
 
-        let run_options = req.run_options.map(Buffer::new).transpose()?;
+        let run_options = self.profile_fn(sess_id, "tf_model_run > run_options", || {
+            req.run_options.map(Buffer::new).transpose()
+        })?;
 
-        let in_nodes = req
-            .in_nodes
-            .into_iter()
-            .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<Node>>>()?;
-        let out_nodes = req
-            .out_nodes
-            .into_iter()
-            .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<Node>>>()?;
+        let in_nodes = self.profile_fn(sess_id, "tf_model_run > in_nodes", || {
+            req.in_nodes
+                .into_iter()
+                .map(|e| e.try_into())
+                .collect::<vaccel::Result<Vec<Node>>>()
+        })?;
+        let out_nodes = self.profile_fn(sess_id, "tf_model_run > out_nodes", || {
+            req.out_nodes
+                .into_iter()
+                .map(|e| e.try_into())
+                .collect::<vaccel::Result<Vec<Node>>>()
+        })?;
 
-        let in_tensors = req
-            .in_tensors
-            .into_iter()
-            .map(|e| e.try_into())
-            .collect::<vaccel::Result<Vec<DynTensor>>>()?;
+        let in_tensors = self.profile_fn(sess_id, "tf_model_run > in_tensors", || {
+            req.in_tensors
+                .into_iter()
+                .map(|e| e.try_into())
+                .collect::<vaccel::Result<Vec<DynTensor>>>()
+        })?;
 
-        info!("session:{} TensorFlow model run", &req.session_id);
-        let (out_tensors, status) = sess.tf_model_run(
-            &mut res,
-            run_options.as_ref(),
-            &in_nodes,
-            &in_tensors,
-            &out_nodes,
-        )?;
+        info!("session:{} TensorFlow model run", sess_id);
+        let (out_tensors, status) =
+            self.profile_fn(sess_id, "tf_model_run > sess.tf_model_run", || {
+                sess.tf_model_run(
+                    &mut res,
+                    run_options.as_ref(),
+                    &in_nodes,
+                    &in_tensors,
+                    &out_nodes,
+                )
+            })?;
 
         let mut resp = ModelRunResponse::new();
-        resp.out_tensors = out_tensors.into_iter().map(Into::into).collect();
+        resp.out_tensors = self.profile_fn(sess_id, "tf_model_run > resp_out_tensors", || {
+            out_tensors.into_iter().map(Into::into).collect()
+        });
         resp.status = Some(status.try_into()?).into();
 
         Ok(resp)
