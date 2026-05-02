@@ -47,7 +47,7 @@ foreach d : cc_lib_dirs
 endforeach
 libclang_dep = cc.find_library('clang', dirs : llvm_lib_dirs)
 
-libvaccel_dep = dependency('vaccel', version : '>=0.7.0')
+libvaccel_dep = dependency('vaccel', version : '>=0.8.0')
 vaccel_sources = run_command(python, '-c',
   glob.format(libvaccel_dep.get_variable('includedir'), '.h'),
   check: true).stdout().strip().split('\n')
