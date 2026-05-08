@@ -2,6 +2,7 @@
 
 use crate::{ffi, Error, Handle, Resource, Result, VaccelId};
 use log::warn;
+use std::ffi::CString;
 use std::ptr::{self, NonNull};
 
 /// Wrapper for the `struct vaccel_session` C object.
@@ -21,6 +22,24 @@ impl Session {
     pub fn with_flags(flags: u32) -> Result<Self> {
         let mut ptr: *mut ffi::vaccel_session = ptr::null_mut();
         match unsafe { ffi::vaccel_session_new(&mut ptr, flags) as u32 } {
+            ffi::VACCEL_OK => (),
+            err => return Err(Error::Ffi(err)),
+        }
+
+        unsafe { Self::from_ptr_owned(ptr) }
+    }
+
+    /// Creates a new `Session` with the specified plugin identified by name.
+    pub fn with_plugin<P: AsRef<str>>(plugin_spec: P) -> Result<Self> {
+        let c_pspec = CString::new(plugin_spec.as_ref()).map_err(|e| {
+            Error::ConversionFailed(format!(
+                "Could not convert `plugin_spec` to `CString` [{}]",
+                e
+            ))
+        })?;
+
+        let mut ptr: *mut ffi::vaccel_session = ptr::null_mut();
+        match unsafe { ffi::vaccel_session_new_with_plugin(&mut ptr, c_pspec.as_ptr()) as u32 } {
             ffi::VACCEL_OK => (),
             err => return Err(Error::Ffi(err)),
         }

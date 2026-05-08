@@ -10,7 +10,11 @@ use vaccel_rpc_proto::{
 
 impl AgentService {
     pub(crate) fn do_create_session(&self, req: CreateRequest) -> Result<CreateResponse> {
-        let sess = Session::with_flags(req.flags)?;
+        let sess = if req.plugin_spec.is_empty() {
+            Session::with_flags(req.flags)?
+        } else {
+            Session::with_plugin(req.plugin_spec)?
+        };
         let sess_id = sess.id().ok_or(AgentServiceError::Internal(
             "Invalid session ID".to_string(),
         ))?;
