@@ -16,7 +16,7 @@ dashmap = "6.1"
 env_logger = "0.11"
 log = "0.4"
 protobuf = "3.1"
-thiserror = "1.0"
+thiserror = "2.0"
 tokio = { version = "1.38", features = ["rt", "rt-multi-thread", "signal", "macros", "tracing"], optional = true }
 ttrpc = { git = "https://github.com/nubificus/ttrpc-rust.git", branch = "0.8.0+vaccel", features = ["async"] }
 #tracing = "0.1"
