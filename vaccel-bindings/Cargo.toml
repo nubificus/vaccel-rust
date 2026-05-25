@@ -32,7 +32,7 @@ thiserror = "1.0"
 
 [build-dependencies]
 libc = "0.2"
-bindgen = "0.69"
+bindgen = "0.72"
 pkg-config = "0.3"
 
 [dev-dependencies]
