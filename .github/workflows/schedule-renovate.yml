@@ -33,7 +33,7 @@ jobs:
     runs-on: base-dind-2204-amd64
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Generate vaccel-bot token
         id: generate-token
@@ -47,7 +47,7 @@ jobs:
           permission-issues: write
 
       - name: Run Renovate
-        uses: renovatebot/github-action@v46.1.10
+        uses: renovatebot/github-action@v46.1.17
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
         with:
