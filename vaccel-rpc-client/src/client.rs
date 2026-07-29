@@ -24,6 +24,13 @@ impl VaccelRpcClient {
         }
     }
 
+    pub fn get_env_send_write() -> bool {
+        match env::var("VACCEL_RPC_SEND_WRITE_ENABLED") {
+            Ok(send) => send == "1",
+            Err(_) => true,
+        }
+    }
+
     pub(crate) fn resolve_uri(uri: &str) -> Result<String> {
         let parts: Vec<&str> = uri.split("://").collect();
         if parts.len() != 2 {

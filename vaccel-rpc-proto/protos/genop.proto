@@ -44,6 +44,7 @@ message Arg {
 	uint32 custom_type_id = 4;
 	uint32 parts = 5;
 	uint32 part_no = 6;
+	bool unallocated = 7;
 }
 
 message Request {

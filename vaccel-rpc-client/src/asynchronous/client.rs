@@ -13,6 +13,7 @@ pub struct VaccelRpcClient {
     pub ttrpc_client: AgentServiceClient,
     pub profiler_manager: ProfilerManager,
     pub runtime: Arc<Runtime>,
+    pub send_write: bool,
 }
 
 impl VaccelRpcClient {
@@ -29,6 +30,7 @@ impl VaccelRpcClient {
             ttrpc_client: AgentServiceClient::new(ttrpc_client),
             profiler_manager: ProfilerManager::new(Self::TIMERS_PREFIX),
             runtime: Arc::new(r),
+            send_write: Self::get_env_send_write(),
         })
     }
 
